@@ -72,17 +72,20 @@ function getDartType(value: any, key: string, classes: Map<string, string>, opti
 }
 
 function getDefaultValue(dartType: string, value: any, options: DartGeneratorOptions): string {
+    if (dartType === 'dynamic') return 'null';
     if (options.useValuesAsDefaults) {
         if (value === null) return 'null';
         if (dartType === 'String') return `'${value.toString().replace(/'/g, "\\'")}'`;
         if (dartType === 'DateTime') return `DateTime.parse('${value}')`;
         if (Array.isArray(value)) return 'const []';
-        if (typeof value === 'object' && !Array.isArray(value) && value !== null) return `${dartType}()`;
+        if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+            // Cannot create const instances if constructor is not const.
+             return `${dartType}()`;
+        }
         if (value !== null) return value.toString();
         return 'null';
     }
 
-    if (dartType === 'dynamic') return 'null';
     if (dartType.startsWith('List')) return 'const []';
     switch (dartType) {
         case 'String': return "''";
@@ -90,7 +93,9 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
         case 'double': return '0.0';
         case 'bool': return 'false';
         case 'DateTime': return 'DateTime.now()';
-        default: return `${dartType}()`;
+        default: 
+            // Cannot create const instances if constructor is not const.
+            return `${dartType}()`;
     }
 }
 
@@ -108,8 +113,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const fieldName = options.camelCaseFields ? toCamelCase(key) : key;
         const dartType = getDartType(jsonObject[key], key, classes, options);
         
-        // When required is true, fields must be nullable anyway to support null from JSON
-        const isNullable = options.nullableFields || options.requiredFields;
+        const isNullable = options.nullableFields;
         const nullable = isNullable ? '?' : '';
         
         const final = options.finalFields ? 'final ' : '';
@@ -149,17 +153,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 const dartType = field.type;
 
                 let parsingLogic: string;
-                const isNullable = options.nullableFields || options.requiredFields;
+                const isNullable = options.nullableFields;
 
                 if (options.supportDateTime && dartType === 'DateTime') {
-                    if (options.defaultValues) {
+                    if (options.defaultValues && !isNullable) {
                         parsingLogic = `json['${jsonKey}'] != null ? DateTime.parse(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
                     } else {
                         parsingLogic = `json['${jsonKey}'] != null ? DateTime.tryParse(json['${jsonKey}']) : null`;
                     }
                 } else if (dartType.startsWith('List<') && dartType.endsWith('>')) {
                     const listType = dartType.substring(5, dartType.length - 1);
-                    const defaultList = options.defaultValues ? 'const []' : 'null';
+                    const defaultList = (options.defaultValues && !isNullable) ? 'const []' : 'null';
                     if (listType === 'dynamic') {
                         parsingLogic = `json['${jsonKey}'] != null ? List<dynamic>.from(json['${jsonKey}']) : ${defaultList}`;
                     } else if (listType === 'String' || listType === 'int' || listType === 'double' || listType === 'bool') {
@@ -168,7 +172,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                         parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}'].map((x) => ${listType}.fromJson(x))) : ${defaultList}`;
                     }
                 } else if (classes.has(dartType)) {
-                    if (options.defaultValues) {
+                    // This is the critical fix. If fields are required, we cannot create a default empty instance. Fallback to null.
+                    if (options.defaultValues && !isNullable && !options.requiredFields) {
                         parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
                     } else {
                         parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null`;
@@ -177,7 +182,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                     let parseSuffix = '';
                     if (dartType === 'double' && !options.useValuesAsDefaults) parseSuffix = '?.toDouble()';
                     
-                    if (options.defaultValues) {
+                    if (options.defaultValues && !isNullable) {
                         parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType, value, options)}`;
                     } else {
                         parsingLogic = `json['${jsonKey}']${parseSuffix}`;
@@ -200,7 +205,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 const jsonKey = field.originalKey;
                 const fieldName = field.name;
                 const dartType = field.type;
-                const isNullable = options.nullableFields || options.requiredFields;
+                const isNullable = options.nullableFields;
 
                 let serializingLogic = fieldName;
                 if (options.supportDateTime && dartType === 'DateTime') {
@@ -283,8 +288,8 @@ export function generateDartCode(
     rootClassName: string = 'DataModel', 
     options: DartGeneratorOptions = defaultOptions
 ): string {
-    if (typeof json !== 'object' || json === null) {
-        throw new Error("Invalid JSON object provided.");
+    if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
+        throw new Error("Invalid or empty JSON object provided.");
     }
     
     const classes = new Map<string, string>();
@@ -353,5 +358,3 @@ export function generateDartCode(
 
     return generatedClasses.join('\n');
 }
-
-    

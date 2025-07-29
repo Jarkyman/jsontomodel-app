@@ -167,8 +167,16 @@ export default function ModelForgeClient() {
   };
 
   const validateJson = (value: string) => {
+    if (!value.trim()) {
+        setJsonError(null);
+        return;
+    }
     try {
       const parsedJson = JSON.parse(value);
+       if (Object.keys(parsedJson).length === 0) {
+        setJsonError("JSON object cannot be empty.");
+        return;
+      }
       if (hasEmptyKeys(parsedJson)) {
         setJsonError("JSON cannot contain empty keys.");
       } else {
@@ -239,15 +247,6 @@ export default function ModelForgeClient() {
       return;
     }
     
-    if (Object.keys(parsedJson).length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Empty JSON",
-        description: "Cannot generate a model from an empty JSON object.",
-      });
-      return;
-    }
-
     setIsGenerating(true);
     setOutputCode('');
     try {
@@ -283,6 +282,7 @@ export default function ModelForgeClient() {
         title: "Error Generating Model",
         description: errorMessage,
       });
+      setOutputCode("");
     } finally {
       setIsGenerating(false);
       if (!hasGenerated && !jsonError) {
@@ -495,11 +495,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    
