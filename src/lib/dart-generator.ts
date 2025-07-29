@@ -47,13 +47,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classString += `    return ${className}(\n`;
     for (const key in jsonObject) {
         const camelCaseKey = toCamelCase(key);
-        const dartType = getDartType(jsonObject[key], key, new Map()); // Temporary map to avoid re-generating nested classes here
+        const value = jsonObject[key];
 
-        if (Array.isArray(jsonObject[key]) && jsonObject[key].length > 0 && typeof jsonObject[key][0] === 'object') {
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
             const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
             const itemClassName = toPascalCase(singularKey);
              classString += `      ${camelCaseKey}: json['${key}'] != null ? List<${itemClassName}>.from(json['${key}'].map((x) => ${itemClassName}.fromJson(x))) : null,\n`;
-        } else if (typeof jsonObject[key] === 'object' && jsonObject[key] !== null && !Array.isArray(jsonObject[key])) {
+        } else if (Array.isArray(value)) {
+            const listType = getDartType(value.length > 0 ? value[0] : null, key, new Map());
+            classString += `      ${camelCaseKey}: json['${key}'] != null ? List<${listType}>.from(json['${key}']) : null,\n`;
+        }
+        else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
             const nestedClassName = toPascalCase(key);
             classString += `      ${camelCaseKey}: json['${key}'] != null ? ${nestedClassName}.fromJson(json['${key}']) : null,\n`;
         } else {
