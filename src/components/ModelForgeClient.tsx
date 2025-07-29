@@ -29,8 +29,6 @@ import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
 import { LineNumberedTextarea } from "./LineNumberedTextarea";
-import { Checkbox } from "./ui/checkbox";
-import { Label } from "./ui/label";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -187,7 +185,7 @@ export default function ModelForgeClient() {
       generateCode(selectedLanguage, rootClassName, dartOptions);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dartOptions, rootClassName, selectedLanguage]);
+  }, [dartOptions, rootClassName]);
 
 
   useEffect(() => {
@@ -252,7 +250,9 @@ export default function ModelForgeClient() {
       });
     } finally {
       setIsGenerating(false);
-      setHasGenerated(true);
+      if (!hasGenerated && !jsonError) {
+        setHasGenerated(true);
+      }
     }
   };
   
@@ -347,9 +347,9 @@ export default function ModelForgeClient() {
                 value={jsonInput}
                 onChange={handleJsonInputChange}
                 placeholder="Paste your JSON here"
-                className="font-code"
+                className="font-code h-full"
                 containerClassName={cn("h-[500px]", {
-                    "border-destructive focus-within:ring-destructive focus-within:ring-2": jsonError,
+                    "border-destructive ring-destructive ring-2": jsonError,
                 })}
                 />
             </div>
@@ -407,7 +407,7 @@ export default function ModelForgeClient() {
               ) : outputCode ? (
                 <div className="relative h-full w-full overflow-auto">
                     <div className="flex absolute inset-0">
-                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-2 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem', whiteSpace: 'pre' }}>
+                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-2 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem', whiteSpace: 'pre', fontFamily: 'var(--font-code)' }}>
                             {outputCode.split('\n').map((_, index) => (
                                 <div key={index}>{index + 1}</div>
                             ))}

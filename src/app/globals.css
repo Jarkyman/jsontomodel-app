@@ -95,6 +95,7 @@ body {
     line-height: 1.5rem; 
     font-size: 0.875rem;
     white-space: pre;
+    font-family: var(--font-code);
 }
 .line-numbered-textarea {
     @apply pl-0 border-l-0 rounded-l-none h-full;
