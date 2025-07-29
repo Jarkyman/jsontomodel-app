@@ -1,0 +1,157 @@
+
+export interface KotlinGeneratorOptions {
+    useVal: boolean;
+    nullable: boolean;
+    dataClass: boolean;
+    fromJson: boolean;
+    toJson: boolean;
+    useSerializedName: boolean;
+    defaultValues: boolean;
+    serializationLibrary: 'manual' | 'gson' | 'moshi' | 'kotlinx';
+}
+
+const defaultOptions: KotlinGeneratorOptions = {
+    useVal: true,
+    nullable: true,
+    dataClass: true,
+    fromJson: false,
+    toJson: false,
+    useSerializedName: false,
+    defaultValues: false,
+    serializationLibrary: "manual",
+};
+
+function toPascalCase(str: string): string {
+    return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
+}
+
+function toCamelCase(str: string): string {
+    let s = str.replace(/([-_][a-z])/ig, ($1) => {
+        return $1.toUpperCase()
+            .replace('-', '')
+            .replace('_', '');
+    });
+    return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string {
+    const type = typeof value;
+    if (type === 'string') return 'String';
+    if (type === 'number') return value % 1 === 0 ? 'Int' : 'Double';
+    if (type === 'boolean') return 'Boolean';
+    if (Array.isArray(value)) {
+        if (value.length === 0) return 'List<Any>';
+        const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        const listType = getKotlinType(value[0], singularKey, classes, options);
+        return `List<${listType}>`;
+    }
+    if (type === 'object' && value !== null) {
+        const className = toPascalCase(key);
+        if (!classes.has(className)) {
+            generateClass(className, value, classes, options);
+        }
+        return className;
+    }
+    return 'Any';
+}
+
+
+function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: KotlinGeneratorOptions): void {
+    if (classes.has(className)) return;
+
+    let classString = '';
+    const classType = options.dataClass ? 'data class' : 'class';
+    classString += `${classType} ${className}(\n`;
+    
+    const fields: string[] = [];
+    for (const key in jsonObject) {
+        if (key === '') continue;
+        const fieldName = toCamelCase(key);
+        const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
+        const keyword = options.useVal ? 'val' : 'var';
+        const nullable = options.nullable ? '?' : '';
+        fields.push(`    ${keyword} ${fieldName}: ${kotlinType}${nullable}`);
+    }
+
+    classString += fields.join(',\n');
+    classString += `\n)`;
+
+    classes.set(className, classString);
+
+    // Recursively generate for sub-objects
+    for (const key in jsonObject) {
+        const value = jsonObject[key];
+        const type = typeof value;
+        if (type === 'object' && value !== null) {
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                generateClass(singularKey, value[0], classes, options);
+            } else if (!Array.isArray(value)) {
+                generateClass(toPascalCase(key), value, classes, options);
+            }
+        }
+    }
+}
+
+
+export function generateKotlinCode(
+    json: any, 
+    rootClassName: string = 'DataModel', 
+    options: KotlinGeneratorOptions = defaultOptions
+): string {
+    if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
+        throw new Error("Invalid or empty JSON object provided.");
+    }
+    
+    const classes = new Map<string, string>();
+    const rootJson = {...json};
+    const finalRootClassName = toPascalCase(rootClassName);
+
+    generateClass(finalRootClassName, rootJson, classes, options);
+
+    // A helper to find the original JSON object for a given class name
+    function findJsonForClass(className: string, currentJson: any, currentName: string): any {
+        if (toPascalCase(currentName) === className) {
+            return currentJson;
+        }
+
+        if (typeof currentJson === 'object' && currentJson !== null) {
+            for (const key in currentJson) {
+                const pascalKey = toPascalCase(key);
+                if (pascalKey === className) {
+                    if (Array.isArray(currentJson[key])) {
+                        return currentJson[key][0] ?? {};
+                    }
+                    return currentJson[key];
+                }
+                const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                if (singularPascalKey === className && Array.isArray(currentJson[key]) && currentJson[key].length > 0) {
+                    return currentJson[key][0];
+                }
+                const result = findJsonForClass(className, currentJson[key], key);
+                if (result) return result;
+            }
+        }
+        return null;
+    }
+    
+    const orderedClasses = Array.from(classes.keys()).reverse();
+    const finalClasses = new Map<string, string>();
+
+    for (const className of orderedClasses) {
+        const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
+        if (jsonSource) {
+            generateClass(className, jsonSource, finalClasses, options);
+        }
+    }
+
+    const generatedClassNames = Array.from(finalClasses.keys());
+    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
+    
+    if (rootClassIndex > -1) {
+        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
+        generatedClassNames.unshift(rootClassName);
+    }
+    
+    return generatedClassNames.map(name => finalClasses.get(name)).join('\n\n');
+}

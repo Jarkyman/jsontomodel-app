@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
+import { generateKotlinCode, KotlinGeneratorOptions } from "@/lib/kotlin-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -32,7 +33,7 @@ import { Textarea } from "./ui/textarea";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)", supported: true },
-  { value: "kotlin", label: "Kotlin", supported: false },
+  { value: "kotlin", label: "Kotlin", supported: true },
   { value: "swift", label: "Swift", supported: false },
   { value: "python", label: "Python", supported: false },
   { value: "java", label: "Java", supported: false },
@@ -101,7 +102,7 @@ const defaultJson = JSON.stringify(
   2
 );
 
-const initialOptions: DartGeneratorOptions = {
+const initialDartOptions: DartGeneratorOptions = {
     fromJson: true,
     toJson: true,
     copyWith: false,
@@ -115,7 +116,21 @@ const initialOptions: DartGeneratorOptions = {
     useValuesAsDefaults: false,
 };
 
-type OptionKey = keyof DartGeneratorOptions;
+const initialKotlinOptions: KotlinGeneratorOptions = {
+  useVal: true,
+  nullable: true,
+  dataClass: true,
+  fromJson: true,
+  toJson: true,
+  useSerializedName: false,
+  defaultValues: false,
+  serializationLibrary: "manual"
+};
+
+
+type DartOptionKey = keyof DartGeneratorOptions;
+type KotlinOptionKey = keyof KotlinGeneratorOptions;
+
 
 const FilterButton = ({ onClick, checked, label }: { onClick: () => void, checked: boolean, label: string }) => (
   <button
@@ -143,7 +158,8 @@ export default function ModelForgeClient() {
   const [rootClassName, setRootClassName] = useState("DataModel");
   const [renameInputValue, setRenameInputValue] = useState(rootClassName);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialOptions);
+  const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialDartOptions);
+  const [kotlinOptions, setKotlinOptions] = useState<KotlinGeneratorOptions>(initialKotlinOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -217,7 +233,7 @@ export default function ModelForgeClient() {
       generateCode();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dartOptions, rootClassName, selectedLanguage]);
+  }, [dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
 
 
   useEffect(() => {
@@ -250,21 +266,11 @@ export default function ModelForgeClient() {
     setIsGenerating(true);
     setOutputCode('');
     try {
+      let result = '';
       if (selectedLanguage === "dart") {
-        const result = generateDartCode(parsedJson, rootClassName, dartOptions);
-        setOutputCode(result);
-        
-        if (result && !hasGenerated) {
-            toast({
-                title: "Model Generated",
-                description: `Your root model is named "${rootClassName}". You can rename it.`,
-                action: (
-                    <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
-                        Rename
-                    </ToastAction>
-                ),
-            });
-        }
+        result = generateDartCode(parsedJson, rootClassName, dartOptions);
+      } else if (selectedLanguage === "kotlin") {
+        result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
       } else {
         toast({
           title: "Not Implemented",
@@ -273,7 +279,24 @@ export default function ModelForgeClient() {
           } is not yet supported.`,
         });
         setOutputCode("");
+        setIsGenerating(false);
+        return;
       }
+      
+      setOutputCode(result);
+        
+      if (result && !hasGenerated) {
+          toast({
+              title: "Model Generated",
+              description: `Your root model is named "${rootClassName}". You can rename it.`,
+              action: (
+                  <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
+                      Rename
+                  </ToastAction>
+              ),
+          });
+      }
+
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
@@ -291,7 +314,7 @@ export default function ModelForgeClient() {
     }
   };
   
-  const handleToggleOption = (option: OptionKey) => {
+  const handleToggleDartOption = (option: DartOptionKey) => {
     setDartOptions(prev => {
         const newOptions = { ...prev, [option]: !prev[option] };
 
@@ -309,6 +332,10 @@ export default function ModelForgeClient() {
 
         return newOptions;
     });
+  };
+
+  const handleToggleKotlinOption = (option: KotlinOptionKey) => {
+    setKotlinOptions(prev => ({...prev, [option]: !prev[option]}));
   };
   
   const handleGenerate = () => {
@@ -387,20 +414,36 @@ export default function ModelForgeClient() {
       <Card className="max-w-2xl mx-auto shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={dartOptions.fromJson} onClick={() => handleToggleOption('fromJson')} label="fromJson" />
-                <FilterButton checked={dartOptions.toJson} onClick={() => handleToggleOption('toJson')} label="toJson" />
-                <FilterButton checked={dartOptions.copyWith} onClick={() => handleToggleOption('copyWith')} label="copyWith" />
-                <FilterButton checked={dartOptions.toString} onClick={() => handleToggleOption('toString')} label="toString" />
-                <FilterButton checked={dartOptions.nullableFields} onClick={() => handleToggleOption('nullableFields')} label="nullable" />
-                <FilterButton checked={dartOptions.requiredFields} onClick={() => handleToggleOption('requiredFields')} label="required" />
-                <FilterButton checked={dartOptions.finalFields} onClick={() => handleToggleOption('finalFields')} label="final" />
-                <FilterButton checked={dartOptions.defaultValues} onClick={() => handleToggleOption('defaultValues')} label="default values" />
-                <FilterButton checked={dartOptions.useValuesAsDefaults} onClick={() => handleToggleOption('useValuesAsDefaults')} label="use values as defaults" />
-                <FilterButton checked={dartOptions.supportDateTime} onClick={() => handleToggleOption('supportDateTime')} label="support DateTime" />
-                <FilterButton checked={dartOptions.camelCaseFields} onClick={() => handleToggleOption('camelCaseFields')} label="camelCase" />
+                <FilterButton checked={dartOptions.fromJson} onClick={() => handleToggleDartOption('fromJson')} label="fromJson" />
+                <FilterButton checked={dartOptions.toJson} onClick={() => handleToggleDartOption('toJson')} label="toJson" />
+                <FilterButton checked={dartOptions.copyWith} onClick={() => handleToggleDartOption('copyWith')} label="copyWith" />
+                <FilterButton checked={dartOptions.toString} onClick={() => handleToggleDartOption('toString')} label="toString" />
+                <FilterButton checked={dartOptions.nullableFields} onClick={() => handleToggleDartOption('nullableFields')} label="nullable" />
+                <FilterButton checked={dartOptions.requiredFields} onClick={() => handleToggleDartOption('requiredFields')} label="required" />
+                <FilterButton checked={dartOptions.finalFields} onClick={() => handleToggleDartOption('finalFields')} label="final" />
+                <FilterButton checked={dartOptions.defaultValues} onClick={() => handleToggleDartOption('defaultValues')} label="default values" />
+                <FilterButton checked={dartOptions.useValuesAsDefaults} onClick={() => handleToggleDartOption('useValuesAsDefaults')} label="use values as defaults" />
+                <FilterButton checked={dartOptions.supportDateTime} onClick={() => handleToggleDartOption('supportDateTime')} label="support DateTime" />
+                <FilterButton checked={dartOptions.camelCaseFields} onClick={() => handleToggleDartOption('camelCaseFields')} label="camelCase" />
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {selectedLanguage === 'kotlin' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <FilterButton checked={kotlinOptions.useVal} onClick={() => handleToggleKotlinOption('useVal')} label="val" />
+                    <FilterButton checked={kotlinOptions.nullable} onClick={() => handleToggleKotlinOption('nullable')} label="nullable" />
+                    <FilterButton checked={kotlinOptions.dataClass} onClick={() => handleToggleKotlinOption('dataClass')} label="data class" />
+                    <FilterButton checked={kotlinOptions.fromJson} onClick={() => handleToggleKotlinOption('fromJson')} label="fromJson" />
+                    <FilterButton checked={kotlinOptions.toJson} onClick={() => handleToggleKotlinOption('toJson')} label="toJson" />
+                    <FilterButton checked={kotlinOptions.useSerializedName} onClick={() => handleToggleKotlinOption('useSerializedName')} label="SerializedName" />
+                    <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
+                </div>
+            </CardContent>
+        </Card>
       )}
 
 
