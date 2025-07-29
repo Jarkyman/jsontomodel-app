@@ -234,38 +234,38 @@ export default function ModelForgeClient() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
-              {outputCode && !isGenerating && (
-                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Rename Model</span>
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Rename Root Model</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Enter a new name for the root model class.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <Input 
-                      value={renameInputValue}
-                      onChange={(e) => setRenameInputValue(e.target.value)}
-                      placeholder="Enter new name"
-                    />
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleRename}>Rename</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
             </div>
-            <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputCode}>
-              {hasCopied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
-              <span className="sr-only">Copy to clipboard</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={!outputCode || isGenerating}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Rename
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Rename Root Model</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Enter a new name for the root model class. The current name is <strong>{rootClassName}</strong>.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <Input 
+                    value={renameInputValue}
+                    onChange={(e) => setRenameInputValue(e.target.value)}
+                    placeholder="Enter new name"
+                  />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRename}>Rename</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputCode}>
+                {hasCopied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
+                <span className="sr-only">Copy to clipboard</span>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-96 min-h-[400px] w-full rounded-md border bg-card p-4">
