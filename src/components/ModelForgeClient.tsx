@@ -146,10 +146,33 @@ export default function ModelForgeClient() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
+  const hasEmptyKeys = (obj: any): boolean => {
+    if (obj === null || typeof obj !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (hasEmptyKeys(item)) return true;
+      }
+    } else {
+      for (const key in obj) {
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+        if (key === '') return true;
+        if (hasEmptyKeys(obj[key])) return true;
+      }
+    }
+    return false;
+  };
+
   const validateJson = (value: string) => {
     try {
-      JSON.parse(value);
-      setJsonError(null);
+      const parsedJson = JSON.parse(value);
+      if (hasEmptyKeys(parsedJson)) {
+        setJsonError("JSON cannot contain empty keys.");
+      } else {
+        setJsonError(null);
+      }
     } catch (error) {
       if (error instanceof Error) {
         setJsonError(error.message);
@@ -161,6 +184,7 @@ export default function ModelForgeClient() {
 
   useEffect(() => {
     validateJson(jsonInput);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jsonInput]);
 
   const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -190,25 +214,6 @@ export default function ModelForgeClient() {
   useEffect(() => {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
-
-  const hasEmptyKeys = (obj: any): boolean => {
-    if (obj === null || typeof obj !== 'object') {
-      return false;
-    }
-
-    if (Array.isArray(obj)) {
-      for (const item of obj) {
-        if (hasEmptyKeys(item)) return true;
-      }
-    } else {
-      for (const key in obj) {
-        if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-        if (key === '') return true;
-        if (hasEmptyKeys(obj[key])) return true;
-      }
-    }
-    return false;
-  };
 
   const generateCode = () => {
     if (jsonError) {
@@ -241,16 +246,6 @@ export default function ModelForgeClient() {
       });
       return;
     }
-
-    if (hasEmptyKeys(parsedJson)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Key",
-        description: "JSON cannot contain empty keys.",
-      });
-      return;
-    }
-
 
     setIsGenerating(true);
     setOutputCode('');
@@ -482,3 +477,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
