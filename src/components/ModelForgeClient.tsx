@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateDartCode } from "@/lib/dart-generator";
 
 const languages = [
-  { value: "dart", label: "Dart" },
+  { value: "dart", label: "Flutter (Dart)" },
   { value: "kotlin", label: "Kotlin" },
   { value: "swift", label: "Swift" },
   { value: "python", label: "Python" },
