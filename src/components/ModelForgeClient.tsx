@@ -28,7 +28,7 @@ import {
 import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
-import { LineNumberedTextarea } from "./LineNumberedTextarea";
+import { Textarea } from "./ui/textarea";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -343,14 +343,13 @@ export default function ModelForgeClient() {
           </CardHeader>
           <CardContent className="flex-grow flex flex-col">
             <div className="flex-grow h-full">
-                <LineNumberedTextarea
-                value={jsonInput}
-                onChange={handleJsonInputChange}
-                placeholder="Paste your JSON here"
-                className="font-code h-full"
-                containerClassName={cn("h-[500px]", {
-                    "border-destructive ring-destructive ring-2": jsonError,
-                })}
+                <Textarea
+                    value={jsonInput}
+                    onChange={handleJsonInputChange}
+                    placeholder="Paste your JSON here"
+                    className={cn("font-code h-[500px] resize-none", {
+                        "border-destructive ring-destructive ring-2": jsonError,
+                    })}
                 />
             </div>
              {jsonError && (
@@ -399,25 +398,17 @@ export default function ModelForgeClient() {
             </div>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col">
-            <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden h-[500px]">
+             <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden h-[500px]">
               {isGenerating ? (
                  <div className="flex items-center justify-center h-full text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin" />
                  </div>
               ) : outputCode ? (
                 <div className="relative h-full w-full overflow-auto">
-                    <div className="flex absolute inset-0">
-                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-2 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem', whiteSpace: 'pre', fontFamily: 'var(--font-code)' }}>
-                            {outputCode.split('\n').map((_, index) => (
-                                <div key={index}>{index + 1}</div>
-                            ))}
-                        </div>
-                        <pre className="flex-1 pt-3 pb-3 pl-2 pr-3" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
-                            <code>{outputCode}</code>
-                        </pre>
-                    </div>
+                    <pre className="p-4 h-full">
+                        <code>{outputCode}</code>
+                    </pre>
                 </div>
-
               ) : (
                 <div className="flex h-full items-center justify-center text-center text-muted-foreground">
                   <p>Your generated model will appear here.</p>

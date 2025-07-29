@@ -86,19 +86,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-.line-numbered-textarea-container {
-    @apply flex h-full overflow-hidden;
-}
-.line-numbers {
-    @apply w-auto min-w-[2.5rem] pr-3 text-right select-none text-muted-foreground bg-card pt-3 pb-3;
-    line-height: 1.5rem; 
-    font-size: 0.875rem;
-    white-space: pre;
-    font-family: var(--font-code);
-}
-.line-numbered-textarea {
-    @apply pl-0 border-l-0 rounded-l-none h-full overflow-y-auto;
-    line-height: 1.5rem;
-    font-size: 0.875rem;
-}
