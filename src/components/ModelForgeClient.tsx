@@ -14,6 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { generateDartCode } from "@/lib/dart-generator";
+import { RenameModel } from "./RenameModel";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -92,7 +93,8 @@ export default function ModelForgeClient() {
   const [selectedLanguage, setSelectedLanguage] = useState("dart");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
-  const { toast } = useToast();
+  const [rootClassName, setRootClassName] = useState("DataModel");
+  const { toast, dismiss } = useToast();
 
   useEffect(() => {
     const storedLang = localStorage.getItem("selectedLanguage");
@@ -105,7 +107,7 @@ export default function ModelForgeClient() {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
 
-  const handleGenerate = async () => {
+  const generateCode = (targetLanguage: string, name: string) => {
     let parsedJson;
     try {
       parsedJson = JSON.parse(jsonInput);
@@ -121,14 +123,13 @@ export default function ModelForgeClient() {
     setIsGenerating(true);
     setOutputCode('');
     try {
-      // We will add more generators as we build them
-      if (selectedLanguage === "dart") {
-        const result = generateDartCode(parsedJson);
+      if (targetLanguage === "dart") {
+        const result = generateDartCode(parsedJson, name);
         setOutputCode(result);
       } else {
         toast({
           title: "Not Implemented",
-          description: `Code generation for ${selectedLanguage} is not yet supported.`,
+          description: `Code generation for ${targetLanguage} is not yet supported.`,
         });
         setOutputCode("");
       }
@@ -143,6 +144,25 @@ export default function ModelForgeClient() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleGenerate = () => {
+    dismiss(); 
+    generateCode(selectedLanguage, rootClassName);
+    toast({
+      duration: 20000, // 20 seconds
+      description: "A default name 'DataModel' was used for the root class.",
+      action: (
+        <RenameModel
+          currentName={rootClassName}
+          onRename={(newName) => {
+            setRootClassName(newName);
+            generateCode(selectedLanguage, newName);
+            dismiss();
+          }}
+        />
+      ),
+    });
   };
 
   const handleCopy = () => {
