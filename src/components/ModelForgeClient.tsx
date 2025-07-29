@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
 import { 
@@ -28,6 +27,7 @@ import {
 import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
+import { LineNumberedTextarea } from "./LineNumberedTextarea";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -167,7 +167,8 @@ export default function ModelForgeClient() {
     if (hasGenerated) {
       generateCode(selectedLanguage, rootClassName, dartOptions);
     }
-  }, [dartOptions, hasGenerated, rootClassName, selectedLanguage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dartOptions]);
 
 
   useEffect(() => {
@@ -239,6 +240,9 @@ export default function ModelForgeClient() {
   const handleToggleOption = (option: OptionKey) => {
     setDartOptions(prev => {
         const newState = { ...prev, [option]: !prev[option] };
+        if (option === 'requiredFields' && newState.requiredFields) {
+            newState.nullableFields = false;
+        }
         return newState;
     });
   };
@@ -250,9 +254,12 @@ export default function ModelForgeClient() {
   
   const handleRename = () => {
     if (renameInputValue.trim()) {
-      setRootClassName(renameInputValue.trim());
-      // No need to call generateCode here, the useEffect will handle it
+      const newName = renameInputValue.trim();
+      setRootClassName(newName);
       setIsRenameDialogOpen(false);
+      if(hasGenerated) {
+        generateCode(selectedLanguage, newName, dartOptions);
+      }
     }
   };
 
@@ -339,12 +346,13 @@ export default function ModelForgeClient() {
             <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea
+            <LineNumberedTextarea
               value={jsonInput}
               onChange={handleJsonInputChange}
               placeholder="Paste your JSON here"
-              className={cn("font-code h-96 min-h-[400px] text-sm bg-card", {
-                "border-destructive focus-visible:ring-destructive": jsonError,
+              className="min-h-[400px]"
+              containerClassName={cn("h-96", {
+                "border-destructive focus-within:ring-destructive focus-within:ring-2": jsonError,
               })}
             />
              {jsonError && (
@@ -393,15 +401,25 @@ export default function ModelForgeClient() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-96 min-h-[400px] w-full rounded-md border bg-card p-4">
+            <div className="h-96 min-h-[400px] w-full rounded-md border bg-card p-2 font-code text-sm">
               {isGenerating ? (
                  <div className="flex items-center justify-center h-full text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin" />
                  </div>
               ) : outputCode ? (
-                <pre className="h-full w-full overflow-auto font-code text-sm">
-                  <code>{outputCode}</code>
-                </pre>
+                <div className="h-full w-full overflow-auto">
+                    <div className="flex">
+                        <div className="w-10 select-none text-right text-muted-foreground pr-4">
+                            {outputCode.split('\n').map((_, index) => (
+                                <div key={index}>{index + 1}</div>
+                            ))}
+                        </div>
+                        <pre className="flex-1">
+                            <code>{outputCode}</code>
+                        </pre>
+                    </div>
+                </div>
+
               ) : (
                 <div className="flex h-full items-center justify-center text-center text-muted-foreground">
                   <p>Your generated model will appear here.</p>

@@ -86,3 +86,18 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.line-numbered-textarea-container {
+    @apply flex h-full font-code text-sm;
+}
+.line-numbers {
+    @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-[9px] pb-[9px];
+    line-height: 1.5; /* Match this with textarea's line-height */
+    white-space: pre;
+    overflow: hidden;
+    
+}
+.line-numbered-textarea {
+    @apply pl-0 border-l-0 rounded-l-none;
+    line-height: 1.5;
+}
