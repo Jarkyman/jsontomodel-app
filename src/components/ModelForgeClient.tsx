@@ -124,6 +124,7 @@ export default function ModelForgeClient() {
   const [renameInputValue, setRenameInputValue] = useState(rootClassName);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialOptions);
+  const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -136,6 +137,13 @@ export default function ModelForgeClient() {
   useEffect(() => {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
+  
+  useEffect(() => {
+    if (hasGenerated) {
+      generateCode(selectedLanguage, rootClassName, dartOptions);
+    }
+  }, [dartOptions]);
+
 
   useEffect(() => {
     setRenameInputValue(rootClassName);
@@ -161,7 +169,8 @@ export default function ModelForgeClient() {
         const result = generateDartCode(parsedJson, name, options);
         setOutputCode(result);
         setRootClassName(name);
-        if (result) {
+        
+        if (result && !hasGenerated) {
             toast({
                 title: "Model Generated",
                 description: `Your root model is named "${name}". You can rename it.`,
@@ -207,7 +216,8 @@ export default function ModelForgeClient() {
   };
 
   const handleGenerate = () => {
-    generateCode(selectedLanguage, rootClassName, dartOptions);
+    generateCode(selectedLanguage, "DataModel", dartOptions);
+    setHasGenerated(true);
   };
   
   const handleRename = () => {
@@ -367,3 +377,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
