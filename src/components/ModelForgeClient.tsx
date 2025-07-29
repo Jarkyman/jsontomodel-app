@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2, Pencil, AlertCircle } from "lucide-react";
+import { Copy, Check, Languages, Loader2, Pencil, AlertCircle, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -161,12 +161,11 @@ export default function ModelForgeClient() {
 
   useEffect(() => {
     validateJson(jsonInput);
-  }, []);
+  }, [jsonInput]);
 
   const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setJsonInput(newValue);
-    validateJson(newValue);
   };
 
   useEffect(() => {
@@ -261,7 +260,7 @@ export default function ModelForgeClient() {
   };
   
   const handleGenerate = () => {
-    generateCode(selectedLanguage, "DataModel", dartOptions);
+    generateCode("DataModel", rootClassName, dartOptions);
   };
   
   const handleRename = () => {
@@ -277,6 +276,20 @@ export default function ModelForgeClient() {
       navigator.clipboard.writeText(outputCode);
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 2000);
+    }
+  };
+
+  const handleFormatJson = () => {
+    try {
+      const parsedJson = JSON.parse(jsonInput);
+      const formattedJson = JSON.stringify(parsedJson, null, 2);
+      setJsonInput(formattedJson);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Invalid JSON",
+        description: "The JSON could not be formatted. Please correct any syntax errors.",
+      });
     }
   };
 
@@ -338,8 +351,12 @@ export default function ModelForgeClient() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="shadow-lg flex flex-col">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
+            <Button variant="outline" size="sm" onClick={handleFormatJson}>
+              <Wand2 className="mr-2 h-4 w-4" />
+              Format
+            </Button>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col">
             <div className="flex-grow h-full">
