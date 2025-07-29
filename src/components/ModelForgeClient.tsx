@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2 } from "lucide-react";
+import { Copy, Check, Languages, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,7 +14,18 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { generateDartCode } from "@/lib/dart-generator";
-import { RenameModel } from "./RenameModel";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "./ui/alert-dialog";
+import { Input } from "./ui/input";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -94,7 +105,8 @@ export default function ModelForgeClient() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [rootClassName, setRootClassName] = useState("DataModel");
-  const { toast, dismiss } = useToast();
+  const [renameInputValue, setRenameInputValue] = useState(rootClassName);
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedLang = localStorage.getItem("selectedLanguage");
@@ -106,6 +118,10 @@ export default function ModelForgeClient() {
   useEffect(() => {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
+
+  useEffect(() => {
+    setRenameInputValue(rootClassName);
+  }, [rootClassName]);
 
   const generateCode = (targetLanguage: string, name: string) => {
     let parsedJson;
@@ -126,6 +142,7 @@ export default function ModelForgeClient() {
       if (targetLanguage === "dart") {
         const result = generateDartCode(parsedJson, name);
         setOutputCode(result);
+        setRootClassName(name);
       } else {
         toast({
           title: "Not Implemented",
@@ -147,22 +164,13 @@ export default function ModelForgeClient() {
   };
 
   const handleGenerate = () => {
-    dismiss(); 
     generateCode(selectedLanguage, rootClassName);
-    toast({
-      duration: 20000, // 20 seconds
-      description: "A default name 'DataModel' was used for the root class.",
-      action: (
-        <RenameModel
-          currentName={rootClassName}
-          onRename={(newName) => {
-            setRootClassName(newName);
-            generateCode(selectedLanguage, newName);
-            dismiss();
-          }}
-        />
-      ),
-    });
+  };
+  
+  const handleRename = () => {
+    if (renameInputValue.trim()) {
+      generateCode(selectedLanguage, renameInputValue.trim());
+    }
   };
 
   const handleCopy = () => {
@@ -224,7 +232,36 @@ export default function ModelForgeClient() {
         </Card>
         <Card className="shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
+              {outputCode && !isGenerating && (
+                 <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Rename Model</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Rename Root Model</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Enter a new name for the root model class.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Input 
+                      value={renameInputValue}
+                      onChange={(e) => setRenameInputValue(e.target.value)}
+                      placeholder="Enter new name"
+                    />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRename}>Rename</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputCode}>
               {hasCopied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
               <span className="sr-only">Copy to clipboard</span>
