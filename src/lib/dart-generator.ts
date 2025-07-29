@@ -77,7 +77,7 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
         if (dartType === 'String') return `'${value.toString().replace(/'/g, "\\'")}'`;
         if (dartType === 'DateTime') return `DateTime.parse('${value}')`;
         if (Array.isArray(value)) return 'const []';
-        if (typeof value === 'object' && !Array.isArray(value) && value !== null) return `const ${dartType}()`;
+        if (typeof value === 'object' && !Array.isArray(value) && value !== null) return `${dartType}()`;
         if (value !== null) return value.toString();
         return 'null';
     }
@@ -90,7 +90,7 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
         case 'double': return '0.0';
         case 'bool': return 'false';
         case 'DateTime': return 'DateTime.now()';
-        default: return `const ${dartType}()`;
+        default: return `${dartType}()`;
     }
 }
 
@@ -160,7 +160,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 else {
                     parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}'].map((x) => ${listType}.fromJson(x))) : ${options.defaultValues ? 'const []' : 'null'}`;
                 }
-            } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            } else if (classes.has(dartType)) {
                  if (options.defaultValues) {
                     parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
                  } else {
@@ -188,27 +188,28 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const jsonKey = field.originalKey;
             const fieldName = field.name;
-            const value = field.value;
+            const dartType = field.type;
 
             let serializingLogic = fieldName;
-            if (options.supportDateTime && field.type === 'DateTime') {
+            if (options.supportDateTime && dartType === 'DateTime') {
                 serializingLogic = `${fieldName}${options.nullableFields ? '?' : ''}.toIso8601String()`;
-            } else if (field.type.startsWith('List<') && field.type.endsWith('>') && field.type !== 'List<dynamic>') {
-                const listType = field.type.substring(5, field.type.length - 1);
-                 if (listType !== 'String' && listType !== 'int' && listType !== 'double' && listType !== 'bool') {
+            } else if (dartType.startsWith('List<') && dartType.endsWith('>') && dartType !== 'List<dynamic>') {
+                const listType = dartType.substring(5, dartType.length - 1);
+                 if (classes.has(listType)) {
                     serializingLogic = `${fieldName}?.map((x) => x.toJson()).toList()`;
                  }
-            } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            } else if (classes.has(dartType)) {
                 serializingLogic = `${fieldName}?.toJson()`;
             }
 
             classString += `      '${jsonKey}': ${serializingLogic},\n`;
         }
-        classString += `    };\n  }\n\n`;
+        classString += `    };\n  }\n`;
     }
     
     // toString method
     if(options.toString) {
+        if (options.toJson) classString += `\n`;
         classString += `  @override\n`;
         classString += `  String toString() {\n`;
         if (fields.length > 0) {
@@ -217,11 +218,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         } else {
             classString += `    return '${className}()';\n`;
         }
-        classString += `  }\n\n`;
+        classString += `  }\n`;
     }
 
     // copyWith method
     if (options.copyWith) {
+        if (options.toJson || options.toString) classString += `\n`;
         classString += `  ${className} copyWith({\n`;
         for (const field of fields) {
             classString += `    ${field.type}? ${field.name},\n`;
@@ -236,12 +238,30 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         } else {
             classString += `    return ${className}();\n`;
         }
-        classString += `  }\n\n`;
+        classString += `  }\n`;
     }
 
+    // Add newline if any method was generated
+    if(options.toJson || options.toString || options.copyWith) {
+        classString += `\n`;
+    }
 
     classString += '}\n';
     classes.set(className, classString);
+
+     // Recursively generate for sub-objects
+    for (const key in jsonObject) {
+        const value = jsonObject[key];
+        const type = typeof value;
+        if (type === 'object' && value !== null) {
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                 generateClass(singularKey, value[0], classes, options);
+            } else if (!Array.isArray(value)) {
+                generateClass(toPascalCase(key), value, classes, options);
+            }
+        }
+    }
 }
 
 
@@ -260,7 +280,60 @@ export function generateDartCode(
     }
 
     const classes = new Map<string, string>();
-    generateClass(rootClassName, json, classes, options);
+    const classOrder: string[] = [];
 
-    return Array.from(classes.values()).join('\n');
+    const originalGenerateClass = (className: string, jsonObject: Record<string, any>, classesMap: Map<string, string>, opts: DartGeneratorOptions) => {
+        generateClass(className, jsonObject, classesMap, opts);
+        if (!classOrder.includes(className)) {
+            classOrder.push(className);
+        }
+    };
+    
+    const rootJson = {...json};
+    const finalRootClassName = toPascalCase(rootClassName);
+
+    originalGenerateClass(finalRootClassName, rootJson, classes, options);
+
+    // This is a bit of a hack to ensure dependencies are generated before they are used.
+    // We reverse the order of generation because deeper classes are added to the list last.
+    const orderedClasses = Array.from(classes.keys()).reverse();
+    const finalClasses = new Map<string, string>();
+
+    for (const className of orderedClasses) {
+        const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
+        if (jsonSource) {
+            generateClass(className, jsonSource, finalClasses, options);
+        }
+    }
+
+    // A helper to find the original JSON object for a given class name
+    function findJsonForClass(className: string, currentJson: any, currentName: string): any {
+        if (toPascalCase(currentName) === className) {
+            return currentJson;
+        }
+
+        if (typeof currentJson === 'object' && currentJson !== null) {
+            for (const key in currentJson) {
+                const pascalKey = toPascalCase(key);
+                if (pascalKey === className) {
+                    return currentJson[key];
+                }
+                 const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                if (singularPascalKey === className && Array.isArray(currentJson[key]) && currentJson[key].length > 0) {
+                    return currentJson[key][0];
+                }
+                const result = findJsonForClass(className, currentJson[key], key);
+                if (result) return result;
+            }
+        }
+        return null;
+    }
+
+    const generatedClasses = Array.from(finalClasses.values());
+    const rootClass = generatedClasses.pop(); // The root class is the last one generated
+    if (rootClass) {
+        generatedClasses.unshift(rootClass); // Add it to the beginning
+    }
+
+    return generatedClasses.join('\n');
 }
