@@ -1,3 +1,4 @@
+
 export interface DartGeneratorOptions {
     finalFields: boolean;
     nullableFields: boolean;
@@ -98,12 +99,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             constructorParams.push(`this.${fieldName}`);
         }
     }
-    if (Object.keys(jsonObject).length > 0) {
+    if (fields.length > 0) {
       classString += `\n`;
     }
 
     // Constructor
-    classString += `  ${className}({\n    ${constructorParams.join(',\n    ')},\n  });\n\n`;
+    if (fields.length > 0) {
+        classString += `  ${className}({\n    ${constructorParams.join(',\n    ')},\n  });\n\n`;
+    } else {
+        classString += `  ${className}();\n\n`;
+    }
     
     // fromJson factory
     if (options.fromJson) {
@@ -215,6 +220,20 @@ export function generateDartCode(
 ): string {
     if (typeof json !== 'object' || json === null) {
         throw new Error("Invalid JSON object provided.");
+    }
+
+    if (Object.keys(json).length === 0) {
+        // Return an empty class for an empty JSON object.
+        let emptyClass = `class ${rootClassName} {\n`;
+        emptyClass += `  ${rootClassName}();\n\n`;
+        if (options.fromJson) {
+            emptyClass += `  factory ${rootClassName}.fromJson(Map<String, dynamic> json) => ${rootClassName}();\n\n`;
+        }
+        if (options.toJson) {
+            emptyClass += `  Map<String, dynamic> toJson() => {};\n\n`;
+        }
+        emptyClass += `}\n`;
+        return emptyClass;
     }
     
     // Ensure required and nullable are not both true

@@ -213,6 +213,15 @@ export default function ModelForgeClient() {
       });
       return;
     }
+    
+    if (Object.keys(parsedJson).length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Empty JSON",
+        description: "Cannot generate a model from an empty JSON object.",
+      });
+      return;
+    }
 
     setIsGenerating(true);
     setOutputCode('');
