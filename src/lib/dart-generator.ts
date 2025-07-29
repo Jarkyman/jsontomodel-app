@@ -1,4 +1,5 @@
 
+
 export interface DartGeneratorOptions {
     finalFields: boolean;
     nullableFields: boolean;
@@ -10,6 +11,7 @@ export interface DartGeneratorOptions {
     defaultValues: boolean;
     supportDateTime: boolean;
     camelCaseFields: boolean;
+    useValuesAsDefaults: boolean;
 }
 
 const defaultOptions: DartGeneratorOptions = {
@@ -23,6 +25,7 @@ const defaultOptions: DartGeneratorOptions = {
     defaultValues: false,
     supportDateTime: true,
     camelCaseFields: false,
+    useValuesAsDefaults: false,
 };
 
 
@@ -67,7 +70,15 @@ function getDartType(value: any, key: string, classes: Map<string, string>, opti
     return 'dynamic';
 }
 
-function getDefaultValue(dartType: string): string {
+function getDefaultValue(dartType: string, value: any, options: DartGeneratorOptions): string {
+    if (options.useValuesAsDefaults) {
+        if (value === null) return 'null';
+        if (dartType === 'String') return `'${value.toString().replace(/'/g, "\\'")}'`;
+        if (dartType === 'DateTime') return `DateTime.parse('${value}')`;
+        if (Array.isArray(value)) return '[]'; // Complex array defaults not supported yet
+        return value.toString();
+    }
+
     if (dartType.startsWith('List')) return '[]';
     switch (dartType) {
         case 'String': return "''";
@@ -81,6 +92,8 @@ function getDefaultValue(dartType: string): string {
 
 
 function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: DartGeneratorOptions): void {
+    if (classes.has(className)) return;
+
     let classString = `class ${className} {\n`;
     const constructorParams: string[] = [];
     const fields: { name: string, type: string, originalKey: string }[] = [];
@@ -125,25 +138,29 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
             if (options.supportDateTime && dartType === 'DateTime') {
                 if (options.defaultValues) {
-                     parsingLogic = `json['${jsonKey}'] != null ? DateTime.parse(json['${jsonKey}']) : DateTime.now()`;
+                     parsingLogic = `json['${jsonKey}'] != null ? DateTime.parse(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
                 } else {
                     parsingLogic = `json['${jsonKey}'] != null ? DateTime.tryParse(json['${jsonKey}']) : null`;
                 }
             } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const itemClassName = getDartType(value[0], jsonKey, classes, options);
-                parsingLogic = `json['${jsonKey}'] != null ? List<${itemClassName}>.from(json['${jsonKey}'].map((x) => ${itemClassName}.fromJson(x))) : null`;
+                const itemClassName = getDartType(value[0], jsonKey, new Map(), options); // Use new map to avoid side-effects
+                parsingLogic = `json['${jsonKey}'] != null ? List<${itemClassName}>.from(json['${jsonKey}'].map((x) => ${itemClassName}.fromJson(x))) : ${options.defaultValues ? '[]' : 'null'}`;
             } else if (Array.isArray(value)) {
                 const listType = value.length > 0 ? getDartType(value[0], jsonKey, new Map(), options) : 'dynamic';
-                parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : null`;
+                parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : ${options.defaultValues ? '[]' : 'null'}`;
             } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 const nestedClassName = toPascalCase(jsonKey);
-                parsingLogic = `json['${jsonKey}'] != null ? ${nestedClassName}.fromJson(json['${jsonKey}']) : null`;
+                 if (options.defaultValues) {
+                    parsingLogic = `json['${jsonKey}'] != null ? ${nestedClassName}.fromJson(json['${jsonKey}']) : ${getDefaultValue(nestedClassName, value, options)}`;
+                 } else {
+                    parsingLogic = `json['${jsonKey}'] != null ? ${nestedClassName}.fromJson(json['${jsonKey}']) : null`;
+                 }
             } else {
                  let parseSuffix = '';
-                if (dartType === 'double') parseSuffix = '?.toDouble()';
+                if (dartType === 'double' && !options.useValuesAsDefaults) parseSuffix = '?.toDouble()';
                 
                 if (options.defaultValues) {
-                    parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType)}`;
+                    parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType, value, options)}`;
                 } else {
                     parsingLogic = `json['${jsonKey}']${parseSuffix}`;
                 }
@@ -222,20 +239,6 @@ export function generateDartCode(
     if (typeof json !== 'object' || json === null) {
         throw new Error("Invalid JSON object provided.");
     }
-
-    if (Object.keys(json).length === 0) {
-        // Return an empty class for an empty JSON object.
-        let emptyClass = `class ${rootClassName} {\n`;
-        emptyClass += `  ${rootClassName}();\n\n`;
-        if (options.fromJson) {
-            emptyClass += `  factory ${rootClassName}.fromJson(Map<String, dynamic> json) => ${rootClassName}();\n\n`;
-        }
-        if (options.toJson) {
-            emptyClass += `  Map<String, dynamic> toJson() => {};\n\n`;
-        }
-        emptyClass += `}\n`;
-        return emptyClass;
-    }
     
     // Ensure required and nullable are not both true
     if(options.requiredFields) {
@@ -247,3 +250,6 @@ export function generateDartCode(
 
     return Array.from(classes.values()).join('\n');
 }
+
+
+    

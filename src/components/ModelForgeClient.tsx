@@ -112,6 +112,7 @@ const initialOptions: DartGeneratorOptions = {
     defaultValues: false,
     supportDateTime: true,
     camelCaseFields: false,
+    useValuesAsDefaults: false,
 };
 
 type OptionKey = keyof DartGeneratorOptions;
@@ -291,7 +292,19 @@ export default function ModelForgeClient() {
   };
   
   const handleToggleOption = (option: OptionKey) => {
-    setDartOptions(prev => ({ ...prev, [option]: !prev[option] }));
+    setDartOptions(prev => {
+        const newOptions = { ...prev, [option]: !prev[option] };
+
+        if (option === 'useValuesAsDefaults' && newOptions.useValuesAsDefaults) {
+            newOptions.defaultValues = true;
+        }
+
+        if (option === 'defaultValues' && !newOptions.defaultValues) {
+            newOptions.useValuesAsDefaults = false;
+        }
+
+        return newOptions;
+    });
   };
   
   const handleGenerate = () => {
@@ -367,7 +380,7 @@ export default function ModelForgeClient() {
       </div>
 
       {selectedLanguage === 'dart' && (
-      <Card className="max-w-xl mx-auto shadow-sm">
+      <Card className="max-w-2xl mx-auto shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={dartOptions.fromJson} onClick={() => handleToggleOption('fromJson')} label="fromJson" />
@@ -378,6 +391,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={dartOptions.requiredFields} onClick={() => handleToggleOption('requiredFields')} label="required" />
                 <FilterButton checked={dartOptions.finalFields} onClick={() => handleToggleOption('finalFields')} label="final" />
                 <FilterButton checked={dartOptions.defaultValues} onClick={() => handleToggleOption('defaultValues')} label="default values" />
+                <FilterButton checked={dartOptions.useValuesAsDefaults} onClick={() => handleToggleOption('useValuesAsDefaults')} label="use values as defaults" />
                 <FilterButton checked={dartOptions.supportDateTime} onClick={() => handleToggleOption('supportDateTime')} label="support DateTime" />
                 <FilterButton checked={dartOptions.camelCaseFields} onClick={() => handleToggleOption('camelCaseFields')} label="camelCase" />
           </div>
@@ -477,5 +491,7 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
