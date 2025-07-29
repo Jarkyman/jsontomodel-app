@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { generateModel } from "@/ai/flows/generate-model-flow";
 
 const languages = [
   { value: "dart", label: "Dart" },
@@ -60,7 +61,7 @@ export default function ModelForgeClient() {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     try {
       JSON.parse(jsonInput);
     } catch (error) {
@@ -73,14 +74,23 @@ export default function ModelForgeClient() {
     }
 
     setIsGenerating(true);
-    // Simulate AI generation
-    setTimeout(() => {
-      const languageLabel =
-        languages.find((l) => l.value === selectedLanguage)?.label || "Model";
-      const generatedCode = `// Generated ${languageLabel} model\n// from your JSON structure\n\n${jsonInput}`;
-      setOutputCode(generatedCode);
+    setOutputCode('');
+    try {
+      const result = await generateModel({
+        json: jsonInput,
+        language: selectedLanguage,
+      });
+      setOutputCode(result.code);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error Generating Model",
+        description: "An unexpected error occurred. Please try again.",
+      });
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
   };
 
   const handleCopy = () => {
