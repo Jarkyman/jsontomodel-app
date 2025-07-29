@@ -84,7 +84,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 }
 
 
-export function generateDartCode(json: any, rootClassName: string = 'RootModel'): string {
+export function generateDartCode(json: any, rootClassName: string = 'DataModel'): string {
     if (typeof json !== 'object' || json === null) {
         throw new Error("Invalid JSON object provided.");
     }

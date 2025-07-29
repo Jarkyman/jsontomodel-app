@@ -30,22 +30,55 @@ const languages = [
 
 const defaultJson = JSON.stringify(
   {
-    user: {
-      id: 1,
-      name: "Jane Doe",
-      email: "jane.doe@example.com",
-      is_active: true,
-      roles: ["admin", "editor"],
-      address: {
-        street: "123 Main St",
-        city: "Anytown"
+    "id": 123,
+    "name": "Test User",
+    "email": "test@example.com",
+    "is_active": true,
+    "created_at": "2025-07-29T12:00:00Z",
+    "score": 89.75,
+    "preferences": {
+      "newsletter": false,
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": true
       }
     },
-    posts: [
+    "roles": ["admin", "editor", "viewer"],
+    "tags": [],
+    "profile_picture": null,
+    "address": {
+      "street": "123 Example St",
+      "city": "Copenhagen",
+      "zipcode": "2100",
+      "coordinates": {
+        "lat": 55.6761,
+        "lng": 12.5683
+      }
+    },
+    "projects": [
       {
-        id: 101,
-        title: "First Post",
-        tags: ["news", "tech"]
+        "id": "p1",
+        "title": "Website Redesign",
+        "status": "active",
+        "budget": 10000,
+        "members": [
+          {
+            "id": "u1",
+            "name": "Alice"
+          },
+          {
+            "id": "u2",
+            "name": "Bob"
+          }
+        ]
+      },
+      {
+        "id": "p2",
+        "title": "Mobile App",
+        "status": "planning",
+        "budget": 5000,
+        "members": []
       }
     ]
   },
