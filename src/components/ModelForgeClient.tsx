@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2, Pencil, CheckSquare, Square, AlertCircle } from "lucide-react";
+import { Copy, Check, Languages, Loader2, Pencil, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,6 +29,9 @@ import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
 import { LineNumberedTextarea } from "./LineNumberedTextarea";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
+import { Checkbox } from "./ui/checkbox";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -115,6 +119,19 @@ const initialOptions: DartGeneratorOptions = {
 
 type OptionKey = keyof DartGeneratorOptions;
 
+const FilterButton = ({ onClick, checked, label, id }: { onClick: () => void, checked: boolean, label: string, id: string }) => (
+  <div className="flex items-center space-x-2">
+    <Checkbox id={id} checked={checked} onCheckedChange={onClick} />
+    <Label
+      htmlFor={id}
+      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+    >
+      {label}
+    </Label>
+  </div>
+);
+
+
 export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState(defaultJson);
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -168,7 +185,7 @@ export default function ModelForgeClient() {
       generateCode(selectedLanguage, rootClassName, dartOptions);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dartOptions]);
+  }, [dartOptions, rootClassName, selectedLanguage]);
 
 
   useEffect(() => {
@@ -204,7 +221,6 @@ export default function ModelForgeClient() {
       if (targetLanguage === "dart") {
         const result = generateDartCode(parsedJson, name, options);
         setOutputCode(result);
-        setRootClassName(name);
         
         if (result && !hasGenerated) {
             toast({
@@ -234,22 +250,16 @@ export default function ModelForgeClient() {
       });
     } finally {
       setIsGenerating(false);
+      setHasGenerated(true);
     }
   };
   
   const handleToggleOption = (option: OptionKey) => {
-    setDartOptions(prev => {
-        const newState = { ...prev, [option]: !prev[option] };
-        if (option === 'requiredFields' && newState.requiredFields) {
-            newState.nullableFields = false;
-        }
-        return newState;
-    });
+    setDartOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
-
+  
   const handleGenerate = () => {
     generateCode(selectedLanguage, "DataModel", dartOptions);
-    setHasGenerated(true);
   };
   
   const handleRename = () => {
@@ -257,9 +267,6 @@ export default function ModelForgeClient() {
       const newName = renameInputValue.trim();
       setRootClassName(newName);
       setIsRenameDialogOpen(false);
-      if(hasGenerated) {
-        generateCode(selectedLanguage, newName, dartOptions);
-      }
     }
   };
 
@@ -271,17 +278,6 @@ export default function ModelForgeClient() {
     }
   };
 
-  const FilterButton = ({ option, label }: { option: OptionKey, label: string }) => (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => handleToggleOption(option)}
-      className={`text-xs transition-colors ${dartOptions[option] ? 'bg-accent/20 border-accent text-accent-foreground hover:bg-accent/30' : 'hover:bg-accent/10'}`}
-    >
-      {dartOptions[option] ? <CheckSquare className="h-4 w-4 mr-2 text-accent" /> : <Square className="h-4 w-4 mr-2" />}
-      {label}
-    </Button>
-  );
 
   return (
     <div className="w-full max-w-7xl space-y-8">
@@ -319,24 +315,37 @@ export default function ModelForgeClient() {
       </div>
 
       {selectedLanguage === 'dart' && (
-        <div className="max-w-xl mx-auto space-y-4">
-            <div className="flex flex-wrap justify-center gap-2">
-                <FilterButton option="fromJson" label="fromJson" />
-                <FilterButton option="toJson" label="toJson" />
-                <FilterButton option="copyWith" label="copyWith" />
-                <FilterButton option="toString" label="toString" />
+      <Card className="max-w-xl mx-auto shadow-sm">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+            <div>
+              <h4 className="font-medium text-sm mb-2">Methods</h4>
+              <div className="flex flex-col gap-2">
+                <FilterButton id="fromJson" checked={dartOptions.fromJson} onClick={() => handleToggleOption('fromJson')} label="fromJson" />
+                <FilterButton id="toJson" checked={dartOptions.toJson} onClick={() => handleToggleOption('toJson')} label="toJson" />
+                <FilterButton id="copyWith" checked={dartOptions.copyWith} onClick={() => handleToggleOption('copyWith')} label="copyWith" />
+                <FilterButton id="toString" checked={dartOptions.toString} onClick={() => handleToggleOption('toString')} label="toString" />
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-                <FilterButton option="nullableFields" label="nullable fields" />
-                <FilterButton option="requiredFields" label="required" />
-                <FilterButton option="finalFields" label="final fields" />
-                <FilterButton option="defaultValues" label="default values" />
+             <div>
+              <h4 className="font-medium text-sm mb-2">Fields</h4>
+              <div className="flex flex-col gap-2">
+                 <FilterButton id="nullableFields" checked={dartOptions.nullableFields} onClick={() => handleToggleOption('nullableFields')} label="nullable" />
+                 <FilterButton id="requiredFields" checked={dartOptions.requiredFields} onClick={() => handleToggleOption('requiredFields')} label="required" />
+                 <FilterButton id="finalFields" checked={dartOptions.finalFields} onClick={() => handleToggleOption('finalFields')} label="final" />
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-                <FilterButton option="supportDateTime" label="support DateTime" />
-                <FilterButton option="camelCaseFields" label="camelCase fields" />
+             <div>
+              <h4 className="font-medium text-sm mb-2">Data</h4>
+              <div className="flex flex-col gap-2">
+                <FilterButton id="defaultValues" checked={dartOptions.defaultValues} onClick={() => handleToggleOption('defaultValues')} label="default values" />
+                <FilterButton id="supportDateTime" checked={dartOptions.supportDateTime} onClick={() => handleToggleOption('supportDateTime')} label="support DateTime" />
+                <FilterButton id="camelCaseFields" checked={dartOptions.camelCaseFields} onClick={() => handleToggleOption('camelCaseFields')} label="camelCase" />
+              </div>
             </div>
-        </div>
+          </div>
+        </CardContent>
+      </Card>
       )}
 
 
@@ -351,7 +360,7 @@ export default function ModelForgeClient() {
               onChange={handleJsonInputChange}
               placeholder="Paste your JSON here"
               className="min-h-[400px]"
-              containerClassName={cn("h-96", {
+              containerClassName={cn("h-[500px]", {
                 "border-destructive focus-within:ring-destructive focus-within:ring-2": jsonError,
               })}
             />
@@ -401,14 +410,14 @@ export default function ModelForgeClient() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-96 min-h-[400px] w-full rounded-md border bg-card p-2 font-code text-sm">
+            <div className="relative h-[500px] w-full rounded-md border bg-card font-code text-sm">
               {isGenerating ? (
                  <div className="flex items-center justify-center h-full text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin" />
                  </div>
               ) : outputCode ? (
                 <div className="h-full w-full overflow-auto">
-                    <div className="flex">
+                    <div className="flex p-4">
                         <div className="w-10 select-none text-right text-muted-foreground pr-4">
                             {outputCode.split('\n').map((_, index) => (
                                 <div key={index}>{index + 1}</div>
@@ -432,4 +441,6 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+    
+
     
