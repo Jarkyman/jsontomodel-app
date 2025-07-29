@@ -57,7 +57,8 @@ function getDartType(value: any, key: string, classes: Map<string, string>, opti
     if (type === 'boolean') return 'bool';
     if (Array.isArray(value)) {
         if (value.length === 0) return 'List<dynamic>';
-        const listType = getDartType(value[0], key.endsWith('s') ? key.slice(0, -1) : key, classes, options);
+        const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
+        const listType = getDartType(value[0], singularKey, classes, options);
         return `List<${listType}>`;
     }
     if (type === 'object' && value !== null) {
@@ -75,18 +76,19 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
         if (value === null) return 'null';
         if (dartType === 'String') return `'${value.toString().replace(/'/g, "\\'")}'`;
         if (dartType === 'DateTime') return `DateTime.parse('${value}')`;
-        if (Array.isArray(value)) return '[]'; // Complex array defaults not supported yet
+        if (Array.isArray(value)) return 'const []';
+        if (typeof value === 'object') return `const ${dartType}()`;
         return value.toString();
     }
 
-    if (dartType.startsWith('List')) return '[]';
+    if (dartType.startsWith('List')) return 'const []';
     switch (dartType) {
         case 'String': return "''";
         case 'int': return '0';
         case 'double': return '0.0';
         case 'bool': return 'false';
         case 'DateTime': return 'DateTime.now()';
-        default: return `${dartType}()`;
+        default: return `const ${dartType}()`;
     }
 }
 
@@ -107,11 +109,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const final = options.finalFields ? 'final ' : '';
         classString += `  ${final}${dartType}${nullable} ${fieldName};\n`;
         fields.push({ name: fieldName, type: dartType, originalKey: key });
-        if (options.requiredFields) {
-            constructorParams.push(`required this.${fieldName}`);
-        } else {
-            constructorParams.push(`this.${fieldName}`);
-        }
     }
     if (fields.length > 0) {
       classString += `\n`;
@@ -119,9 +116,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     // Constructor
     if (fields.length > 0) {
-        classString += `  ${className}({\n    ${constructorParams.join(',\n    ')},\n  });\n\n`;
+        classString += `  const ${className}({\n`;
+        for (const field of fields) {
+            if (options.requiredFields) {
+                constructorParams.push(`required this.${field.name}`);
+            } else {
+                constructorParams.push(`this.${field.name}`);
+            }
+        }
+        classString += `    ${constructorParams.join(',\n    ')},\n  });\n\n`;
     } else {
-        classString += `  ${className}();\n\n`;
+        classString += `  const ${className}();\n\n`;
     }
     
     // fromJson factory
@@ -142,18 +147,22 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 } else {
                     parsingLogic = `json['${jsonKey}'] != null ? DateTime.tryParse(json['${jsonKey}']) : null`;
                 }
-            } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const itemClassName = getDartType(value[0], jsonKey, new Map(), options); // Use new map to avoid side-effects
-                parsingLogic = `json['${jsonKey}'] != null ? List<${itemClassName}>.from(json['${jsonKey}'].map((x) => ${itemClassName}.fromJson(x))) : ${options.defaultValues ? '[]' : 'null'}`;
-            } else if (Array.isArray(value)) {
-                const listType = value.length > 0 ? getDartType(value[0], jsonKey, new Map(), options) : 'dynamic';
-                parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : ${options.defaultValues ? '[]' : 'null'}`;
+            } else if (dartType.startsWith('List<') && dartType.endsWith('>')) {
+                const listType = dartType.substring(5, dartType.length - 1);
+                if (listType === 'dynamic') {
+                     parsingLogic = `json['${jsonKey}'] != null ? List<dynamic>.from(json['${jsonKey}']) : ${options.defaultValues ? 'const []' : 'null'}`;
+                }
+                 else if (listType === 'String' || listType === 'int' || listType === 'double' || listType === 'bool') {
+                     parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : ${options.defaultValues ? 'const []' : 'null'}`;
+                 }
+                else {
+                    parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}'].map((x) => ${listType}.fromJson(x))) : ${options.defaultValues ? 'const []' : 'null'}`;
+                }
             } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                const nestedClassName = toPascalCase(jsonKey);
                  if (options.defaultValues) {
-                    parsingLogic = `json['${jsonKey}'] != null ? ${nestedClassName}.fromJson(json['${jsonKey}']) : ${getDefaultValue(nestedClassName, value, options)}`;
+                    parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
                  } else {
-                    parsingLogic = `json['${jsonKey}'] != null ? ${nestedClassName}.fromJson(json['${jsonKey}']) : null`;
+                    parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null`;
                  }
             } else {
                  let parseSuffix = '';
@@ -182,8 +191,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             let serializingLogic = fieldName;
             if (options.supportDateTime && field.type === 'DateTime') {
                 serializingLogic = `${fieldName}${options.nullableFields ? '?' : ''}.toIso8601String()`;
-            } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-                serializingLogic = `${fieldName}?.map((x) => x.toJson()).toList()`;
+            } else if (field.type.startsWith('List<') && field.type.endsWith('>') && field.type !== 'List<dynamic>') {
+                const listType = field.type.substring(5, field.type.length - 1);
+                 if (listType !== 'String' && listType !== 'int' && listType !== 'double' && listType !== 'bool') {
+                    serializingLogic = `${fieldName}?.map((x) => x.toJson()).toList()`;
+                 }
             } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                 serializingLogic = `${fieldName}?.toJson()`;
             }
@@ -250,6 +262,3 @@ export function generateDartCode(
 
     return Array.from(classes.values()).join('\n');
 }
-
-
-    
