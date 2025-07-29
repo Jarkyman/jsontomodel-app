@@ -24,7 +24,7 @@ const defaultOptions: DartGeneratorOptions = {
     fromJson: true,
     defaultValues: false,
     supportDateTime: true,
-    camelCaseFields: false,
+    camelCaseFields: true,
     useValuesAsDefaults: false,
 };
 
@@ -337,3 +337,6 @@ export function generateDartCode(
 
     return generatedClasses.join('\n');
 }
+
+
+    

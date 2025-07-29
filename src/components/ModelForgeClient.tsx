@@ -111,7 +111,7 @@ const initialOptions: DartGeneratorOptions = {
     finalFields: true,
     defaultValues: false,
     supportDateTime: true,
-    camelCaseFields: false,
+    camelCaseFields: true,
     useValuesAsDefaults: false,
 };
 
@@ -491,6 +491,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 
