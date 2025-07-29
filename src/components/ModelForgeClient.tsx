@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { generateModel } from "@/ai/flows/generate-model-flow";
+import { generateDartCode } from "@/lib/dart-generator";
 
 const languages = [
   { value: "dart", label: "Dart" },
@@ -34,9 +34,20 @@ const defaultJson = JSON.stringify(
       id: 1,
       name: "Jane Doe",
       email: "jane.doe@example.com",
-      isActive: true,
+      is_active: true,
       roles: ["admin", "editor"],
+      address: {
+        street: "123 Main St",
+        city: "Anytown"
+      }
     },
+    posts: [
+      {
+        id: 101,
+        title: "First Post",
+        tags: ["news", "tech"]
+      }
+    ]
   },
   null,
   2
@@ -45,7 +56,7 @@ const defaultJson = JSON.stringify(
 export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState(defaultJson);
   const [outputCode, setOutputCode] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("typescript");
+  const [selectedLanguage, setSelectedLanguage] = useState("dart");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const { toast } = useToast();
@@ -62,8 +73,9 @@ export default function ModelForgeClient() {
   }, [selectedLanguage]);
 
   const handleGenerate = async () => {
+    let parsedJson;
     try {
-      JSON.parse(jsonInput);
+      parsedJson = JSON.parse(jsonInput);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -76,17 +88,24 @@ export default function ModelForgeClient() {
     setIsGenerating(true);
     setOutputCode('');
     try {
-      const result = await generateModel({
-        json: jsonInput,
-        language: selectedLanguage,
-      });
-      setOutputCode(result.code);
+      // We will add more generators as we build them
+      if (selectedLanguage === "dart") {
+        const result = generateDartCode(parsedJson);
+        setOutputCode(result);
+      } else {
+        toast({
+          title: "Not Implemented",
+          description: `Code generation for ${selectedLanguage} is not yet supported.`,
+        });
+        setOutputCode("");
+      }
     } catch (error) {
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         variant: "destructive",
         title: "Error Generating Model",
-        description: "An unexpected error occurred. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsGenerating(false);
