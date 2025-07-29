@@ -38,7 +38,8 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (value === null) {
         if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
         if (options.serializationLibrary === 'manual') return 'Any';
-        return null; // For Moshi/Gson, don't generate a field for a null value.
+        // For Moshi/Gson, we will omit the field if the value is null, as we cannot infer the type.
+        return null; 
     }
 
     const type = typeof value;
@@ -47,9 +48,10 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (type === 'boolean') return 'Boolean';
     if (Array.isArray(value)) {
         if (value.length === 0) {
-            if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
-            if (options.serializationLibrary === 'manual') return 'List<Any>';
-            return null; // For Moshi/Gson, don't generate field for empty list
+             if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
+             if (options.serializationLibrary === 'manual') return 'List<Any>';
+             // For Moshi/Gson, we will omit the field for empty lists.
+             return null;
         }
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getKotlinType(value[0], singularKey, classes, options);
@@ -67,19 +69,16 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     }
     
     // For 'undefined' or other types
-    if (options.serializationLibrary === 'kotlinx') {
-        return 'JsonElement';
-    }
+    if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
     if (options.serializationLibrary === 'manual') return 'Any';
     
     return null;
 }
 
 function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptions): string {
-    if (options.nullable) {
-        return 'null';
+    if (kotlinType.startsWith('List')) {
+        return 'emptyList()';
     }
-    if (kotlinType.startsWith('List')) return 'emptyList()';
 
     switch (kotlinType) {
         case 'String': return '""';
@@ -87,7 +86,10 @@ function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptio
         case 'Double': return '0.0';
         case 'Boolean': return 'false';
         case 'JsonElement': return 'JsonNull';
+        case 'Any': return 'Any()'; // This might be problematic, but it's for manual mode.
         default: 
+            // For data classes, `()` assumes it has default values for all its fields.
+            // This is ensured by this same logic recursively.
             return `${kotlinType}()`;
     }
 }
@@ -109,7 +111,8 @@ function generateImports(options: KotlinGeneratorOptions, fields: { originalKey:
         }
         if (fields.some(f => f.type.includes('JsonElement'))) {
             imports.add('import kotlinx.serialization.json.JsonElement');
-            if (options.defaultValues && !options.nullable) {
+            // Add JsonNull for default value assignment
+            if (options.defaultValues) {
                 imports.add('import kotlinx.serialization.json.JsonNull');
             }
         }
