@@ -87,6 +87,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     // Fields
     for (const key in jsonObject) {
+        if (key === '') continue; // Skip empty keys
         const fieldName = options.camelCaseFields ? toCamelCase(key) : key;
         const dartType = getDartType(jsonObject[key], key, classes, options);
         const nullable = options.nullableFields ? '?' : '';

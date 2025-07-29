@@ -191,6 +191,25 @@ export default function ModelForgeClient() {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
 
+  const hasEmptyKeys = (obj: any): boolean => {
+    if (obj === null || typeof obj !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (hasEmptyKeys(item)) return true;
+      }
+    } else {
+      for (const key in obj) {
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+        if (key === '') return true;
+        if (hasEmptyKeys(obj[key])) return true;
+      }
+    }
+    return false;
+  };
+
   const generateCode = () => {
     if (jsonError) {
       toast({
@@ -222,6 +241,16 @@ export default function ModelForgeClient() {
       });
       return;
     }
+
+    if (hasEmptyKeys(parsedJson)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Key",
+        description: "JSON cannot contain empty keys.",
+      });
+      return;
+    }
+
 
     setIsGenerating(true);
     setOutputCode('');
