@@ -45,6 +45,7 @@ const languages = [
 ];
 
 const kotlinSerializationLibraries = [
+    { value: "none", label: "None" },
     { value: "manual", label: "Manual" },
     { value: "gson", label: "Gson" },
     { value: "moshi", label: "Moshi" },
@@ -128,7 +129,7 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
   nullable: true,
   dataClass: true,
   defaultValues: false,
-  serializationLibrary: "kotlinx",
+  serializationLibrary: "none",
   defaultToNull: false,
 };
 

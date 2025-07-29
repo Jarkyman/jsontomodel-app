@@ -4,7 +4,7 @@ export interface KotlinGeneratorOptions {
     nullable: boolean;
     dataClass: boolean;
     defaultValues: boolean;
-    serializationLibrary: 'manual' | 'gson' | 'moshi' | 'kotlinx';
+    serializationLibrary: 'none' | 'manual' | 'gson' | 'moshi' | 'kotlinx';
     defaultToNull: boolean;
 }
 
@@ -13,7 +13,7 @@ const defaultOptions: KotlinGeneratorOptions = {
     nullable: true,
     dataClass: true,
     defaultValues: false,
-    serializationLibrary: "kotlinx",
+    serializationLibrary: "none",
     defaultToNull: false,
 };
 
@@ -33,7 +33,7 @@ function toCamelCase(str: string): string {
 function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string | null {
     if (value === null) {
         if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
-        if (options.serializationLibrary === 'manual') return 'Any';
+        if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
         // For Moshi/Gson, we will omit the field if the value is null, as we cannot infer the type.
         return null; 
     }
@@ -45,7 +45,7 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (Array.isArray(value)) {
         if (value.length === 0) {
              if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
-             if (options.serializationLibrary === 'manual') return 'List<Any>';
+             if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'List<Any>';
              // For Moshi/Gson, we will omit the field for empty lists.
              return null;
         }
@@ -66,7 +66,7 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     
     // For 'undefined' or other types
     if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
-    if (options.serializationLibrary === 'manual') return 'Any';
+    if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
     
     return null;
 }
@@ -90,7 +90,7 @@ function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptio
 
 function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
     const imports = new Set<string>();
-    const useSerializedName = options.serializationLibrary !== 'manual';
+    const useSerializedName = options.serializationLibrary !== 'manual' && options.serializationLibrary !== 'none';
 
     if (options.serializationLibrary === 'gson' && useSerializedName && fields.some(f => f.originalKey !== f.name)) {
         imports.add('import com.google.gson.annotations.SerializedName');
@@ -142,7 +142,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         let fieldString = '';
         const keyword = options.useVal ? 'val' : 'var';
         const nullableMarker = options.nullable ? '?' : '';
-        const useSerializedName = options.serializationLibrary !== 'manual';
+        const useSerializedName = options.serializationLibrary !== 'manual' && options.serializationLibrary !== 'none';
         
         let annotation = '';
         if (field.name !== field.originalKey && useSerializedName) {
