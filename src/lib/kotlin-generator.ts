@@ -40,7 +40,9 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (type === 'number') return value % 1 === 0 ? 'Int' : 'Double';
     if (type === 'boolean') return 'Boolean';
     if (Array.isArray(value)) {
-        if (value.length === 0) return 'List<Any>';
+        if (value.length === 0) {
+            return options.serializationLibrary === 'kotlinx' ? 'List<JsonElement>' : 'List<Any>';
+        }
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getKotlinType(value[0], singularKey, classes, options);
         return `List<${listType}>`;
@@ -52,10 +54,16 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
         }
         return className;
     }
+    
+    // For 'null' or 'undefined' values
+    if (options.serializationLibrary === 'kotlinx') {
+        return 'JsonElement';
+    }
+    
     return 'Any';
 }
 
-function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string }[]): string {
+function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
     const imports = new Set<string>();
 
     if (options.serializationLibrary === 'gson' && fields.some(f => f.originalKey !== f.name)) {
@@ -69,6 +77,9 @@ function generateImports(options: KotlinGeneratorOptions, fields: { originalKey:
         if (fields.some(f => f.originalKey !== f.name)) {
             imports.add('import kotlinx.serialization.SerialName');
         }
+        if (fields.some(f => f.type.includes('JsonElement'))) {
+            imports.add('import kotlinx.serialization.json.JsonElement');
+        }
     }
     return imports.size > 0 ? Array.from(imports).join('\n') + '\n\n' : '';
 }
@@ -78,17 +89,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     let classString = '';
     const fields: { name: string, type: string, originalKey: string }[] = [];
-    const tempFields = [];
     
-    // Prepare fields
+    // Prepare field types first
     for (const key in jsonObject) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
-        tempFields.push({ name: fieldName, originalKey: key });
+        const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
+        fields.push({ name: fieldName, originalKey: key, type: kotlinType });
     }
     
     // Imports
-    classString += generateImports(options, tempFields);
+    classString += generateImports(options, fields);
 
     // Class definition
     if (options.serializationLibrary === 'kotlinx') {
@@ -97,28 +108,25 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     const classType = options.dataClass ? 'data class' : 'class';
     classString += `${classType} ${className}(\n`;
     
-    for (const key in jsonObject) {
-        if (key === '') continue;
-        const fieldName = toCamelCase(key);
-        const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
+    for (const field of fields) {
         const keyword = options.useVal ? 'val' : 'var';
         const nullable = options.nullable ? '?' : '';
         
         let annotation = '';
-        if (fieldName !== key) {
-            if (options.serializationLibrary === 'gson' && options.useSerializedName) {
-                annotation = `    @SerializedName("${key}")\n`;
-            } else if (options.serializationLibrary === 'moshi' && options.useSerializedName) {
-                annotation = `    @Json(name = "${key}")\n`;
-            } else if (options.serializationLibrary === 'kotlinx' && options.useSerializedName) {
-                annotation = `    @SerialName("${key}")\n`;
+        if (field.name !== field.originalKey && options.useSerializedName) {
+            if (options.serializationLibrary === 'gson') {
+                annotation = `    @SerializedName("${field.originalKey}")\n`;
+            } else if (options.serializationLibrary === 'moshi') {
+                annotation = `    @Json(name = "${field.originalKey}")\n`;
+            } else if (options.serializationLibrary === 'kotlinx') {
+                annotation = `    @SerialName("${field.originalKey}")\n`;
             }
         }
         
-        classString += `${annotation}    ${keyword} ${fieldName}: ${kotlinType}${nullable}`;
+        classString += `${annotation}    ${keyword} ${field.name}: ${field.type}${nullable}`;
         classString += ',\n'
-        fields.push({ name: fieldName, type: kotlinType, originalKey: key });
     }
+
     if (classString.endsWith(',\n')) {
         classString = classString.slice(0, -2);
     }
@@ -167,7 +175,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // toJson method
         if (options.toJson) {
             classString += `    fun toJson(): Map<String, Any${options.nullable ? '?' : ''}> {\n`;
-            classString += `        return mapOf(\n`;
+            classString += `        val map = mutableMapOf<String, Any?>()\n`;
             for (const field of fields) {
                 let serializingLogic = field.name;
                 if (field.type.startsWith('List<') && !field.type.includes('<Any>')) {
@@ -178,18 +186,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 } else if (classes.has(field.type)) {
                     serializingLogic = `${field.name}?.toJson()`;
                 }
-
-                classString += `            "${field.originalKey}" to ${serializingLogic},\n`;
+                classString += `        map["${field.originalKey}"] = ${serializingLogic}\n`;
             }
-            if (fields.length > 0) {
-            classString = classString.slice(0, -2);
-            classString += '\n';
-            }
-            classString += `        ).filterValues { it != null }\n    }\n`;
+            classString += `        return map.filterValues { it != null }\n    }\n`;
         }
 
         classString += `}`;
-
     }
 
     classes.set(className, classString);
