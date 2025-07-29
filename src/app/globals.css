@@ -91,11 +91,12 @@ body {
     @apply flex h-full font-code text-sm overflow-hidden;
 }
 .line-numbers {
-    @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-[9px] pb-[9px] overflow-y-hidden;
-    line-height: 1.5; /* Match this with textarea's line-height */
+    @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-2 pb-2 overflow-y-hidden;
+    line-height: 1.5rem; /* Match this with textarea's line-height */
     white-space: pre;
+    font-size: 0.875rem; /* 14px */
 }
 .line-numbered-textarea {
     @apply pl-0 border-l-0 rounded-l-none h-full;
-    line-height: 1.5;
+    line-height: 1.5rem; /* Match line-numbers' line-height */
 }
