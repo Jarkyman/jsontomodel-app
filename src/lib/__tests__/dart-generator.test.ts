@@ -1,7 +1,20 @@
-import { generateDartCode } from '../dart-generator';
+import { generateDartCode, DartGeneratorOptions } from '../dart-generator';
+
+const fullOptions: DartGeneratorOptions = {
+    fromJson: true,
+    toJson: true,
+    copyWith: true,
+    toString: true,
+    nullableFields: false,
+    requiredFields: true,
+    finalFields: true,
+    defaultValues: true,
+    supportDateTime: true,
+    camelCaseFields: true,
+};
 
 describe('generateDartCode', () => {
-  it('should generate correct Dart models from complex JSON', () => {
+  it('should generate correct Dart models from complex JSON with default options', () => {
     const jsonInput = {
       "id": 123,
       "name": "Test User",
@@ -55,13 +68,26 @@ describe('generateDartCode', () => {
         }
       ]
     };
+    
+    const defaultOptions: DartGeneratorOptions = {
+        fromJson: true,
+        toJson: true,
+        copyWith: false,
+        toString: false,
+        nullableFields: true,
+        requiredFields: false,
+        finalFields: true,
+        defaultValues: false,
+        supportDateTime: true,
+        camelCaseFields: false,
+    };
 
     const expectedOutput = `class DataModel {
   final int? id;
   final String? name;
   final String? email;
   final bool? isActive;
-  final String? createdAt;
+  final DateTime? createdAt;
   final double? score;
   final Preferences? preferences;
   final List<String>? roles;
@@ -91,7 +117,7 @@ describe('generateDartCode', () => {
       name: json['name'],
       email: json['email'],
       isActive: json['is_active'],
-      createdAt: json['created_at'],
+      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
       score: json['score'],
       preferences: json['preferences'] != null ? Preferences.fromJson(json['preferences']) : null,
       roles: json['roles'] != null ? List<String>.from(json['roles']) : null,
@@ -108,7 +134,7 @@ describe('generateDartCode', () => {
       'name': name,
       'email': email,
       'is_active': isActive,
-      'created_at': createdAt,
+      'created_at': createdAt?.toIso8601String(),
       'score': score,
       'preferences': preferences?.toJson(),
       'roles': roles,
@@ -215,8 +241,8 @@ class Coordinates {
 
   factory Coordinates.fromJson(Map<String, dynamic> json) {
     return Coordinates(
-      lat: json['lat'],
-      lng: json['lng'],
+      lat: json['lat']?.toDouble(),
+      lng: json['lng']?.toDouble(),
     );
   }
 
@@ -290,7 +316,72 @@ class Member {
     
     // Normalize whitespace for comparison
     const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+    const generated = generateDartCode(jsonInput, 'DataModel', defaultOptions);
+    expect(normalize(generated)).toBe(normalize(expectedOutput));
+  });
 
-    expect(normalize(generateDartCode(jsonInput, 'DataModel'))).toBe(normalize(expectedOutput));
+  it('should generate code with all options enabled', () => {
+    const jsonInput = {
+      "user_id": 1,
+      "user_name": "test",
+      "registered_at": "2023-01-01T00:00:00.000Z",
+      "is_premium": true,
+    };
+
+    const expectedOutput = `
+class AllOptions {
+  final int userId;
+  final String userName;
+  final DateTime registeredAt;
+  final bool isPremium;
+
+  AllOptions({
+    required this.userId,
+    required this.userName,
+    required this.registeredAt,
+    required this.isPremium,
+  });
+
+  factory AllOptions.fromJson(Map<String, dynamic> json) {
+    return AllOptions(
+      userId: json['user_id'] ?? 0,
+      userName: json['user_name'] ?? '',
+      registeredAt: json['registered_at'] != null ? DateTime.parse(json['registered_at']) : DateTime.now(),
+      isPremium: json['is_premium'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'user_name': userName,
+      'registered_at': registeredAt.toIso8601String(),
+      'is_premium': isPremium,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'AllOptions(userId: $userId, userName: $userName, registeredAt: $registeredAt, isPremium: $isPremium)';
+  }
+
+  AllOptions copyWith({
+    int? userId,
+    String? userName,
+    DateTime? registeredAt,
+    bool? isPremium,
+  }) {
+    return AllOptions(
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      registeredAt: registeredAt ?? this.registeredAt,
+      isPremium: isPremium ?? this.isPremium,
+    );
+  }
+}
+`;
+    const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+    const generated = generateDartCode(jsonInput, 'AllOptions', fullOptions);
+    expect(normalize(generated)).toBe(normalize(expectedOutput));
   });
 });

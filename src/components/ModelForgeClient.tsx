@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2, Pencil } from "lucide-react";
+import { Copy, Check, Languages, Loader2, Pencil, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { generateDartCode } from "@/lib/dart-generator";
+import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -99,6 +99,21 @@ const defaultJson = JSON.stringify(
   2
 );
 
+const initialOptions: DartGeneratorOptions = {
+    fromJson: true,
+    toJson: true,
+    copyWith: false,
+    toString: false,
+    nullableFields: true,
+    requiredFields: false,
+    finalFields: true,
+    defaultValues: false,
+    supportDateTime: true,
+    camelCaseFields: false,
+};
+
+type OptionKey = keyof DartGeneratorOptions;
+
 export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState(defaultJson);
   const [outputCode, setOutputCode] = useState("");
@@ -108,6 +123,7 @@ export default function ModelForgeClient() {
   const [rootClassName, setRootClassName] = useState("DataModel");
   const [renameInputValue, setRenameInputValue] = useState(rootClassName);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialOptions);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -125,7 +141,7 @@ export default function ModelForgeClient() {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
 
-  const generateCode = (targetLanguage: string, name: string) => {
+  const generateCode = (targetLanguage: string, name: string, options: DartGeneratorOptions) => {
     let parsedJson;
     try {
       parsedJson = JSON.parse(jsonInput);
@@ -142,7 +158,7 @@ export default function ModelForgeClient() {
     setOutputCode('');
     try {
       if (targetLanguage === "dart") {
-        const result = generateDartCode(parsedJson, name);
+        const result = generateDartCode(parsedJson, name, options);
         setOutputCode(result);
         setRootClassName(name);
         if (result) {
@@ -175,14 +191,28 @@ export default function ModelForgeClient() {
       setIsGenerating(false);
     }
   };
+  
+  const handleToggleOption = (option: OptionKey) => {
+    setDartOptions(prev => {
+        const newState = { ...prev, [option]: !prev[option] };
+        // requiredFields and nullableFields are mutually exclusive
+        if (option === 'requiredFields' && newState.requiredFields) {
+            newState.nullableFields = false;
+        }
+        if (option === 'nullableFields' && newState.nullableFields) {
+            newState.requiredFields = false;
+        }
+        return newState;
+    });
+  };
 
   const handleGenerate = () => {
-    generateCode(selectedLanguage, rootClassName);
+    generateCode(selectedLanguage, rootClassName, dartOptions);
   };
   
   const handleRename = () => {
     if (renameInputValue.trim()) {
-      generateCode(selectedLanguage, renameInputValue.trim());
+      generateCode(selectedLanguage, renameInputValue.trim(), dartOptions);
       setIsRenameDialogOpen(false);
     }
   };
@@ -194,6 +224,18 @@ export default function ModelForgeClient() {
       setTimeout(() => setHasCopied(false), 2000);
     }
   };
+
+  const FilterButton = ({ option, label }: { option: OptionKey, label: string }) => (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => handleToggleOption(option)}
+      className={`text-xs ${dartOptions[option] ? 'bg-accent/20 border-accent' : ''}`}
+    >
+      {dartOptions[option] ? <CheckSquare className="h-4 w-4 mr-2 text-accent" /> : <Square className="h-4 w-4 mr-2" />}
+      {label}
+    </Button>
+  );
 
   return (
     <div className="w-full max-w-7xl space-y-8">
@@ -229,6 +271,28 @@ export default function ModelForgeClient() {
           Generate
         </Button>
       </div>
+
+      {selectedLanguage === 'dart' && (
+        <div className="max-w-xl mx-auto space-y-4">
+            <div className="flex flex-wrap justify-center gap-2">
+                <FilterButton option="fromJson" label="fromJson" />
+                <FilterButton option="toJson" label="toJson" />
+                <FilterButton option="copyWith" label="copyWith" />
+                <FilterButton option="toString" label="toString" />
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+                <FilterButton option="nullableFields" label="nullable fields" />
+                <FilterButton option="requiredFields" label="required" />
+                <FilterButton option="finalFields" label="final fields" />
+                <FilterButton option="defaultValues" label="default values" />
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+                <FilterButton option="supportDateTime" label="support DateTime" />
+                <FilterButton option="camelCaseFields" label="camelCase fields" />
+            </div>
+        </div>
+      )}
+
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="shadow-lg">
