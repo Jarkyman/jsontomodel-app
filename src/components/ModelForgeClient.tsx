@@ -302,6 +302,10 @@ export default function ModelForgeClient() {
         if (option === 'defaultValues' && !newOptions.defaultValues) {
             newOptions.useValuesAsDefaults = false;
         }
+        
+        if (option === 'requiredFields' && newOptions.requiredFields) {
+            newOptions.nullableFields = true;
+        }
 
         return newOptions;
     });
@@ -491,6 +495,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 

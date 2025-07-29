@@ -107,7 +107,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         if (key === '') continue; // Skip empty keys
         const fieldName = options.camelCaseFields ? toCamelCase(key) : key;
         const dartType = getDartType(jsonObject[key], key, classes, options);
-        const nullable = options.nullableFields ? '?' : '';
+        
+        // When required is true, fields must be nullable anyway to support null from JSON
+        const isNullable = options.nullableFields || options.requiredFields;
+        const nullable = isNullable ? '?' : '';
+        
         const final = options.finalFields ? 'final ' : '';
         classString += `  ${final}${dartType}${nullable} ${fieldName};\n`;
         fields.push({ name: fieldName, type: dartType, originalKey: key, value: jsonObject[key] });
@@ -134,77 +138,86 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     // fromJson factory
     if (options.fromJson) {
         classString += `  factory ${className}.fromJson(Map<String, dynamic> json) {\n`;
-        classString += `    return ${className}(\n`;
-        for (const field of fields) {
-            const jsonKey = field.originalKey;
-            const fieldName = field.name;
-            const value = field.value;
-            const dartType = field.type;
+        if (Object.keys(jsonObject).length === 0) {
+            classString += `    return ${className}();\n  }\n\n`;
+        } else {
+            classString += `    return ${className}(\n`;
+            for (const field of fields) {
+                const jsonKey = field.originalKey;
+                const fieldName = field.name;
+                const value = field.value;
+                const dartType = field.type;
 
-            let parsingLogic: string;
+                let parsingLogic: string;
+                const isNullable = options.nullableFields || options.requiredFields;
 
-            if (options.supportDateTime && dartType === 'DateTime') {
-                if (options.defaultValues) {
-                     parsingLogic = `json['${jsonKey}'] != null ? DateTime.parse(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
+                if (options.supportDateTime && dartType === 'DateTime') {
+                    if (options.defaultValues) {
+                        parsingLogic = `json['${jsonKey}'] != null ? DateTime.parse(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
+                    } else {
+                        parsingLogic = `json['${jsonKey}'] != null ? DateTime.tryParse(json['${jsonKey}']) : null`;
+                    }
+                } else if (dartType.startsWith('List<') && dartType.endsWith('>')) {
+                    const listType = dartType.substring(5, dartType.length - 1);
+                    const defaultList = options.defaultValues ? 'const []' : 'null';
+                    if (listType === 'dynamic') {
+                        parsingLogic = `json['${jsonKey}'] != null ? List<dynamic>.from(json['${jsonKey}']) : ${defaultList}`;
+                    } else if (listType === 'String' || listType === 'int' || listType === 'double' || listType === 'bool') {
+                        parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : ${defaultList}`;
+                    } else {
+                        parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}'].map((x) => ${listType}.fromJson(x))) : ${defaultList}`;
+                    }
+                } else if (classes.has(dartType)) {
+                    if (options.defaultValues) {
+                        parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
+                    } else {
+                        parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null`;
+                    }
                 } else {
-                    parsingLogic = `json['${jsonKey}'] != null ? DateTime.tryParse(json['${jsonKey}']) : null`;
+                    let parseSuffix = '';
+                    if (dartType === 'double' && !options.useValuesAsDefaults) parseSuffix = '?.toDouble()';
+                    
+                    if (options.defaultValues) {
+                        parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType, value, options)}`;
+                    } else {
+                        parsingLogic = `json['${jsonKey}']${parseSuffix}`;
+                    }
                 }
-            } else if (dartType.startsWith('List<') && dartType.endsWith('>')) {
-                const listType = dartType.substring(5, dartType.length - 1);
-                if (listType === 'dynamic') {
-                     parsingLogic = `json['${jsonKey}'] != null ? List<dynamic>.from(json['${jsonKey}']) : ${options.defaultValues ? 'const []' : 'null'}`;
-                }
-                 else if (listType === 'String' || listType === 'int' || listType === 'double' || listType === 'bool') {
-                     parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}']) : ${options.defaultValues ? 'const []' : 'null'}`;
-                 }
-                else {
-                    parsingLogic = `json['${jsonKey}'] != null ? List<${listType}>.from(json['${jsonKey}'].map((x) => ${listType}.fromJson(x))) : ${options.defaultValues ? 'const []' : 'null'}`;
-                }
-            } else if (classes.has(dartType)) {
-                 if (options.defaultValues) {
-                    parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : ${getDefaultValue(dartType, value, options)}`;
-                 } else {
-                    parsingLogic = `json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null`;
-                 }
-            } else {
-                 let parseSuffix = '';
-                if (dartType === 'double' && !options.useValuesAsDefaults) parseSuffix = '?.toDouble()';
-                
-                if (options.defaultValues) {
-                    parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType, value, options)}`;
-                } else {
-                    parsingLogic = `json['${jsonKey}']${parseSuffix}`;
-                }
+                classString += `      ${fieldName}: ${parsingLogic},\n`;
             }
-            classString += `      ${fieldName}: ${parsingLogic},\n`;
+            classString += `    );\n  }\n\n`;
         }
-        classString += `    );\n  }\n\n`;
     }
 
     // toJson method
     if (options.toJson) {
         classString += `  Map<String, dynamic> toJson() {\n`;
-        classString += `    return {\n`;
-        for (const field of fields) {
-            const jsonKey = field.originalKey;
-            const fieldName = field.name;
-            const dartType = field.type;
+        if (Object.keys(jsonObject).length === 0) {
+            classString += `    return {};\n  }\n`;
+        } else {
+            classString += `    return {\n`;
+            for (const field of fields) {
+                const jsonKey = field.originalKey;
+                const fieldName = field.name;
+                const dartType = field.type;
+                const isNullable = options.nullableFields || options.requiredFields;
 
-            let serializingLogic = fieldName;
-            if (options.supportDateTime && dartType === 'DateTime') {
-                serializingLogic = `${fieldName}${options.nullableFields ? '?' : ''}.toIso8601String()`;
-            } else if (dartType.startsWith('List<') && dartType.endsWith('>') && dartType !== 'List<dynamic>') {
-                const listType = dartType.substring(5, dartType.length - 1);
-                 if (classes.has(listType)) {
-                    serializingLogic = `${fieldName}?.map((x) => x.toJson()).toList()`;
-                 }
-            } else if (classes.has(dartType)) {
-                serializingLogic = `${fieldName}?.toJson()`;
+                let serializingLogic = fieldName;
+                if (options.supportDateTime && dartType === 'DateTime') {
+                    serializingLogic = `${fieldName}${isNullable ? '?' : ''}.toIso8601String()`;
+                } else if (dartType.startsWith('List<') && dartType.endsWith('>') && dartType !== 'List<dynamic>') {
+                    const listType = dartType.substring(5, dartType.length - 1);
+                    if (classes.has(listType)) {
+                        serializingLogic = `${fieldName}?.map((x) => x.toJson()).toList()`;
+                    }
+                } else if (classes.has(dartType)) {
+                    serializingLogic = `${fieldName}?.toJson()`;
+                }
+
+                classString += `      '${jsonKey}': ${serializingLogic},\n`;
             }
-
-            classString += `      '${jsonKey}': ${serializingLogic},\n`;
+            classString += `    };\n  }\n`;
         }
-        classString += `    };\n  }\n`;
     }
     
     // toString method
@@ -311,6 +324,9 @@ export function generateDartCode(
             for (const key in currentJson) {
                 const pascalKey = toPascalCase(key);
                 if (pascalKey === className) {
+                    if (Array.isArray(currentJson[key])) {
+                        return currentJson[key][0] ?? {};
+                    }
                     return currentJson[key];
                 }
                  const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
@@ -323,15 +339,19 @@ export function generateDartCode(
         }
         return null;
     }
-
-    const generatedClasses = Array.from(finalClasses.values());
-    const rootClass = generatedClasses.pop(); // The root class is the last one generated
-    if (rootClass) {
-        generatedClasses.unshift(rootClass); // Add it to the beginning
+    
+    const generatedClassNames = Array.from(finalClasses.keys());
+    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
+    
+    if (rootClassIndex > -1) {
+        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
+        generatedClassNames.unshift(rootClassName);
     }
+    
+    const generatedClasses = generatedClassNames.map(name => finalClasses.get(name));
+
 
     return generatedClasses.join('\n');
 }
-
 
     
