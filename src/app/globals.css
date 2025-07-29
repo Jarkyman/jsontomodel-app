@@ -91,7 +91,7 @@ body {
     @apply flex h-full font-code text-sm overflow-hidden;
 }
 .line-numbers {
-    @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-2 pb-2 overflow-y-hidden;
+    @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-3 pb-3 overflow-y-hidden;
     line-height: 1.5rem; /* Match this with textarea's line-height */
     white-space: pre;
     font-size: 0.875rem; /* 14px */

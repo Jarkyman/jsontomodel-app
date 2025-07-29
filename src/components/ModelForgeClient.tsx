@@ -347,8 +347,8 @@ export default function ModelForgeClient() {
                 value={jsonInput}
                 onChange={handleJsonInputChange}
                 placeholder="Paste your JSON here"
-                className="min-h-[400px] h-full"
-                containerClassName={cn({
+                className="font-code text-sm h-full"
+                containerClassName={cn("h-[500px]", {
                     "border-destructive focus-within:ring-destructive focus-within:ring-2": jsonError,
                 })}
                 />
@@ -399,7 +399,7 @@ export default function ModelForgeClient() {
             </div>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col">
-            <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden">
+            <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden h-[500px]">
               {isGenerating ? (
                  <div className="flex items-center justify-center h-full text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin" />
@@ -407,12 +407,12 @@ export default function ModelForgeClient() {
               ) : outputCode ? (
                 <div className="relative h-full w-full overflow-auto">
                     <div className="flex absolute inset-0">
-                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-4 bg-card">
+                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-4 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
                             {outputCode.split('\n').map((_, index) => (
                                 <div key={index}>{index + 1}</div>
                             ))}
                         </div>
-                        <pre className="flex-1 p-3">
+                        <pre className="flex-1 pt-3 pb-3 pl-0 pr-3" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
                             <code>{outputCode}</code>
                         </pre>
                     </div>
