@@ -34,20 +34,31 @@ function toCamelCase(str: string): string {
     return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
-function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string {
+function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string | null {
+    if (value === null) {
+        if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
+        if (options.serializationLibrary === 'manual') return 'Any';
+        return null; // For Moshi/Gson, don't generate a field for a null value.
+    }
+
     const type = typeof value;
     if (type === 'string') return 'String';
     if (type === 'number') return value % 1 === 0 ? 'Int' : 'Double';
     if (type === 'boolean') return 'Boolean';
     if (Array.isArray(value)) {
         if (value.length === 0) {
-            return options.serializationLibrary === 'kotlinx' ? 'List<JsonElement>' : 'List<Any>';
+            if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
+            if (options.serializationLibrary === 'manual') return 'List<Any>';
+            return null; // For Moshi/Gson, don't generate field for empty list
         }
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getKotlinType(value[0], singularKey, classes, options);
+        
+        if (listType === null) return null;
+
         return `List<${listType}>`;
     }
-    if (type === 'object' && value !== null) {
+    if (type === 'object') {
         const className = toPascalCase(key);
         if (!classes.has(className)) {
             generateClass(className, value, classes, options);
@@ -55,12 +66,13 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
         return className;
     }
     
-    // For 'null' or 'undefined' values
+    // For 'undefined' or other types
     if (options.serializationLibrary === 'kotlinx') {
         return 'JsonElement';
     }
+    if (options.serializationLibrary === 'manual') return 'Any';
     
-    return 'Any';
+    return null;
 }
 
 function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
@@ -95,7 +107,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
-        fields.push({ name: fieldName, originalKey: key, type: kotlinType });
+
+        if (kotlinType) { // Only add field if type is resolvable
+            fields.push({ name: fieldName, originalKey: key, type: kotlinType });
+        }
     }
     
     // Imports
@@ -108,7 +123,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     const classType = options.dataClass ? 'data class' : 'class';
     classString += `${classType} ${className}(\n`;
     
+    const fieldStrings = [];
     for (const field of fields) {
+        let fieldString = '';
         const keyword = options.useVal ? 'val' : 'var';
         const nullable = options.nullable ? '?' : '';
         
@@ -123,18 +140,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             }
         }
         
-        classString += `${annotation}    ${keyword} ${field.name}: ${field.type}${nullable}`;
-        classString += ',\n'
+        fieldString += `${annotation}    ${keyword} ${field.name}: ${field.type}${nullable}`;
+        fieldStrings.push(fieldString);
     }
+    classString += fieldStrings.join(',\n');
 
-    if (classString.endsWith(',\n')) {
-        classString = classString.slice(0, -2);
-    }
     classString += `\n)`;
 
     const isManual = options.serializationLibrary === 'manual';
 
-    if (isManual && (options.fromJson || options.toJson)) {
+    if (isManual && (options.fromJson || options.toJson) && fields.length > 0) {
         classString += ' {\n';
 
         // Companion object with fromJson
@@ -151,7 +166,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 let parsingLogic: string;
                 if (kotlinType.startsWith('List<')) {
                     const listType = kotlinType.substring(5, kotlinType.length - 1);
-                    if (listType === 'Any' || listType === 'String' || listType === 'Int' || listType === 'Double' || listType === 'Boolean') {
+                    if (listType === 'Any' || listType === 'String' || listType === 'Int' || listType === 'Double' || listType === 'Boolean' || listType === 'JsonElement') {
                         parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
                     } else {
                         parsingLogic = `(json["${jsonKey}"] as? List<Map<String, Any>>)?.map { ${listType}.fromJson(it) }`;
@@ -273,3 +288,5 @@ export function generateKotlinCode(
     
     return generatedClassNames.map(name => finalClasses.get(name)).join('\n\n');
 }
+
+    
