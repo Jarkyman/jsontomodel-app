@@ -98,7 +98,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             constructorParams.push(`this.${fieldName}`);
         }
     }
-    classString += `\n`;
+    if (Object.keys(jsonObject).length > 0) {
+      classString += `\n`;
+    }
 
     // Constructor
     classString += `  ${className}({\n    ${constructorParams.join(',\n    ')},\n  });\n\n`;
@@ -170,10 +172,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     
     // toString method
     if(options.toString) {
-        const toStringFields = fields.map(f => `${f.name}: $${f.name}`).join(', ');
         classString += `  @override\n`;
         classString += `  String toString() {\n`;
-        classString += `    return '${className}(${toStringFields})';\n`;
+        if (fields.length > 0) {
+            const toStringFields = fields.map(f => `${f.name}: $${f.name}`).join(', ');
+            classString += `    return '${className}(${toStringFields})';\n`;
+        } else {
+            classString += `    return '${className}()';\n`;
+        }
         classString += `  }\n\n`;
     }
 
@@ -184,11 +190,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             classString += `    ${field.type}? ${field.name},\n`;
         }
         classString += `  }) {\n`;
-        classString += `    return ${className}(\n`;
-        for (const field of fields) {
-            classString += `      ${field.name}: ${field.name} ?? this.${field.name},\n`;
+        if (fields.length > 0) {
+            classString += `    return ${className}(\n`;
+            for (const field of fields) {
+                classString += `      ${field.name}: ${field.name} ?? this.${field.name},\n`;
+            }
+            classString += `    );\n`;
+        } else {
+            classString += `    return ${className}();\n`;
         }
-        classString += `    );\n  }\n\n`;
+        classString += `  }\n\n`;
     }
 
 
