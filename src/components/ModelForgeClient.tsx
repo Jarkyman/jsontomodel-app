@@ -131,7 +131,8 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
   toJson: true,
   useSerializedName: false,
   defaultValues: false,
-  serializationLibrary: "manual"
+  serializationLibrary: "manual",
+  defaultToNull: false,
 };
 
 
@@ -355,7 +356,18 @@ export default function ModelForgeClient() {
   };
 
   const handleToggleKotlinOption = (option: KotlinOptionKey) => {
-    setKotlinOptions(prev => ({...prev, [option]: !prev[option]}));
+    setKotlinOptions(prev => {
+        const newOptions = { ...prev, [option]: !prev[option] };
+
+        if (option === 'defaultValues' && newOptions.defaultValues) {
+            newOptions.defaultToNull = false;
+        }
+        if (option === 'defaultToNull' && newOptions.defaultToNull) {
+            newOptions.defaultValues = false;
+        }
+
+        return newOptions;
+    });
   };
   
   const handleGenerate = () => {
@@ -476,6 +488,7 @@ export default function ModelForgeClient() {
                         disabled={kotlinOptions.serializationLibrary === 'manual'}
                     />
                     <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
+                    <FilterButton checked={kotlinOptions.defaultToNull} onClick={() => handleToggleKotlinOption('defaultToNull')} label="default to null" />
                 </div>
                  <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Serialization Library:</span>
