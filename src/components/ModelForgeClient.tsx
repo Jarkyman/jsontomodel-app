@@ -95,7 +95,7 @@ export default function ModelForgeClient() {
     <div className="w-full max-w-7xl space-y-8">
       <header className="text-center">
         <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
-          ModelForge
+          Json To Model
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Instantly generate data models from any JSON structure. Select your language and forge your code.

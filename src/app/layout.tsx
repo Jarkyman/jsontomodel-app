@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'ModelForge',
+  title: 'Json To Model',
   description: 'Generate data models from JSON in any language.',
 };
 
