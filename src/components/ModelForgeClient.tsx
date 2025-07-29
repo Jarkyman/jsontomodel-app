@@ -49,7 +49,7 @@ const kotlinSerializationLibraries = [
     { value: "manual", label: "Manual" },
     { value: "gson", label: "Gson" },
     { value: "moshi", label: "Moshi" },
-    { value: "kotlinx", label: "kotlinx.serialization" },
+    { value: "kotlinx", label: "kotlinx" },
 ];
 
 const defaultJson = JSON.stringify(
@@ -129,7 +129,7 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
   nullable: true,
   dataClass: true,
   defaultValues: false,
-  serializationLibrary: "none",
+  serializationLibrary: "kotlinx",
   defaultToNull: false,
 };
 
@@ -572,3 +572,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
