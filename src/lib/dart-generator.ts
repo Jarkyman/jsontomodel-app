@@ -57,7 +57,7 @@ function getDartType(value: any, key: string, classes: Map<string, string>, opti
     if (type === 'boolean') return 'bool';
     if (Array.isArray(value)) {
         if (value.length === 0) return 'List<dynamic>';
-        const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
+        const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getDartType(value[0], singularKey, classes, options);
         return `List<${listType}>`;
     }
@@ -77,10 +77,12 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
         if (dartType === 'String') return `'${value.toString().replace(/'/g, "\\'")}'`;
         if (dartType === 'DateTime') return `DateTime.parse('${value}')`;
         if (Array.isArray(value)) return 'const []';
-        if (typeof value === 'object') return `const ${dartType}()`;
-        return value.toString();
+        if (typeof value === 'object' && !Array.isArray(value) && value !== null) return `const ${dartType}()`;
+        if (value !== null) return value.toString();
+        return 'null';
     }
 
+    if (dartType === 'dynamic') return 'null';
     if (dartType.startsWith('List')) return 'const []';
     switch (dartType) {
         case 'String': return "''";
@@ -98,7 +100,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     let classString = `class ${className} {\n`;
     const constructorParams: string[] = [];
-    const fields: { name: string, type: string, originalKey: string }[] = [];
+    const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
 
     // Fields
     for (const key in jsonObject) {
@@ -108,7 +110,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const nullable = options.nullableFields ? '?' : '';
         const final = options.finalFields ? 'final ' : '';
         classString += `  ${final}${dartType}${nullable} ${fieldName};\n`;
-        fields.push({ name: fieldName, type: dartType, originalKey: key });
+        fields.push({ name: fieldName, type: dartType, originalKey: key, value: jsonObject[key] });
     }
     if (fields.length > 0) {
       classString += `\n`;
@@ -116,17 +118,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     // Constructor
     if (fields.length > 0) {
-        classString += `  const ${className}({\n`;
+        classString += `  ${className}({\n`;
         for (const field of fields) {
             if (options.requiredFields) {
-                constructorParams.push(`required this.${field.name}`);
+                constructorParams.push(`    required this.${field.name}`);
             } else {
-                constructorParams.push(`this.${field.name}`);
+                constructorParams.push(`    this.${field.name}`);
             }
         }
-        classString += `    ${constructorParams.join(',\n    ')},\n  });\n\n`;
+        classString += `${constructorParams.join(',\n')},\n  });\n\n`;
     } else {
-        classString += `  const ${className}();\n\n`;
+        classString += `  ${className}();\n\n`;
     }
     
     // fromJson factory
@@ -136,7 +138,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const jsonKey = field.originalKey;
             const fieldName = field.name;
-            const value = jsonObject[jsonKey];
+            const value = field.value;
             const dartType = field.type;
 
             let parsingLogic: string;
@@ -186,7 +188,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const jsonKey = field.originalKey;
             const fieldName = field.name;
-            const value = jsonObject[jsonKey];
+            const value = field.value;
 
             let serializingLogic = fieldName;
             if (options.supportDateTime && field.type === 'DateTime') {
