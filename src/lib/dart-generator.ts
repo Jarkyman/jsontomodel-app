@@ -274,11 +274,6 @@ export function generateDartCode(
         throw new Error("Invalid JSON object provided.");
     }
     
-    // Ensure required and nullable are not both true
-    if(options.requiredFields) {
-        options.nullableFields = false;
-    }
-
     const classes = new Map<string, string>();
     const classOrder: string[] = [];
 
