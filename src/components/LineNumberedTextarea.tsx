@@ -18,6 +18,7 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
     const lineNumbersRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+    // This is the crucial part for keeping scroll in sync
     const handleScroll = () => {
       if (lineNumbersRef.current && textareaRef.current) {
         lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
@@ -38,11 +39,14 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
     useEffect(() => {
         const textarea = textareaRef.current;
         if (textarea) {
+            // Add event listener for scrolling
             textarea.addEventListener('scroll', handleScroll, { passive: true });
-            handleScroll(); // Initial sync
+            // Initial sync
+            handleScroll();
         }
         return () => {
             if (textarea) {
+                // Cleanup listener
                 textarea.removeEventListener('scroll', handleScroll);
             }
         };
@@ -50,7 +54,6 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
 
     const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         onChange(e);
-        updateLineNumbers();
     };
 
     useEffect(() => {
@@ -64,7 +67,7 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
 
     return (
       <div className={cn('line-numbered-textarea-container w-full rounded-md border', containerClassName)}>
-        <div ref={lineNumbersRef} className="line-numbers">
+        <div ref={lineNumbersRef} className="line-numbers overflow-y-hidden">
           {lineNumbers}
         </div>
         <Textarea
