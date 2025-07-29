@@ -14,8 +14,8 @@ const defaultOptions: KotlinGeneratorOptions = {
     useVal: true,
     nullable: true,
     dataClass: true,
-    fromJson: false,
-    toJson: false,
+    fromJson: true,
+    toJson: true,
     useSerializedName: false,
     defaultValues: false,
     serializationLibrary: "manual",
@@ -60,22 +60,92 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (classes.has(className)) return;
 
     let classString = '';
+    const fields: { name: string, type: string, originalKey: string }[] = [];
+    
+    // Class definition
     const classType = options.dataClass ? 'data class' : 'class';
     classString += `${classType} ${className}(\n`;
     
-    const fields: string[] = [];
     for (const key in jsonObject) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
         const keyword = options.useVal ? 'val' : 'var';
         const nullable = options.nullable ? '?' : '';
-        fields.push(`    ${keyword} ${fieldName}: ${kotlinType}${nullable}`);
+        let annotation = '';
+        if (options.useSerializedName && key.includes('_')) {
+             annotation = `    @SerializedName("${key}")\n`;
+        }
+        classString += `${annotation}    ${keyword} ${fieldName}: ${kotlinType}${nullable}`;
+        classString += ',\n'
+        fields.push({ name: fieldName, type: kotlinType, originalKey: key });
+    }
+    if (classString.endsWith(',\n')) {
+        classString = classString.slice(0, -2);
+    }
+    classString += `\n) {\n`;
+
+    // Companion object with fromJson
+    if (options.fromJson) {
+        classString += `    companion object {\n`;
+        classString += `        fun fromJson(json: Map<String, Any>): ${className} {\n`;
+        classString += `            return ${className}(\n`;
+        for (const field of fields) {
+            const jsonKey = field.originalKey;
+            const fieldName = field.name;
+            const kotlinType = field.type;
+            const nullable = options.nullable ? '?' : '';
+
+            let parsingLogic: string;
+            if (kotlinType.startsWith('List<')) {
+                const listType = kotlinType.substring(5, kotlinType.length - 1);
+                 if (listType === 'Any' || listType === 'String' || listType === 'Int' || listType === 'Double' || listType === 'Boolean') {
+                    parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
+                } else {
+                    parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { ${listType}.fromJson(it as Map<String, Any>) }`;
+                }
+            } else if (classes.has(kotlinType)) {
+                parsingLogic = `json["${jsonKey}"]?.let { ${kotlinType}.fromJson(it as Map<String, Any>) }`;
+            } else {
+                parsingLogic = `json["${jsonKey}"] as? ${kotlinType}${nullable}`;
+            }
+
+            classString += `                ${fieldName} = ${parsingLogic},\n`;
+        }
+        if (fields.length > 0) {
+          classString = classString.slice(0, -2);
+          classString += '\n';
+        }
+
+        classString += `            )\n        }\n    }\n\n`;
     }
 
-    classString += fields.join(',\n');
-    classString += `\n)`;
+    // toJson method
+    if (options.toJson) {
+        classString += `    fun toJson(): Map<String, Any${options.nullable ? '?' : ''}> {\n`;
+        classString += `        return mapOf(\n`;
+        for (const field of fields) {
+            let serializingLogic = field.name;
+            if (field.type.startsWith('List<') && !field.type.includes('<Any>')) {
+                 const listType = field.type.substring(5, field.type.length - 1);
+                 if (classes.has(listType)) {
+                    serializingLogic = `${field.name}?.map { it.toJson() }`;
+                 }
+            } else if (classes.has(field.type)) {
+                serializingLogic = `${field.name}?.toJson()`;
+            }
 
+            classString += `            "${field.originalKey}" to ${serializingLogic},\n`;
+        }
+         if (fields.length > 0) {
+          classString = classString.slice(0, -2);
+          classString += '\n';
+        }
+        classString += `        )\n    }\n`;
+    }
+
+
+    classString += `}`;
     classes.set(className, classString);
 
     // Recursively generate for sub-objects
