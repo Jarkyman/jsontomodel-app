@@ -44,6 +44,13 @@ const languages = [
   { value: "javascript", label: "JavaScript", supported: false },
 ];
 
+const kotlinSerializationLibraries = [
+    { value: "manual", label: "Manual" },
+    { value: "gson", label: "Gson" },
+    { value: "moshi", label: "Moshi" },
+    { value: "kotlinx", label: "kotlinx.serialization" },
+];
+
 const defaultJson = JSON.stringify(
   {
     "id": 123,
@@ -132,11 +139,12 @@ type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = keyof KotlinGeneratorOptions;
 
 
-const FilterButton = ({ onClick, checked, label }: { onClick: () => void, checked: boolean, label: string }) => (
+const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
     className={cn(
-      'flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring',
+      'flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
       checked
         ? 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80'
         : 'border-input bg-transparent hover:bg-accent hover:text-accent-foreground'
@@ -234,6 +242,18 @@ export default function ModelForgeClient() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
+
+  useEffect(() => {
+    setKotlinOptions(prev => {
+        const isManual = prev.serializationLibrary === 'manual';
+        return {
+            ...prev,
+            fromJson: isManual,
+            toJson: isManual,
+            useSerializedName: !isManual,
+        };
+    });
+  }, [kotlinOptions.serializationLibrary]);
 
 
   useEffect(() => {
@@ -432,16 +452,49 @@ export default function ModelForgeClient() {
 
       {selectedLanguage === 'kotlin' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
-            <CardContent className="p-6">
+            <CardContent className="p-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <FilterButton checked={kotlinOptions.useVal} onClick={() => handleToggleKotlinOption('useVal')} label="val" />
                     <FilterButton checked={kotlinOptions.nullable} onClick={() => handleToggleKotlinOption('nullable')} label="nullable" />
                     <FilterButton checked={kotlinOptions.dataClass} onClick={() => handleToggleKotlinOption('dataClass')} label="data class" />
-                    <FilterButton checked={kotlinOptions.fromJson} onClick={() => handleToggleKotlinOption('fromJson')} label="fromJson" />
-                    <FilterButton checked={kotlinOptions.toJson} onClick={() => handleToggleKotlinOption('toJson')} label="toJson" />
-                    <FilterButton checked={kotlinOptions.useSerializedName} onClick={() => handleToggleKotlinOption('useSerializedName')} label="SerializedName" />
+                    <FilterButton 
+                        checked={kotlinOptions.fromJson} 
+                        onClick={() => handleToggleKotlinOption('fromJson')} 
+                        label="fromJson"
+                        disabled={kotlinOptions.serializationLibrary !== 'manual'}
+                    />
+                    <FilterButton 
+                        checked={kotlinOptions.toJson} 
+                        onClick={() => handleToggleKotlinOption('toJson')} 
+                        label="toJson"
+                        disabled={kotlinOptions.serializationLibrary !== 'manual'}
+                    />
+                    <FilterButton 
+                        checked={kotlinOptions.useSerializedName} 
+                        onClick={() => handleToggleKotlinOption('useSerializedName')} 
+                        label="SerializedName" 
+                        disabled={kotlinOptions.serializationLibrary === 'manual'}
+                    />
                     <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
                 </div>
+                 <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                    <span className="text-sm font-medium text-muted-foreground">Serialization Library:</span>
+                    <Select 
+                        value={kotlinOptions.serializationLibrary} 
+                        onValueChange={(value) => setKotlinOptions(prev => ({...prev, serializationLibrary: value as any}))}
+                    >
+                        <SelectTrigger className="w-auto">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {kotlinSerializationLibraries.map((lib) => (
+                            <SelectItem key={lib.value} value={lib.value}>
+                                {lib.label}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                 </div>
             </CardContent>
         </Card>
       )}
