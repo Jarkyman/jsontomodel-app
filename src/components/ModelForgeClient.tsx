@@ -118,7 +118,7 @@ const initialOptions: DartGeneratorOptions = {
 
 type OptionKey = keyof DartGeneratorOptions;
 
-const FilterButton = ({ onClick, checked, label, id }: { onClick: () => void, checked: boolean, label: string, id: string }) => (
+const FilterButton = ({ onClick, checked, label }: { onClick: () => void, checked: boolean, label: string }) => (
   <button
     onClick={onClick}
     className={cn(
@@ -320,16 +320,16 @@ export default function ModelForgeClient() {
       <Card className="max-w-xl mx-auto shadow-sm">
         <CardContent className="p-6">
           <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton id="fromJson" checked={dartOptions.fromJson} onClick={() => handleToggleOption('fromJson')} label="fromJson" />
-                <FilterButton id="toJson" checked={dartOptions.toJson} onClick={() => handleToggleOption('toJson')} label="toJson" />
-                <FilterButton id="copyWith" checked={dartOptions.copyWith} onClick={() => handleToggleOption('copyWith')} label="copyWith" />
-                <FilterButton id="toString" checked={dartOptions.toString} onClick={() => handleToggleOption('toString')} label="toString" />
-                <FilterButton id="nullableFields" checked={dartOptions.nullableFields} onClick={() => handleToggleOption('nullableFields')} label="nullable" />
-                <FilterButton id="requiredFields" checked={dartOptions.requiredFields} onClick={() => handleToggleOption('requiredFields')} label="required" />
-                <FilterButton id="finalFields" checked={dartOptions.finalFields} onClick={() => handleToggleOption('finalFields')} label="final" />
-                <FilterButton id="defaultValues" checked={dartOptions.defaultValues} onClick={() => handleToggleOption('defaultValues')} label="default values" />
-                <FilterButton id="supportDateTime" checked={dartOptions.supportDateTime} onClick={() => handleToggleOption('supportDateTime')} label="support DateTime" />
-                <FilterButton id="camelCaseFields" checked={dartOptions.camelCaseFields} onClick={() => handleToggleOption('camelCaseFields')} label="camelCase" />
+                <FilterButton checked={dartOptions.fromJson} onClick={() => handleToggleOption('fromJson')} label="fromJson" />
+                <FilterButton checked={dartOptions.toJson} onClick={() => handleToggleOption('toJson')} label="toJson" />
+                <FilterButton checked={dartOptions.copyWith} onClick={() => handleToggleOption('copyWith')} label="copyWith" />
+                <FilterButton checked={dartOptions.toString} onClick={() => handleToggleOption('toString')} label="toString" />
+                <FilterButton checked={dartOptions.nullableFields} onClick={() => handleToggleOption('nullableFields')} label="nullable" />
+                <FilterButton checked={dartOptions.requiredFields} onClick={() => handleToggleOption('requiredFields')} label="required" />
+                <FilterButton checked={dartOptions.finalFields} onClick={() => handleToggleOption('finalFields')} label="final" />
+                <FilterButton checked={dartOptions.defaultValues} onClick={() => handleToggleOption('defaultValues')} label="default values" />
+                <FilterButton checked={dartOptions.supportDateTime} onClick={() => handleToggleOption('supportDateTime')} label="support DateTime" />
+                <FilterButton checked={dartOptions.camelCaseFields} onClick={() => handleToggleOption('camelCaseFields')} label="camelCase" />
           </div>
         </CardContent>
       </Card>
@@ -347,7 +347,7 @@ export default function ModelForgeClient() {
                 value={jsonInput}
                 onChange={handleJsonInputChange}
                 placeholder="Paste your JSON here"
-                className="font-code text-sm h-full"
+                className="font-code"
                 containerClassName={cn("h-[500px]", {
                     "border-destructive focus-within:ring-destructive focus-within:ring-2": jsonError,
                 })}
@@ -407,12 +407,12 @@ export default function ModelForgeClient() {
               ) : outputCode ? (
                 <div className="relative h-full w-full overflow-auto">
                     <div className="flex absolute inset-0">
-                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-4 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
+                        <div className="w-10 select-none text-right text-muted-foreground pt-3 pr-2 bg-card" style={{ lineHeight: '1.5rem', fontSize: '0.875rem', whiteSpace: 'pre' }}>
                             {outputCode.split('\n').map((_, index) => (
                                 <div key={index}>{index + 1}</div>
                             ))}
                         </div>
-                        <pre className="flex-1 pt-3 pb-3 pl-0 pr-3" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
+                        <pre className="flex-1 pt-3 pb-3 pl-2 pr-3" style={{ lineHeight: '1.5rem', fontSize: '0.875rem' }}>
                             <code>{outputCode}</code>
                         </pre>
                     </div>
@@ -430,6 +430,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-    
-
-    

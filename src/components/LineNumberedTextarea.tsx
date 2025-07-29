@@ -39,7 +39,6 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
         const textarea = textareaRef.current;
         if (textarea) {
             textarea.addEventListener('scroll', handleScroll);
-            // Initial sync
             handleScroll();
         }
         return () => {
@@ -49,7 +48,6 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
         };
     }, []);
 
-    // This is to handle the ref from the parent component
     useEffect(() => {
         if (typeof ref === 'function') {
             ref(textareaRef.current);
@@ -71,7 +69,7 @@ const LineNumberedTextarea = React.forwardRef<HTMLTextAreaElement, LineNumberedT
             onChange(e);
             updateLineNumbers();
           }}
-          className={cn("line-numbered-textarea h-full resize-none", className)}
+          className={cn("line-numbered-textarea resize-none", className)}
           {...props}
         />
       </div>

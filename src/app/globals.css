@@ -88,15 +88,16 @@ body {
 }
 
 .line-numbered-textarea-container {
-    @apply flex h-full font-code text-sm overflow-hidden;
+    @apply flex h-full overflow-hidden;
 }
 .line-numbers {
     @apply w-10 pr-2 text-right select-none text-muted-foreground bg-card pt-3 pb-3 overflow-y-hidden;
-    line-height: 1.5rem; /* Match this with textarea's line-height */
+    line-height: 1.5rem; 
+    font-size: 0.875rem;
     white-space: pre;
-    font-size: 0.875rem; /* 14px */
 }
 .line-numbered-textarea {
     @apply pl-0 border-l-0 rounded-l-none h-full;
-    line-height: 1.5rem; /* Match line-numbers' line-height */
+    line-height: 1.5rem;
+    font-size: 0.875rem;
 }
