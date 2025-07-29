@@ -75,6 +75,24 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     return null;
 }
 
+function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptions): string {
+    if (options.nullable) {
+        return 'null';
+    }
+    if (kotlinType.startsWith('List')) return 'emptyList()';
+
+    switch (kotlinType) {
+        case 'String': return '""';
+        case 'Int': return '0';
+        case 'Double': return '0.0';
+        case 'Boolean': return 'false';
+        case 'JsonElement': return 'JsonNull';
+        default: 
+            return `${kotlinType}()`;
+    }
+}
+
+
 function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
     const imports = new Set<string>();
 
@@ -91,6 +109,9 @@ function generateImports(options: KotlinGeneratorOptions, fields: { originalKey:
         }
         if (fields.some(f => f.type.includes('JsonElement'))) {
             imports.add('import kotlinx.serialization.json.JsonElement');
+            if (options.defaultValues && !options.nullable) {
+                imports.add('import kotlinx.serialization.json.JsonNull');
+            }
         }
     }
     return imports.size > 0 ? Array.from(imports).join('\n') + '\n\n' : '';
@@ -100,7 +121,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (classes.has(className)) return;
 
     let classString = '';
-    const fields: { name: string, type: string, originalKey: string }[] = [];
+    const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     
     // Prepare field types first
     for (const key in jsonObject) {
@@ -109,7 +130,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
 
         if (kotlinType) { // Only add field if type is resolvable
-            fields.push({ name: fieldName, originalKey: key, type: kotlinType });
+            fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
         }
     }
     
@@ -140,7 +161,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             }
         }
         
-        fieldString += `${annotation}    ${keyword} ${field.name}: ${field.type}${nullable}`;
+        const defaultValue = options.defaultValues ? ` = ${getKotlinDefaultValue(field.type, options)}` : '';
+
+        fieldString += `${annotation}    ${keyword} ${field.name}: ${field.type}${nullable}${defaultValue}`;
         fieldStrings.push(fieldString);
     }
     classString += fieldStrings.join(',\n');
