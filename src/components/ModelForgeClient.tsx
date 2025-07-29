@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger 
 } from "./ui/alert-dialog";
 import { Input } from "./ui/input";
+import { ToastAction } from "./ui/toast";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -106,6 +107,7 @@ export default function ModelForgeClient() {
   const [hasCopied, setHasCopied] = useState(false);
   const [rootClassName, setRootClassName] = useState("DataModel");
   const [renameInputValue, setRenameInputValue] = useState(rootClassName);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -143,6 +145,17 @@ export default function ModelForgeClient() {
         const result = generateDartCode(parsedJson, name);
         setOutputCode(result);
         setRootClassName(name);
+        if (result) {
+            toast({
+                title: "Model Generated",
+                description: `Your root model is named "${name}". You can rename it.`,
+                action: (
+                    <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
+                        Rename
+                    </ToastAction>
+                ),
+            });
+        }
       } else {
         toast({
           title: "Not Implemented",
@@ -170,6 +183,7 @@ export default function ModelForgeClient() {
   const handleRename = () => {
     if (renameInputValue.trim()) {
       generateCode(selectedLanguage, renameInputValue.trim());
+      setIsRenameDialogOpen(false);
     }
   };
 
@@ -236,7 +250,7 @@ export default function ModelForgeClient() {
               <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
             </div>
             <div className="flex items-center gap-2">
-              <AlertDialog>
+              <AlertDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" size="sm" disabled={!outputCode || isGenerating}>
                     <Pencil className="h-4 w-4 mr-2" />
