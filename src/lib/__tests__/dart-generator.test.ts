@@ -11,10 +11,11 @@ const fullOptions: DartGeneratorOptions = {
     defaultValues: true,
     supportDateTime: true,
     camelCaseFields: true,
+    useValuesAsDefaults: false,
 };
 
 describe('generateDartCode', () => {
-  it('should generate correct Dart models from complex JSON with default options', () => {
+  it('should generate correct Dart models from complex JSON with default options and camelCase', () => {
     const jsonInput = {
       "id": 123,
       "name": "Test User",
@@ -79,7 +80,7 @@ describe('generateDartCode', () => {
         finalFields: true,
         defaultValues: false,
         supportDateTime: true,
-        camelCaseFields: false,
+        camelCaseFields: true,
     };
 
     const expectedOutput = `class DataModel {
@@ -383,5 +384,158 @@ class AllOptions {
     const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
     const generated = generateDartCode(jsonInput, 'AllOptions', fullOptions);
     expect(normalize(generated)).toBe(normalize(expectedOutput));
+  });
+
+  it('should generate an empty class for an empty JSON object', () => {
+    const jsonInput = {};
+    const options: DartGeneratorOptions = {
+        ...fullOptions,
+        requiredFields: false,
+        nullableFields: true,
+        defaultValues: false
+    };
+    const expectedOutput = `
+class EmptyModel {
+
+  EmptyModel();
+
+  factory EmptyModel.fromJson(Map<String, dynamic> json) {
+    return EmptyModel();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {};
+  }
+
+  @override
+  String toString() {
+    return 'EmptyModel()';
+  }
+
+  EmptyModel copyWith() {
+    return EmptyModel();
+  }
+
+}`;
+    const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+    const generated = generateDartCode(jsonInput, 'EmptyModel', options);
+    expect(normalize(generated)).toBe(normalize(expectedOutput));
+  });
+
+  it('should handle required and nullable fields correctly', () => {
+    const jsonInput = {"name": "John Doe", "age": null};
+    const options: DartGeneratorOptions = {
+        ...fullOptions,
+        requiredFields: true,
+        nullableFields: true,
+        defaultValues: false,
+    };
+    const expectedOutput = `
+class User {
+  final String? name;
+  final int? age;
+
+  User({
+    required this.name,
+    required this.age,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      name: json['name'],
+      age: json['age'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'age': age,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'User(name: $name, age: $age)';
+  }
+
+  User copyWith({
+    String? name,
+    int? age,
+  }) {
+    return User(
+      name: name ?? this.name,
+      age: age ?? this.age,
+    );
+  }
+}
+`;
+    const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+    const generated = generateDartCode(jsonInput, 'User', options);
+    expect(normalize(generated)).toBe(normalize(expectedOutput));
+  });
+
+  it('should use values from JSON as defaults when useValuesAsDefaults is true', () => {
+    const jsonInput = {
+        "id": 123,
+        "name": "Default Name",
+        "is_enabled": true
+    };
+    const options: DartGeneratorOptions = {
+        ...fullOptions,
+        requiredFields: false,
+        nullableFields: false,
+        defaultValues: true,
+        useValuesAsDefaults: true,
+    };
+    const expectedOutput = `
+class Config {
+  final int id;
+  final String name;
+  final bool isEnabled;
+
+  Config({
+    this.id = 123,
+    this.name = 'Default Name',
+    this.isEnabled = true,
+  });
+
+  factory Config.fromJson(Map<String, dynamic> json) {
+    return Config(
+      id: json['id'] ?? 123,
+      name: json['name'] ?? 'Default Name',
+      isEnabled: json['is_enabled'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'is_enabled': isEnabled,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Config(id: $id, name: $name, isEnabled: $isEnabled)';
+  }
+
+  Config copyWith({
+    int? id,
+    String? name,
+    bool? isEnabled,
+  }) {
+    return Config(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      isEnabled: isEnabled ?? this.isEnabled,
+    );
+  }
+}
+`;
+      const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+      const generated = generateDartCode(jsonInput, 'Config', options);
+      expect(normalize(generated)).toBe(normalize(expectedOutput));
   });
 });
