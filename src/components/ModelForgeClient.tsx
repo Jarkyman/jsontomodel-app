@@ -127,17 +127,14 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
   useVal: true,
   nullable: true,
   dataClass: true,
-  fromJson: true,
-  toJson: true,
-  useSerializedName: false,
   defaultValues: false,
-  serializationLibrary: "manual",
+  serializationLibrary: "kotlinx",
   defaultToNull: false,
 };
 
 
 type DartOptionKey = keyof DartGeneratorOptions;
-type KotlinOptionKey = keyof KotlinGeneratorOptions;
+type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -243,18 +240,6 @@ export default function ModelForgeClient() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
-
-  useEffect(() => {
-    setKotlinOptions(prev => {
-        const isManual = prev.serializationLibrary === 'manual';
-        return {
-            ...prev,
-            fromJson: isManual,
-            toJson: isManual,
-            useSerializedName: !isManual,
-        };
-    });
-  }, [kotlinOptions.serializationLibrary]);
 
 
   useEffect(() => {
@@ -469,24 +454,6 @@ export default function ModelForgeClient() {
                     <FilterButton checked={kotlinOptions.useVal} onClick={() => handleToggleKotlinOption('useVal')} label="val" />
                     <FilterButton checked={kotlinOptions.nullable} onClick={() => handleToggleKotlinOption('nullable')} label="nullable" />
                     <FilterButton checked={kotlinOptions.dataClass} onClick={() => handleToggleKotlinOption('dataClass')} label="data class" />
-                    <FilterButton 
-                        checked={kotlinOptions.fromJson} 
-                        onClick={() => handleToggleKotlinOption('fromJson')} 
-                        label="fromJson"
-                        disabled={kotlinOptions.serializationLibrary !== 'manual'}
-                    />
-                    <FilterButton 
-                        checked={kotlinOptions.toJson} 
-                        onClick={() => handleToggleKotlinOption('toJson')} 
-                        label="toJson"
-                        disabled={kotlinOptions.serializationLibrary !== 'manual'}
-                    />
-                    <FilterButton 
-                        checked={kotlinOptions.useSerializedName} 
-                        onClick={() => handleToggleKotlinOption('useSerializedName')} 
-                        label="SerializedName" 
-                        disabled={kotlinOptions.serializationLibrary === 'manual'}
-                    />
                     <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
                     <FilterButton checked={kotlinOptions.defaultToNull} onClick={() => handleToggleKotlinOption('defaultToNull')} label="default to null" />
                 </div>

@@ -3,9 +3,6 @@ export interface KotlinGeneratorOptions {
     useVal: boolean;
     nullable: boolean;
     dataClass: boolean;
-    fromJson: boolean;
-    toJson: boolean;
-    useSerializedName: boolean;
     defaultValues: boolean;
     serializationLibrary: 'manual' | 'gson' | 'moshi' | 'kotlinx';
     defaultToNull: boolean;
@@ -15,11 +12,8 @@ const defaultOptions: KotlinGeneratorOptions = {
     useVal: true,
     nullable: true,
     dataClass: true,
-    fromJson: true,
-    toJson: true,
-    useSerializedName: false,
     defaultValues: false,
-    serializationLibrary: "manual",
+    serializationLibrary: "kotlinx",
     defaultToNull: false,
 };
 
@@ -94,19 +88,19 @@ function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptio
     }
 }
 
-
 function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
     const imports = new Set<string>();
+    const useSerializedName = options.serializationLibrary !== 'manual';
 
-    if (options.serializationLibrary === 'gson' && fields.some(f => f.originalKey !== f.name)) {
+    if (options.serializationLibrary === 'gson' && useSerializedName && fields.some(f => f.originalKey !== f.name)) {
         imports.add('import com.google.gson.annotations.SerializedName');
     }
-    if (options.serializationLibrary === 'moshi' && fields.some(f => f.originalKey !== f.name)) {
+    if (options.serializationLibrary === 'moshi' && useSerializedName && fields.some(f => f.originalKey !== f.name)) {
         imports.add('import com.squareup.moshi.Json');
     }
     if (options.serializationLibrary === 'kotlinx') {
         imports.add('import kotlinx.serialization.Serializable');
-        if (fields.some(f => f.originalKey !== f.name)) {
+        if (useSerializedName && fields.some(f => f.originalKey !== f.name)) {
             imports.add('import kotlinx.serialization.SerialName');
         }
         if (fields.some(f => f.type.includes('JsonElement'))) {
@@ -148,9 +142,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         let fieldString = '';
         const keyword = options.useVal ? 'val' : 'var';
         const nullableMarker = options.nullable ? '?' : '';
+        const useSerializedName = options.serializationLibrary !== 'manual';
         
         let annotation = '';
-        if (field.name !== field.originalKey && options.useSerializedName) {
+        if (field.name !== field.originalKey && useSerializedName) {
             if (options.serializationLibrary === 'gson') {
                 annotation = `    @SerializedName("${field.originalKey}")\n`;
             } else if (options.serializationLibrary === 'moshi') {
@@ -176,68 +171,63 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     const isManual = options.serializationLibrary === 'manual';
 
-    if (isManual && (options.fromJson || options.toJson) && fields.length > 0) {
+    if (isManual && fields.length > 0) {
         classString += ' {\n';
 
-        if (options.fromJson) {
-            classString += `    companion object {\n`;
-            classString += `        fun fromJson(json: Map<String, Any>): ${className} {\n`;
-            classString += `            return ${className}(\n`;
-            for (const field of fields) {
-                const jsonKey = field.originalKey;
-                const fieldName = field.name;
-                const kotlinType = field.type;
-                const nullableMarker = options.nullable ? '?' : '';
+        // fromJson for manual
+        classString += `    companion object {\n`;
+        classString += `        fun fromJson(json: Map<String, Any>): ${className} {\n`;
+        classString += `            return ${className}(\n`;
+        for (const field of fields) {
+            const jsonKey = field.originalKey;
+            const fieldName = field.name;
+            const kotlinType = field.type;
+            const nullableMarker = options.nullable ? '?' : '';
 
-                let parsingLogic: string;
-                if (kotlinType.startsWith('List<')) {
-                    const listType = kotlinType.substring(5, kotlinType.length - 1);
-                    if (['Any', 'String', 'Int', 'Double', 'Boolean', 'JsonElement'].includes(listType)) {
-                        parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
-                    } else {
-                        parsingLogic = `(json["${jsonKey}"] as? List<Map<String, Any>>)?.map { ${listType}.fromJson(it) }`;
-                    }
-                } else if (classes.has(kotlinType)) {
-                    parsingLogic = `json["${jsonKey}"]?.let { ${kotlinType}.fromJson(it as Map<String, Any>) }`;
+            let parsingLogic: string;
+            if (kotlinType.startsWith('List<')) {
+                const listType = kotlinType.substring(5, kotlinType.length - 1);
+                if (['Any', 'String', 'Int', 'Double', 'Boolean', 'JsonElement'].includes(listType)) {
+                    parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
                 } else {
-                    parsingLogic = `json["${jsonKey}"] as? ${kotlinType}${nullableMarker}`;
+                    parsingLogic = `(json["${jsonKey}"] as? List<Map<String, Any>>)?.map { ${listType}.fromJson(it) }`;
                 }
-                
-                let finalLogic = parsingLogic;
-                if (options.nullable) {
-                    finalLogic = parsingLogic;
-                } else {
-                    finalLogic = `${parsingLogic} ?: ${getKotlinDefaultValue(kotlinType, options)}`;
-                }
-
-
-                classString += `                ${fieldName} = ${finalLogic},\n`;
+            } else if (classes.has(kotlinType)) {
+                parsingLogic = `json["${jsonKey}"]?.let { ${kotlinType}.fromJson(it as Map<String, Any>) }`;
+            } else {
+                parsingLogic = `json["${jsonKey}"] as? ${kotlinType}${nullableMarker}`;
             }
-            if (fields.length > 0) {
-             classString = classString.slice(0, -2);
-             classString += '\n';
+            
+            let finalLogic = parsingLogic;
+            if (!options.nullable) {
+                finalLogic = `${parsingLogic} ?: ${getKotlinDefaultValue(kotlinType, options)}`;
             }
 
-            classString += `            )\n        }\n    }\n\n`;
+            classString += `                ${fieldName} = ${finalLogic},\n`;
+        }
+        if (fields.length > 0) {
+            classString = classString.slice(0, -2);
+            classString += '\n';
         }
 
-        if (options.toJson) {
-            classString += `    fun toJson(): Map<String, Any${options.nullable ? '?' : ''}> {\n`;
-            classString += `        val map = mutableMapOf<String, Any?>()\n`;
-            for (const field of fields) {
-                let serializingLogic = field.name;
-                if (field.type.startsWith('List<') && !field.type.includes('<Any>')) {
-                    const listType = field.type.substring(5, field.type.length - 1);
-                    if (classes.has(listType)) {
-                        serializingLogic = `${field.name}?.map { it.toJson() }`;
-                    }
-                } else if (classes.has(field.type)) {
-                    serializingLogic = `${field.name}?.toJson()`;
+        classString += `            )\n        }\n    }\n\n`;
+        
+        // toJson for manual
+        classString += `    fun toJson(): Map<String, Any${options.nullable ? '?' : ''}> {\n`;
+        classString += `        val map = mutableMapOf<String, Any?>()\n`;
+        for (const field of fields) {
+            let serializingLogic = field.name;
+            if (field.type.startsWith('List<') && !field.type.includes('<Any>')) {
+                const listType = field.type.substring(5, field.type.length - 1);
+                if (classes.has(listType)) {
+                    serializingLogic = `${field.name}?.map { it.toJson() }`;
                 }
-                classString += `        map["${field.originalKey}"] = ${serializingLogic}\n`;
+            } else if (classes.has(field.type)) {
+                serializingLogic = `${field.name}?.toJson()`;
             }
-            classString += `        return map.filterValues { it != null }\n    }\n`;
+            classString += `        map["${field.originalKey}"] = ${serializingLogic}\n`;
         }
+        classString += `        return map.filterValues { it != null }\n    }\n`;
 
         classString += `}`;
     }
