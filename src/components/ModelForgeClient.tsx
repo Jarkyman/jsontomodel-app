@@ -31,16 +31,16 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
 
 const languages = [
-  { value: "dart", label: "Flutter (Dart)" },
-  { value: "kotlin", label: "Kotlin" },
-  { value: "swift", label: "Swift" },
-  { value: "python", label: "Python" },
-  { value: "java", label: "Java" },
-  { value: "csharp", label: "C#" },
-  { value: "typescript", label: "TypeScript" },
-  { value: "go", label: "Go" },
-  { value: "php", label: "PHP" },
-  { value: "javascript", label: "JavaScript" },
+  { value: "dart", label: "Flutter (Dart)", supported: true },
+  { value: "kotlin", label: "Kotlin", supported: false },
+  { value: "swift", label: "Swift", supported: false },
+  { value: "python", label: "Python", supported: false },
+  { value: "java", label: "Java", supported: false },
+  { value: "csharp", label: "C#", supported: false },
+  { value: "typescript", label: "TypeScript", supported: false },
+  { value: "go", label: "Go", supported: false },
+  { value: "php", label: "PHP", supported: false },
+  { value: "javascript", label: "JavaScript", supported: false },
 ];
 
 const defaultJson = JSON.stringify(
@@ -181,17 +181,17 @@ export default function ModelForgeClient() {
   
   useEffect(() => {
     if (hasGenerated) {
-      generateCode(selectedLanguage, rootClassName, dartOptions);
+      generateCode();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dartOptions, rootClassName]);
+  }, [dartOptions, rootClassName, selectedLanguage]);
 
 
   useEffect(() => {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
 
-  const generateCode = (targetLanguage: string, name: string, options: DartGeneratorOptions) => {
+  const generateCode = () => {
     if (jsonError) {
       toast({
         variant: "destructive",
@@ -217,14 +217,14 @@ export default function ModelForgeClient() {
     setIsGenerating(true);
     setOutputCode('');
     try {
-      if (targetLanguage === "dart") {
-        const result = generateDartCode(parsedJson, name, options);
+      if (selectedLanguage === "dart") {
+        const result = generateDartCode(parsedJson, rootClassName, dartOptions);
         setOutputCode(result);
         
         if (result && !hasGenerated) {
             toast({
                 title: "Model Generated",
-                description: `Your root model is named "${name}". You can rename it.`,
+                description: `Your root model is named "${rootClassName}". You can rename it.`,
                 action: (
                     <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
                         Rename
@@ -235,7 +235,9 @@ export default function ModelForgeClient() {
       } else {
         toast({
           title: "Not Implemented",
-          description: `Code generation for ${targetLanguage} is not yet supported.`,
+          description: `Code generation for ${
+            languages.find((l) => l.value === selectedLanguage)?.label
+          } is not yet supported.`,
         });
         setOutputCode("");
       }
@@ -260,7 +262,7 @@ export default function ModelForgeClient() {
   };
   
   const handleGenerate = () => {
-    generateCode("DataModel", rootClassName, dartOptions);
+    generateCode();
   };
   
   const handleRename = () => {
@@ -280,10 +282,12 @@ export default function ModelForgeClient() {
   };
 
   const handleFormatJson = () => {
+    if (!jsonInput) return;
     try {
       const parsedJson = JSON.parse(jsonInput);
       const formattedJson = JSON.stringify(parsedJson, null, 2);
       setJsonInput(formattedJson);
+      validateJson(formattedJson);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -314,7 +318,7 @@ export default function ModelForgeClient() {
             </SelectTrigger>
             <SelectContent>
               {languages.map((lang) => (
-                <SelectItem key={lang.value} value={lang.value}>
+                <SelectItem key={lang.value} value={lang.value} disabled={!lang.supported}>
                   {lang.label}
                 </SelectItem>
               ))}
@@ -353,10 +357,12 @@ export default function ModelForgeClient() {
         <Card className="shadow-lg flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleFormatJson}>
-              <Wand2 className="mr-2 h-4 w-4" />
-              Format
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleFormatJson} disabled={!jsonInput || !!jsonError}>
+                <Wand2 className="mr-2 h-4 w-4" />
+                Format
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col">
             <div className="flex-grow h-full">
