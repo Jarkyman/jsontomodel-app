@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2, Pencil, CheckSquare, Square } from "lucide-react";
+import { Copy, Check, Languages, Loader2, Pencil, CheckSquare, Square, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +27,7 @@ import {
 } from "./ui/alert-dialog";
 import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
+import { cn } from "@/lib/utils";
 
 const languages = [
   { value: "dart", label: "Flutter (Dart)" },
@@ -116,6 +117,7 @@ type OptionKey = keyof DartGeneratorOptions;
 
 export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState(defaultJson);
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const [outputCode, setOutputCode] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("dart");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -126,6 +128,29 @@ export default function ModelForgeClient() {
   const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
+
+  const validateJson = (value: string) => {
+    try {
+      JSON.parse(value);
+      setJsonError(null);
+    } catch (error) {
+      if (error instanceof Error) {
+        setJsonError(error.message);
+      } else {
+        setJsonError("An unknown JSON parsing error occurred.");
+      }
+    }
+  };
+
+  useEffect(() => {
+    validateJson(jsonInput);
+  }, []);
+
+  const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setJsonInput(newValue);
+    validateJson(newValue);
+  };
 
   useEffect(() => {
     const storedLang = localStorage.getItem("selectedLanguage");
@@ -142,7 +167,7 @@ export default function ModelForgeClient() {
     if (hasGenerated) {
       generateCode(selectedLanguage, rootClassName, dartOptions);
     }
-  }, [dartOptions]);
+  }, [dartOptions, hasGenerated, rootClassName, selectedLanguage]);
 
 
   useEffect(() => {
@@ -150,10 +175,20 @@ export default function ModelForgeClient() {
   }, [rootClassName]);
 
   const generateCode = (targetLanguage: string, name: string, options: DartGeneratorOptions) => {
+    if (jsonError) {
+      toast({
+        variant: "destructive",
+        title: "Invalid JSON",
+        description: "Please fix the errors in your JSON input before generating.",
+      });
+      return;
+    }
+
     let parsedJson;
     try {
       parsedJson = JSON.parse(jsonInput);
     } catch (error) {
+       // This should ideally not be reached due to live validation, but as a fallback
       toast({
         variant: "destructive",
         title: "Invalid JSON",
@@ -204,13 +239,6 @@ export default function ModelForgeClient() {
   const handleToggleOption = (option: OptionKey) => {
     setDartOptions(prev => {
         const newState = { ...prev, [option]: !prev[option] };
-        // requiredFields and nullableFields are mutually exclusive
-        if (option === 'requiredFields' && newState.requiredFields) {
-            newState.nullableFields = false;
-        }
-        if (option === 'nullableFields' && newState.nullableFields) {
-            newState.requiredFields = false;
-        }
         return newState;
     });
   };
@@ -222,7 +250,8 @@ export default function ModelForgeClient() {
   
   const handleRename = () => {
     if (renameInputValue.trim()) {
-      generateCode(selectedLanguage, renameInputValue.trim(), dartOptions);
+      setRootClassName(renameInputValue.trim());
+      // No need to call generateCode here, the useEffect will handle it
       setIsRenameDialogOpen(false);
     }
   };
@@ -240,7 +269,7 @@ export default function ModelForgeClient() {
       variant="outline"
       size="sm"
       onClick={() => handleToggleOption(option)}
-      className={`text-xs ${dartOptions[option] ? 'bg-accent/20 border-accent' : ''}`}
+      className={`text-xs transition-colors ${dartOptions[option] ? 'bg-accent/20 border-accent text-accent-foreground hover:bg-accent/30' : 'hover:bg-accent/10'}`}
     >
       {dartOptions[option] ? <CheckSquare className="h-4 w-4 mr-2 text-accent" /> : <Square className="h-4 w-4 mr-2" />}
       {label}
@@ -274,7 +303,7 @@ export default function ModelForgeClient() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleGenerate} disabled={isGenerating} size="lg" className="w-full sm:w-auto shrink-0 bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button onClick={handleGenerate} disabled={isGenerating || !!jsonError} size="lg" className="w-full sm:w-auto shrink-0 bg-accent hover:bg-accent/90 text-accent-foreground">
           {isGenerating ? (
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
           ) : null}
@@ -312,10 +341,18 @@ export default function ModelForgeClient() {
           <CardContent>
             <Textarea
               value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
+              onChange={handleJsonInputChange}
               placeholder="Paste your JSON here"
-              className="font-code h-96 min-h-[400px] text-sm bg-card"
+              className={cn("font-code h-96 min-h-[400px] text-sm bg-card", {
+                "border-destructive focus-visible:ring-destructive": jsonError,
+              })}
             />
+             {jsonError && (
+              <p className="mt-2 flex items-center text-sm text-destructive">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                {jsonError}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-lg">
@@ -377,5 +414,4 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
     
