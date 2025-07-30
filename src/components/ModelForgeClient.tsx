@@ -20,6 +20,7 @@ import { generatePythonCode, PythonGeneratorOptions } from "@/lib/python-generat
 import { generateJavaCode, JavaGeneratorOptions } from "@/lib/java-generator";
 import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generator";
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
+import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -44,7 +45,7 @@ const languages = [
   { value: "java", label: "Java", supported: true },
   { value: "csharp", label: "C#", supported: true },
   { value: "typescript", label: "TypeScript", supported: true },
-  { value: "go", label: "Go", supported: false },
+  { value: "go", label: "Go", supported: true },
   { value: "php", label: "PHP", supported: false },
   { value: "javascript", label: "JavaScript", supported: false },
 ];
@@ -197,6 +198,11 @@ const initialTypescriptOptions: TypeScriptGeneratorOptions = {
     allowNulls: false,
 };
 
+const initialGoOptions: GoGeneratorOptions = {
+    usePointers: true,
+    packageName: 'main',
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -240,6 +246,7 @@ export default function ModelForgeClient() {
   const [javaOptions, setJavaOptions] = useState<JavaGeneratorOptions>(initialJavaOptions);
   const [csharpOptions, setCSharpOptions] = useState<CSharpGeneratorOptions>(initialCSharpOptions);
   const [typescriptOptions, setTypescriptOptions] = useState<TypeScriptGeneratorOptions>(initialTypescriptOptions);
+  const [goOptions, setGoOptions] = useState<GoGeneratorOptions>(initialGoOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -352,6 +359,8 @@ export default function ModelForgeClient() {
             result = generateCSharpCode(parsedJson, rootClassName, csharpOptions);
           } else if (selectedLanguage === "typescript") {
             result = generateTypescriptCode(parsedJson, rootClassName, typescriptOptions);
+          } else if (selectedLanguage === "go") {
+            result = generateGoCode(parsedJson, rootClassName, goOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -404,7 +413,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -618,7 +627,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
-                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('to_dict')} label="to_dict" />
+                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
                     <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
                     <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
                     <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
@@ -671,6 +680,16 @@ export default function ModelForgeClient() {
                   <FilterButton checked={typescriptOptions.readonlyFields} onClick={() => handleToggleTypescriptOption('readonlyFields')} label="Readonly Fields" />
                   <FilterButton checked={typescriptOptions.allowNulls} onClick={() => handleToggleTypescriptOption('allowNulls')} label="Allow Nulls" />
                 </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'go' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                 <p className="text-sm text-muted-foreground">Go options coming soon...</p>
+              </div>
             </CardContent>
         </Card>
       )}
@@ -767,6 +786,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 
