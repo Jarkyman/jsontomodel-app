@@ -1,7 +1,9 @@
 # See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
 #
-# Allow crawling of all content
-User-agent: *
-Disallow:
+# A good robots.txt file allows search engines to crawl all pages on your site that you want to be indexed.
+# This file is configured to allow all search engines to crawl all pages on your site.
 
-Sitemap: https://[YOUR_DOMAIN_HERE]/sitemap.xml
+User-agent: *
+Allow: /
+
+Sitemap: https://www.jsontomodel.com/sitemap.xml
