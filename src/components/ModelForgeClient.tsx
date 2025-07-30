@@ -202,6 +202,7 @@ type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibra
 type SwiftOptionKey = keyof SwiftGeneratorOptions;
 type PythonOptionKey = keyof PythonGeneratorOptions;
 type JavaOptionKey = keyof JavaGeneratorOptions;
+type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -473,6 +474,10 @@ export default function ModelForgeClient() {
   const handleCSharpOption = (option: keyof CSharpGeneratorOptions, value: any) => {
     setCSharpOptions(prev => ({ ...prev, [option]: value }));
   };
+  
+  const handleToggleTypescriptOption = (option: TypescriptOptionKey) => {
+    setTypescriptOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
 
 
   const handleRename = () => {
@@ -612,7 +617,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
-                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
+                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('to_dict')} label="to_dict" />
                     <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
                     <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
                     <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
@@ -658,8 +663,11 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'typescript' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="text-center text-muted-foreground">
-                    TypeScript options coming soon...
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <FilterButton checked={typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `type`" />
+                  <FilterButton checked={!typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `interface`" />
+                  <FilterButton checked={typescriptOptions.optionalFields} onClick={() => handleToggleTypescriptOption('optionalFields')} label="Optional Fields" />
+                  <FilterButton checked={typescriptOptions.readonlyFields} onClick={() => handleToggleTypescriptOption('readonlyFields')} label="Readonly Fields" />
                 </div>
             </CardContent>
         </Card>
@@ -746,7 +754,7 @@ export default function ModelForgeClient() {
                     </pre>
                 </div>
               ) : (
-                <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+                <div className="h-full items-center justify-center text-center text-muted-foreground">
                   <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your generated model will appear here.'}</p>
                 </div>
               )}
@@ -757,5 +765,7 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
