@@ -74,6 +74,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             isObjectArray: Array.isArray(jsonObject[key]) && jsonObject[key].length > 0 && typeof jsonObject[key][0] === 'object',
         });
     }
+     if (Object.keys(jsonObject).length === 0) {
+        classString += `\n`;
+    }
+
 
     // Constructor
     classString += `    constructor(data = {}) {\n`;
@@ -103,11 +107,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
          let serialization = `this.${field.name}`;
          if (field.isDate) {
             serialization = `this.${field.name}?.toISOString()`;
-         } else if (field.isObjectArray || field.isObject) {
+         } else if (field.isObjectArray) {
             serialization = `this.${field.name}?.map(item => item.toJSON())`;
-            if (field.isObject) {
+         }
+         else if (field.isObject) {
               serialization = `this.${field.name}?.toJSON()`;
-            }
          }
         classString += `            "${field.originalKey}": ${serialization},\n`;
     }
@@ -138,7 +142,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 export function generateJavaScriptCode(
     json: any,
     rootClassName: string = 'DataModel',
-    options: JavaScriptGeneratorOptions = defaultOptions
+    options: JavaScriptGeneratorOptions = {}
 ): string {
     if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
         return `class ${toPascalCase(rootClassName)} {\n    constructor(data = {}) {}\n\n    static fromJSON(data) {\n        return new ${toPascalCase(rootClassName)}(data);\n    }\n\n    toJSON() {\n        return {};\n    }\n}\n`;
