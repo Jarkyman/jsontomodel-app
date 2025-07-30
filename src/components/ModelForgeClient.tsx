@@ -329,7 +329,7 @@ type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
 type ElixirOptionKey = keyof ElixirGeneratorOptions;
 type ErlangOptionKey = keyof ErlangGeneratorOptions;
 type ScalaOptionKey = keyof ScaleGeneratorOptions;
-type ObjcOptionKey = keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix'>;
+type ObjcOptionKey = keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix' | 'toCamelCase'>;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -380,6 +380,7 @@ export default function ModelForgeClient() {
   const [erlangOptions, setErlangOptions] = useState<ErlangGeneratorOptions>(initialErlangOptions);
   const [scalaOptions, setScalaOptions] = useState<ScaleGeneratorOptions>(initialScalaOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
   const { toast } = useToast();
 
   const hasEmptyKeys = (obj: any): boolean => {
@@ -436,6 +437,9 @@ export default function ModelForgeClient() {
   const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setJsonInput(newValue);
+    if (!userHasInteracted) {
+      setUserHasInteracted(true);
+    }
   };
 
   useEffect(() => {
@@ -531,7 +535,7 @@ export default function ModelForgeClient() {
           
           setOutputCode(result);
             
-          if (result && !hasGenerated) {
+          if (result && !hasGenerated && userHasInteracted) {
               toast({
                   title: "Model Generated",
                   description: `Your root model is named "${rootClassName}". You can rename it.`,
@@ -691,6 +695,10 @@ export default function ModelForgeClient() {
   
   const handleToggleObjcOption = (option: ObjcOptionKey) => {
      setObjcOptions(prev => ({ ...prev, [option]: !prev[option] }));
+  }
+
+  const handleToggleCamelCaseObjcOption = () => {
+    setObjcOptions(prev => ({...prev, toCamelCase: !prev.toCamelCase}));
   }
 
   const handleSqlOption = (option: keyof SQLGeneratorOptions, value: any) => {
@@ -1062,7 +1070,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties')} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers')} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability')} label="Nullability" />
-                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
+                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleToggleCamelCaseObjcOption()} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
@@ -1236,6 +1244,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-
     
+
