@@ -38,7 +38,7 @@ const languages = [
   { value: "kotlin", label: "Kotlin", supported: true },
   { value: "swift", label: "Swift", supported: true },
   { value: "python", label: "Python", supported: true },
-  { value: "java", label: "Java", supported: false },
+  { value: "java", label: "Java", supported: true },
   { value: "csharp", label: "C#", supported: false },
   { value: "typescript", label: "TypeScript", supported: false },
   { value: "go", label: "Go", supported: false },
@@ -404,7 +404,15 @@ export default function ModelForgeClient() {
   };
   
   const handleTogglePythonOption = (option: PythonOptionKey) => {
-    setPythonOptions(prev => ({...prev, [option]: !prev[option] }));
+    setPythonOptions(prev => {
+        const newOptions = { ...prev, [option]: !prev[option] };
+
+        if (option === 'frozen' && newOptions.frozen) {
+            // Uncheck slots if frozen is checked, as it's a common conflict
+            // newOptions.slots = false;
+        }
+        return newOptions;
+    });
   };
 
   const handleRename = () => {
@@ -546,6 +554,16 @@ export default function ModelForgeClient() {
                     <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
                     <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
                     <FilterButton checked={pythonOptions.nestedClasses} onClick={() => handleTogglePythonOption('nestedClasses')} label="nested" />
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'java' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <div className="text-center text-muted-foreground">
+                    Java options coming soon...
                 </div>
             </CardContent>
         </Card>
