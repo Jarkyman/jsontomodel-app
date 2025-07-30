@@ -2,11 +2,11 @@
 import { generateElixirCode, ElixirGeneratorOptions } from '../elixir-generator';
 
 const fullJsonInput = {
-    "user_id": 123,
-    "user_name": "John Doe",
-    "is_active": true,
+    "userId": 123,
+    "userName": "John Doe",
+    "isActive": true,
     "profile": {
-        "theme": "dark"
+        "themePreference": "dark"
     }
 };
 
@@ -20,14 +20,14 @@ const defaultOptions: ElixirGeneratorOptions = {
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateElixirCode', () => {
-    it('should generate correct Elixir modules with default options', () => {
+    it('should generate correct Elixir modules with snake_case for types and fields', () => {
         const generated = generateElixirCode(fullJsonInput, 'User', defaultOptions);
         const normGenerated = normalize(generated);
 
         // Check for Profile module
         expect(normGenerated).toContain('defmodule UserProfile do');
-        expect(normGenerated).toContain('@type theme :: String.t()');
-        expect(normGenerated).toContain('defstruct [ theme: nil ]');
+        expect(normGenerated).toContain('@type theme_preference :: String.t()');
+        expect(normGenerated).toContain('defstruct [ theme_preference: nil ]');
 
         // Check for User module
         expect(normGenerated).toContain('defmodule User do');
@@ -52,13 +52,16 @@ describe('generateElixirCode', () => {
         const options: ElixirGeneratorOptions = { ...defaultOptions, defaultValues: true };
         const generated = generateElixirCode({ "name": "test" }, 'Simple', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain('defstruct [ name: nil // default: "test" ]');
+        expect(normGenerated).toContain('defstruct [ name: nil # default: "test" ]');
     });
 
-    it('should handle non-snake_case', () => {
+    it('should handle camelCase when snake_case is false', () => {
         const options: ElixirGeneratorOptions = { ...defaultOptions, useSnakeCase: false };
-        const generated = generateElixirCode({ "userName": "test" }, 'User', options);
+        const generated = generateElixirCode({ "userName": "test", "isActive": true }, 'User', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain('defstruct [ userName: nil ]');
+        
+        expect(normGenerated).toContain('defstruct [ userName: nil, isActive: nil ]');
+        expect(normGenerated).toContain('@type userName :: String.t()');
+        expect(normGenerated).toContain('@type isActive :: boolean');
     });
 });
