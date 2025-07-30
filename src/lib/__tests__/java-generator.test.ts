@@ -100,7 +100,7 @@ describe('generateJavaCode', () => {
          expect(normGenerated).not.toContain('public void setName(String name)');
     });
 
-    it('should generate without JSON annotations when option is false', () => {
+    it('should not generate JSON annotations when option is false', () => {
          const options: JavaGeneratorOptions = { ...defaultOptions, jsonAnnotations: false };
          const jsonInput = { "user_name": "test" };
          const generated = generateJavaCode(jsonInput, 'User', options);
