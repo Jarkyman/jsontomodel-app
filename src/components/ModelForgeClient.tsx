@@ -201,6 +201,7 @@ const initialTypescriptOptions: TypeScriptGeneratorOptions = {
 const initialGoOptions: GoGeneratorOptions = {
     usePointers: true,
     packageName: 'main',
+    useArrayOfPointers: false,
 };
 
 
@@ -694,6 +695,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={goOptions.usePointers} onClick={() => handleToggleGoOption('usePointers')} label="Use Pointers (for nulls)" />
+                <FilterButton checked={goOptions.useArrayOfPointers} onClick={() => handleToggleGoOption('useArrayOfPointers')} label="Use Pointers in Arrays" />
               </div>
             </CardContent>
         </Card>

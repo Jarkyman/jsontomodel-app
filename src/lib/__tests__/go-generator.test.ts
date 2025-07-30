@@ -11,12 +11,14 @@ const fullJsonInput = {
     },
     "roles": ["admin", "editor"],
     "profile_picture_url": null,
-    "scores": [10, 20, 30.5]
+    "scores": [10, 20, 30.5],
+    "nullable_roles": ["admin", null, "viewer"]
 };
 
 const defaultOptions: GoGeneratorOptions = {
     usePointers: true,
     packageName: 'models',
+    useArrayOfPointers: false
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -36,10 +38,11 @@ describe('generateGoCode', () => {
                 ID *int \`json:"id,omitempty"\`
                 IsActive *bool \`json:"is_active,omitempty"\` 
                 Name *string \`json:"name,omitempty"\`
+                NullableRoles []interface{} \`json:"nullable_roles,omitempty"\`
                 Preferences *Preferences \`json:"preferences,omitempty"\` 
                 ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\` 
-                Roles []*string \`json:"roles,omitempty"\`
-                Scores []*float64 \`json:"scores,omitempty"\`
+                Roles []string \`json:"roles,omitempty"\`
+                Scores []float64 \`json:"scores,omitempty"\`
             }
         `;
         const expectedPreferencesStruct = `
@@ -63,6 +66,7 @@ describe('generateGoCode', () => {
                 ID int \`json:"id,omitempty"\`
                 IsActive bool \`json:"is_active,omitempty"\` 
                 Name string \`json:"name,omitempty"\`
+                NullableRoles []interface{} \`json:"nullable_roles,omitempty"\`
                 Preferences Preferences \`json:"preferences,omitempty"\` 
                 ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\` 
                 Roles []string \`json:"roles,omitempty"\`
@@ -75,6 +79,32 @@ describe('generateGoCode', () => {
         expect(normGenerated).not.toContain('*string');
         expect(normGenerated).not.toContain('*int');
     });
+
+    it('should generate array of pointers when useArrayOfPointers is true', () => {
+        const options: GoGeneratorOptions = { ...defaultOptions, usePointers: true, useArrayOfPointers: true };
+        const generated = generateGoCode(fullJsonInput, 'UserData', options);
+        const normGenerated = normalize(generated);
+        
+        const expectedUserDataStruct = `
+             type UserData struct {
+                CreatedAt *time.Time \`json:"created_at,omitempty"\`
+                ID *int \`json:"id,omitempty"\`
+                IsActive *bool \`json:"is_active,omitempty"\`
+                Name *string \`json:"name,omitempty"\`
+                NullableRoles []*string \`json:"nullable_roles,omitempty"\`
+                Preferences *Preferences \`json:"preferences,omitempty"\`
+                ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\`
+                Roles []*string \`json:"roles,omitempty"\`
+                Scores []*float64 \`json:"scores,omitempty"\`
+            }
+        `;
+
+        expect(normGenerated).toContain(normalize(expectedUserDataStruct));
+        expect(normGenerated).toContain('Roles []*string');
+        expect(normGenerated).toContain('Scores []*float64');
+        expect(normGenerated).toContain('NullableRoles []*string');
+    });
+
 
     it('should handle complex nested structures', () => {
         const complexJson = {
@@ -95,7 +125,7 @@ describe('generateGoCode', () => {
         `;
         const expectedOuter = `
             type OuterLevel struct { 
-                InnerList []*InnerList \`json:"inner_list,omitempty"\`
+                InnerList []InnerList \`json:"inner_list,omitempty"\`
             }
         `;
         const expectedInner = `
