@@ -194,6 +194,7 @@ const initialTypescriptOptions: TypeScriptGeneratorOptions = {
     useType: true,
     optionalFields: true,
     readonlyFields: true,
+    allowNulls: false,
 };
 
 
@@ -668,6 +669,7 @@ export default function ModelForgeClient() {
                   <FilterButton checked={!typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `interface`" />
                   <FilterButton checked={typescriptOptions.optionalFields} onClick={() => handleToggleTypescriptOption('optionalFields')} label="Optional Fields" />
                   <FilterButton checked={typescriptOptions.readonlyFields} onClick={() => handleToggleTypescriptOption('readonlyFields')} label="Readonly Fields" />
+                  <FilterButton checked={typescriptOptions.allowNulls} onClick={() => handleToggleTypescriptOption('allowNulls')} label="Allow Nulls" />
                 </div>
             </CardContent>
         </Card>
@@ -765,6 +767,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 

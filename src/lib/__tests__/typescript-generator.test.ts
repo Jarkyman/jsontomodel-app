@@ -17,6 +17,7 @@ const defaultOptions: TypeScriptGeneratorOptions = {
     useType: true,
     optionalFields: true,
     readonlyFields: true,
+    allowNulls: false,
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -47,7 +48,7 @@ describe('generateTypescriptCode', () => {
     });
 
     it('should generate mutable, required fields', () => {
-        const options: TypeScriptGeneratorOptions = { useType: true, optionalFields: false, readonlyFields: false };
+        const options: TypeScriptGeneratorOptions = { useType: true, optionalFields: false, readonlyFields: false, allowNulls: false };
         const generated = generateTypescriptCode({ name: "Test" }, 'User', options);
         const normGenerated = normalize(generated);
         
@@ -75,6 +76,20 @@ describe('generateTypescriptCode', () => {
         expect(normGenerated).toContain(expectedOuter);
         expect(normGenerated).toContain(expectedRoot);
     });
+
+    it('should allow nulls when option is enabled', () => {
+        const options: TypeScriptGeneratorOptions = { ...defaultOptions, allowNulls: true };
+        const generated = generateTypescriptCode(fullJsonInput, 'UserData', options);
+        const normGenerated = normalize(generated);
+        
+        const expectedPreferences = `export type Preferences = { readonly newsletter?: boolean | null; };`;
+        const expectedUserData = `export type UserData = { readonly id?: number | null; readonly name?: string | null; readonly isActive?: boolean | null; readonly createdAt?: Date | string | null; readonly preferences?: Preferences | null; readonly roles?: (string | null)[] | null; readonly profilePicture?: null; };`;
+
+        expect(normGenerated).toContain(expectedPreferences);
+        expect(normGenerated).toContain(expectedUserData);
+    });
 });
+
+    
 
     

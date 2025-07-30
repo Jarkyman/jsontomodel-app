@@ -3,12 +3,14 @@ export interface TypeScriptGeneratorOptions {
     useType: boolean;
     optionalFields: boolean;
     readonlyFields: boolean;
+    allowNulls: boolean;
 }
 
 const defaultOptions: TypeScriptGeneratorOptions = {
     useType: true,
     optionalFields: true,
     readonlyFields: true,
+    allowNulls: false,
 };
 
 function toPascalCase(str: string): string {
@@ -30,27 +32,48 @@ function isIsoDateString(value: any): boolean {
 }
 
 function getTypescriptType(value: any, key: string, types: Map<string, string>, options: TypeScriptGeneratorOptions): string {
-    if (value === null) return 'null';
-    if (isIsoDateString(value)) return 'Date | string';
+    let baseType: string;
 
-    const type = typeof value;
-    if (type === 'string') return 'string';
-    if (type === 'number') return 'number';
-    if (type === 'boolean') return 'boolean';
-    if (Array.isArray(value)) {
-        if (value.length === 0) return 'any[]';
-        const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        const listType = getTypescriptType(value[0], singularKey, types, options);
-        return `${listType}[]`;
-    }
-    if (type === 'object') {
-        const typeName = toPascalCase(key);
-        if (!types.has(typeName)) {
-            generateType(typeName, value, types, options);
+    if (value === null) {
+        baseType = 'null';
+    } else if (isIsoDateString(value)) {
+        baseType = 'Date | string';
+    } else {
+        const type = typeof value;
+        if (type === 'string') {
+            baseType = 'string';
+        } else if (type === 'number') {
+            baseType = 'number';
+        } else if (type === 'boolean') {
+            baseType = 'boolean';
+        } else if (Array.isArray(value)) {
+            if (value.length === 0) {
+                baseType = 'any[]';
+            } else {
+                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                const listType = getTypescriptType(value[0], singularKey, types, options);
+                baseType = `${listType}[]`;
+            }
+        } else if (type === 'object') {
+            const typeName = toPascalCase(key);
+            if (!types.has(typeName)) {
+                generateType(typeName, value, types, options);
+            }
+            baseType = typeName;
+        } else {
+            baseType = 'any';
         }
-        return typeName;
     }
-    return 'any';
+
+    if (options.allowNulls && baseType !== 'null' && baseType !== 'any') {
+        if (baseType.endsWith('[]')) {
+            const arrayType = baseType.slice(0, -2);
+            // Handle cases like string[] to (string | null)[]
+            return `(${arrayType})[] | null`;
+        }
+        return `${baseType} | null`;
+    }
+    return baseType;
 }
 
 
@@ -125,5 +148,7 @@ export function generateTypescriptCode(
 
     return finalCode;
 }
+
+    
 
     
