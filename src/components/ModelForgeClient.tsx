@@ -452,9 +452,18 @@ export default function ModelForgeClient() {
         if (option === 'finalFields' && newOptions.finalFields) {
             newOptions.setters = false; // Cannot have setters for final fields
         }
+         if (option === 'noArgsConstructor' && newOptions.finalFields && newOptions.noArgsConstructor) {
+            // No-arg constructor is not useful with final fields unless there are no fields.
+            // Let's not enforce this automatically for now, but it's a consideration.
+        }
         return newOptions;
     });
   };
+  
+  const handleCSharpOption = (option: keyof CSharpGeneratorOptions, value: any) => {
+    setCSharpOptions(prev => ({ ...prev, [option]: value }));
+  };
+
 
   const handleRename = () => {
     if (renameInputValue.trim()) {
@@ -626,7 +635,11 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                    <p className="text-sm text-muted-foreground">C# options coming soon...</p>
+                    <FilterButton checked={csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Records" />
+                    <FilterButton checked={!csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Classes" />
+                    <FilterButton checked={csharpOptions.propertySetters === 'init'} onClick={() => handleCSharpOption('propertySetters', 'init')} label="Immutable (init)" />
+                    <FilterButton checked={csharpOptions.propertySetters === 'set'} onClick={() => handleCSharpOption('propertySetters', 'set')} label="Mutable (set)" />
+                    <FilterButton checked={csharpOptions.jsonAnnotations} onClick={() => handleCSharpOption('jsonAnnotations', !csharpOptions.jsonAnnotations)} label="[JsonPropertyName]" />
                 </div>
             </CardContent>
         </Card>
