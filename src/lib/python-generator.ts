@@ -60,10 +60,11 @@ function getPythonType(value: any, key: string, classes: Map<string, string>, op
     }
     if (type === 'boolean') return 'bool';
     if (Array.isArray(value)) {
-        if (value.length === 0) return 'List[Any]';
+        const listOrTuple = options.frozen ? 'Tuple' : 'List';
+        if (value.length === 0) return `${listOrTuple}[Any]`;
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getPythonType(value[0], singularKey, classes, options);
-        return `List[${listType}]`;
+        return `${listOrTuple}[${listType}]`;
     }
     if (type === 'object') {
         const className = toPascalCase(key);
@@ -118,12 +119,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const fieldName = field.name;
             const fieldType = field.type;
 
-            if (fieldType.startsWith('List[') && options.nestedClasses) {
-                 const itemType = fieldType.substring(5, fieldType.length - 1);
-                 if (classes.has(itemType)) {
-                    classString += `            ${fieldName}=[${itemType}.from_dict(item) for item in data.get("${key}", []) if item is not None],\n`;
+            if ((fieldType.startsWith('List[') || fieldType.startsWith('Tuple[')) && options.nestedClasses) {
+                 const collectionType = fieldType.startsWith('List') ? 'List' : 'Tuple';
+                 const innerType = fieldType.substring(collectionType.length + 1, fieldType.length - 1);
+                 const fromDictWrapper = options.frozen ? 'tuple' : '';
+                 
+                 if (classes.has(innerType)) {
+                    const comprehension = `(${innerType}.from_dict(item) for item in data.get("${key}", []) if item is not None)`;
+                    classString += `            ${fieldName}=${fromDictWrapper}${comprehension},\n`;
                  } else {
-                    classString += `            ${fieldName}=data.get("${key}"),\n`;
+                    const comprehension = `(item for item in data.get("${key}", []))`;
+                    classString += `            ${fieldName}=${fromDictWrapper}${comprehension},\n`;
                  }
             } else if (classes.has(fieldType) && options.nestedClasses) {
                 classString += `            ${fieldName}=${fieldType}.from_dict(data["${key}"]) if data.get("${key}") is not None else None,\n`;
@@ -145,8 +151,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const fieldName = field.name;
             const fieldType = field.type;
 
-            if (fieldType.startsWith('List[') && options.nestedClasses) {
-                 const itemType = fieldType.substring(5, fieldType.length - 1);
+            if ((fieldType.startsWith('List[') || fieldType.startsWith('Tuple[')) && options.nestedClasses) {
+                 const collectionType = fieldType.startsWith('List') ? 'List' : 'Tuple';
+                 const itemType = fieldType.substring(collectionType.length + 1, fieldType.length - 1);
                  if (classes.has(itemType)) {
                     classString += `            "${key}": [item.to_dict() for item in self.${fieldName}] if self.${fieldName} is not None else [],\n`;
                  } else {
@@ -170,8 +177,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const value = jsonObject[key];
             if (typeof value === 'object' && value !== null) {
                 if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                    const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                    generateClass(singularKey, value[0], classes, options);
+                     const singularKey = options.camelCaseToSnakeCase ? toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key) : toPascalCase(key);
+                     generateClass(singularKey, value[0], classes, options);
                 } else if (!Array.isArray(value)) {
                     generateClass(toPascalCase(key), value, classes, options);
                 }
@@ -197,7 +204,7 @@ export function generatePythonCode(
     generateClass(finalRootClassName, rootJson, classes, options);
     
     const codeString = Array.from(classes.values()).join('\n');
-    const needsTyping = options.typeHints && (codeString.includes('Optional[') || codeString.includes('List[') || codeString.includes('Dict[') || codeString.includes('Any'));
+    const needsTyping = options.typeHints && (codeString.includes('Optional[') || codeString.includes('List[') || codeString.includes('Tuple[') || codeString.includes('Dict[') || codeString.includes('Any'));
     const needsDatetime = codeString.includes('datetime');
     const needsDataclass = options.dataclass;
 
@@ -207,7 +214,16 @@ export function generatePythonCode(
         imports += `from dataclasses import dataclass\n`;
     }
      if (needsTyping) {
-        imports += `from typing import Any, Dict, List, Optional\n`;
+        const typingImports = new Set<string>();
+        if (codeString.includes('Any')) typingImports.add('Any');
+        if (codeString.includes('Dict[')) typingImports.add('Dict');
+        if (codeString.includes('List[')) typingImports.add('List');
+        if (codeString.includes('Optional[')) typingImports.add('Optional');
+        if (codeString.includes('Tuple[')) typingImports.add('Tuple');
+        
+        if (typingImports.size > 0) {
+            imports += `from typing import ${Array.from(typingImports).sort().join(', ')}\n`;
+        }
     }
     if (needsDatetime) {
         imports += `from datetime import datetime\n`;
