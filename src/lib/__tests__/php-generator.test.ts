@@ -38,7 +38,7 @@ describe('generatePhpCode', () => {
         const normGenerated = normalize(generated);
 
         // Check for correct class structure
-        expect(normGenerated).toContain('final class UserData');
+        expect(normGenerated).toContain('final class UserData implements \\JsonSerializable');
         
         // Check for constructor property promotion syntax and @param docblock
         expect(normGenerated).toContain('/** * @param Project[]|null $projects */');
@@ -53,9 +53,13 @@ describe('generatePhpCode', () => {
 
         // Check for toArray method
         expect(normGenerated).toContain('public function toArray(): array');
-        expect(normGenerated).toContain("'created_at' => $this->createdAt?->format(DateTimeInterface::ATOM)");
+        expect(normGenerated).toContain("'created_at' => $this->createdAt?->format(\\DateTimeInterface::ATOM)");
         expect(normGenerated).toContain("'preferences' => $this->preferences?->toArray()");
         expect(normGenerated).toContain("'projects' => isset($this->projects) ? array_map(fn($item) => $item->toArray(), $this->projects) : null");
+
+        // Check for jsonSerialize method
+        expect(normGenerated).toContain('public function jsonSerialize(): mixed');
+        expect(normGenerated).toContain('return $this->toArray();');
 
         // Check nested class
         expect(normGenerated).toContain('final class Preferences');
@@ -91,13 +95,15 @@ describe('generatePhpCode', () => {
         expect(normGenerated).toContain('public readonly $name');
     });
     
-    it('should generate without fromArray/toArray methods', () => {
+    it('should generate without fromArray/toArray/jsonSerialize methods', () => {
         const options: PhpGeneratorOptions = { ...defaultOptions, fromArray: false, toArray: false };
         const generated = generatePhpCode({ "name": "Test" }, 'User', options);
         const normGenerated = normalize(generated);
         
         expect(normGenerated).not.toContain('fromArray');
         expect(normGenerated).not.toContain('toArray');
+        expect(normGenerated).not.toContain('jsonSerialize');
+        expect(normGenerated).not.toContain('implements \\JsonSerializable');
     });
 
     it('should handle null values for arrays safely', () => {

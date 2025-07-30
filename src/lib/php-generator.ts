@@ -75,8 +75,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (classes.has(className)) return;
 
     const final = options.finalClasses ? 'final ' : '';
+    const implementsClause = options.toArray ? ' implements \\JsonSerializable' : '';
     let classString = `<?php\n\ndeclare(strict_types=1);\n\n`;
-    classString += `${final}class ${className}\n{\n`;
+    classString += `${final}class ${className}${implementsClause}\n{\n`;
 
     const fields: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }[] = [];
     for (const key in jsonObject) {
@@ -119,7 +120,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // Traditional properties and constructor
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'readonly ' : '';
-            const type = options.typedProperties ? `?${field.type}` : 'mixed';
+            const type = options.typedProperties ? `?${field.type}` : '';
 
             if (field.isObjectArray) {
                 const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
@@ -144,7 +145,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const key = field.originalKey;
             const { parsingLogic } = getParsingLogic(field, key, 'data');
             
-            classString += `            ${field.name}: ${parsingLogic},\n`;
+            classString += `            ${parsingLogic},\n`;
         }
         if (fields.length > 0) {
             classString = classString.slice(0, -2);
@@ -161,6 +162,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
              classString += `            '${key}' => ${serializingLogic},\n`;
         }
         classString += `        ];\n    }\n`;
+
+        classString += `\n    public function jsonSerialize(): mixed\n    {\n        return $this->toArray();\n    }\n`;
     }
 
     classString += '}\n';
