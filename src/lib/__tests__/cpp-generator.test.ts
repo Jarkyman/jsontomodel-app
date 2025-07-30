@@ -30,7 +30,7 @@ const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateCppCode', () => {
 
-    it('should generate a full C++ header with nlohmann/json integration', () => {
+    it('should generate a full C++ header with std::optional for C++17', () => {
         const generated = generateCppCode(fullJsonInput, 'UserData', defaultOptions);
         const normGenerated = normalize(generated);
 
@@ -48,17 +48,30 @@ describe('generateCppCode', () => {
         expect(normGenerated).toContain('struct UserProfile;');
         expect(normGenerated).toContain('struct Inventory;');
 
-        // Check for struct definitions
+        // Check for struct definitions using std::optional
         expect(normGenerated).toContain('struct UserData { std::optional<double> balance; std::optional<std::vector<Inventory>> inventory; std::optional<bool> is_active; std::optional<std::string> last_seen; std::optional<nlohmann::json> metadata; std::optional<std::vector<std::string>> tags; std::optional<int> user_id; std::optional<std::string> user_name; std::optional<UserProfile> user_profile; };');
         expect(normGenerated).toContain('struct UserProfile { std::optional<bool> show_email; std::optional<std::string> theme; };');
         expect(normGenerated).toContain('struct Inventory { std::optional<int> item_id; std::optional<int> quantity; };');
 
+        // Ensure no raw pointers are present
+        expect(normGenerated).not.toContain('*');
 
         // Check for NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE macros
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UserData, balance, inventory, is_active, last_seen, metadata, tags, user_id, user_name, user_profile);');
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UserProfile, show_email, theme);');
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Inventory, item_id, quantity);');
     });
+
+    it('should generate raw pointers for C++03', () => {
+        const options: CppGeneratorOptions = { ...defaultOptions, cppVersion: '03', usePointersForNull: true };
+        const generated = generateCppCode(fullJsonInput, 'UserData', options);
+        const normGenerated = normalize(generated);
+
+        expect(normGenerated).not.toContain('#include <optional>');
+        expect(normGenerated).toContain('struct UserProfile { bool* show_email; std::string* theme; };');
+        expect(normGenerated).toContain('struct UserData { double* balance; std::vector<Inventory>* inventory; bool* is_active; std::string* last_seen; nlohmann::json* metadata; std::vector<std::string>* tags; int* user_id; std::string* user_name; UserProfile* user_profile; };');
+    });
+
 
     it('should handle empty JSON object by throwing an error', () => {
         expect(() => generateCppCode({}, 'Empty', defaultOptions)).toThrow("Invalid or empty JSON object provided.");
@@ -84,5 +97,7 @@ describe('generateCppCode', () => {
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EmptyList, empty_list);');
     });
 });
+
+    
 
     

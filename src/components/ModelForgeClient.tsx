@@ -553,9 +553,20 @@ export default function ModelForgeClient() {
     setCppOptions(prev => {
         const newOptions = { ...prev, [option]: value };
         // When switching to C++03, force usePointersForNull to true
-        if (option === 'cppVersion' && value === '03') {
-            newOptions.usePointersForNull = true;
+        // and when switching away from it, force it to false
+        if (option === 'cppVersion') {
+            if (value === '03') {
+                newOptions.usePointersForNull = true;
+            } else {
+                newOptions.usePointersForNull = false;
+            }
         }
+        if (option === 'usePointersForNull' && prev.cppVersion !== '03') {
+             // This should not happen via UI, but as a safeguard.
+             // Only allow toggling pointers if C++03 is selected.
+             return prev;
+        }
+
         return newOptions;
     });
   };
@@ -917,5 +928,7 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     

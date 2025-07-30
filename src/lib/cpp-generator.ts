@@ -1,4 +1,5 @@
 
+
 export interface CppGeneratorOptions {
     namespace: string;
     usePointersForNull: boolean;
@@ -7,7 +8,7 @@ export interface CppGeneratorOptions {
 
 const defaultOptions: CppGeneratorOptions = {
     namespace: "DataModels",
-    usePointersForNull: false, // std::optional is preferred
+    usePointersForNull: false, // std::optional is preferred for modern C++
     cppVersion: '17'
 };
 
@@ -22,9 +23,7 @@ function toSnakeCase(str: string): string {
         .toLowerCase();
 }
 
-function getCppType(value: any, key: string, structs: Set<string>, options: CppGeneratorOptions): string {
-    const useOptional = options.cppVersion !== '03' && !options.usePointersForNull;
-    
+function getBaseCppType(value: any, key: string, structs: Set<string>, options: CppGeneratorOptions): string {
     if (value === null) {
         return 'nlohmann::json';
     }
@@ -36,9 +35,8 @@ function getCppType(value: any, key: string, structs: Set<string>, options: CppG
     if (Array.isArray(value)) {
         if (value.length === 0) return 'std::vector<nlohmann::json>';
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        const listType = getCppType(value[0], singularKey, structs, options);
-        // Pointers/optionals are handled on the member, not in the vector type itself for this generator's style
-        return `std::vector<${listType.replace('*', '')}>`;
+        const listType = getBaseCppType(value[0], singularKey, structs, options);
+        return `std::vector<${listType}>`;
     }
     if (type === 'object') {
         const structName = toPascalCase(key);
@@ -60,27 +58,18 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toSnakeCase(key);
-        const cppType = getCppType(jsonObject[key], key, structs, options);
+        const baseCppType = getBaseCppType(jsonObject[key], key, structs, options);
         
         let finalType: string;
         if (useOptional) {
-            finalType = `std::optional<${cppType}>`;
+            finalType = `std::optional<${baseCppType}>`;
         } else {
-             // For pointers, only apply to non-primitive/non-vector types unless it's a nullable value
-            if (jsonObject[key] === null || typeof jsonObject[key] === 'object') {
-                 finalType = `${cppType}*`;
-            } else {
-                 finalType = cppType;
-            }
-        }
-        
-        // Handle case where type was already determined as pointer, e.g. from nullable object.
-        if (finalType.endsWith('**')) {
-            finalType = finalType.slice(0, -1);
+            // Legacy C++03 mode using raw pointers
+            finalType = `${baseCppType}*`;
         }
 
         structDef += `    ${finalType} ${fieldName};\n`;
-        fields.push({ name: fieldName, type: cppType, originalKey: key });
+        fields.push({ name: fieldName, type: baseCppType, originalKey: key });
     }
     structDef += '};\n';
     
@@ -210,3 +199,5 @@ using nlohmann::json;
 
     return header;
 }
+
+    
