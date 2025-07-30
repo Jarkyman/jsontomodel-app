@@ -60,7 +60,18 @@ describe('generateVbNetCode', () => {
         const generated = generateVbNetCode({ "user_name": "Test" }, 'User', options);
         const normGenerated = normalize(generated);
         
+        // The attribute should now be present because the key differs, but the property name is not PascalCase
         expect(normGenerated).toContain('<JsonProperty("user_name")> Public Property user_name As String');
+    });
+
+    it('should not add JsonProperty if name does not change, even if annotations are on', () => {
+        const options: VbNetGeneratorOptions = { jsonAnnotations: true, pascalCase: false, moduleName: 'Test' };
+        const generated = generateVbNetCode({ "name": "Test" }, 'User', options);
+        const normGenerated = normalize(generated);
+
+        // Since pascalCase is off, property name is "name", same as JSON key. No attribute needed.
+        expect(normGenerated).not.toContain('<JsonProperty("name")>');
+        expect(normGenerated).toContain('Public Property name As String');
     });
 
     it('should handle complex nested structures', () => {
@@ -91,8 +102,6 @@ describe('generateVbNetCode', () => {
         const generated = generateVbNetCode(jsonWithEmptyList, 'Container', defaultOptions);
         const normGenerated = normalize(generated);
         
-        expect(normGenerated).toContain('Public Property EmptyItems As List(Of Object)');
+        expect(normGenerated).toContain('<JsonProperty("empty_items")> Public Property EmptyItems As List(Of Object)');
     });
 });
-
-    

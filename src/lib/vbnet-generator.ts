@@ -60,6 +60,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 
     for (const field of fields) {
+        // Only add JsonProperty if annotations are on AND the property name is different from the original JSON key.
         if (options.jsonAnnotations && field.originalKey !== field.name) {
             classString += `    <JsonProperty("${field.originalKey}")>\n`;
         }
@@ -108,7 +109,9 @@ export function generateVbNetCode(
     let allCode = orderedClasses.map(name => classes.get(name) || '').join('\n\n');
 
     let finalCode = '';
-    if (options.jsonAnnotations) {
+    const needsNewtonsoft = options.jsonAnnotations && Array.from(classes.values()).some(code => code.includes('<JsonProperty'));
+    
+    if (needsNewtonsoft) {
         finalCode += `Imports Newtonsoft.Json\n`;
     }
     if (allCode.includes('List(Of')) {
@@ -125,5 +128,3 @@ export function generateVbNetCode(
 
     return finalCode;
 }
-
-    
