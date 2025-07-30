@@ -27,6 +27,7 @@ import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
 import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
 import { generateRubyCode, RubyGeneratorOptions } from "@/lib/ruby-generator";
+import { generateRCode, RGeneratorOptions } from "@/lib/r-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -58,7 +59,7 @@ const languages = [
   { value: "vbnet", label: "Visual Basic", supported: true },
   { value: "rust", label: "Rust", supported: true },
   { value: "ruby", label: "Ruby", supported: true },
-  { value: "r", label: "R", supported: false },
+  { value: "r", label: "R", supported: true },
   { value: "objectivec", label: "Objective-C", supported: false },
   { value: "sql", label: "SQL", supported: false },
   { value: "elixir", label: "Elixir", supported: false },
@@ -260,6 +261,11 @@ const initialRubyOptions: RubyGeneratorOptions = {
   useStruct: false,
 };
 
+const initialROptions: RGeneratorOptions = {
+  useStruct: true, // Ignored, but kept for parity
+  defaultValues: false,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -274,6 +280,7 @@ type CppOptionKey = keyof CppGeneratorOptions;
 type VbNetOptionKey = keyof VbNetGeneratorOptions;
 type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
+type ROptionKey = keyof RGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -317,6 +324,7 @@ export default function ModelForgeClient() {
   const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
+  const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -443,6 +451,8 @@ export default function ModelForgeClient() {
               result = generateRustCode(parsedJson, rootClassName, rustOptions);
           } else if (selectedLanguage === "ruby") {
               result = generateRubyCode(parsedJson, rootClassName, rubyOptions);
+          } else if (selectedLanguage === "r") {
+            result = generateRCode(parsedJson, rootClassName, rOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -495,7 +505,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -605,6 +615,10 @@ export default function ModelForgeClient() {
 
   const handleToggleRubyOption = (option: RubyOptionKey) => {
     setRubyOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleToggleROption = (option: ROptionKey) => {
+    setROptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -930,6 +944,20 @@ export default function ModelForgeClient() {
                 onClick={() => handleToggleRubyOption('useStruct')}
                 label="Use Struct"
                />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {selectedLanguage === 'r' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <FilterButton 
+                checked={rOptions.defaultValues} 
+                onClick={() => handleToggleROption('defaultValues')} 
+                label="Default Values"
+              />
             </div>
           </CardContent>
         </Card>
