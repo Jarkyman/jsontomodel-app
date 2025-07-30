@@ -552,21 +552,9 @@ export default function ModelForgeClient() {
   const handleCppOption = (option: keyof CppGeneratorOptions, value: any) => {
     setCppOptions(prev => {
         const newOptions = { ...prev, [option]: value };
-        // When switching to C++03, force usePointersForNull to true
-        // and when switching away from it, force it to false
         if (option === 'cppVersion') {
-            if (value === '03') {
-                newOptions.usePointersForNull = true;
-            } else {
-                newOptions.usePointersForNull = false;
-            }
+            newOptions.usePointersForNull = value === '03';
         }
-        if (option === 'usePointersForNull' && prev.cppVersion !== '03') {
-             // This should not happen via UI, but as a safeguard.
-             // Only allow toggling pointers if C++03 is selected.
-             return prev;
-        }
-
         return newOptions;
     });
   };
@@ -807,16 +795,7 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                  <FilterButton 
-                      checked={cppOptions.usePointersForNull} 
-                      onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
-                      label="Use Pointers (Legacy)"
-                      disabled={cppOptions.cppVersion !== '03'}
-                  />
-                   <p className="text-xs text-muted-foreground w-full text-center">Modern C++ uses std::optional by default. Pointers are for legacy compatibility.</p>
-              </div>
-              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+              <div className="flex items-center justify-center gap-2">
                   <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
                   <Select 
                       value={cppOptions.cppVersion} 
@@ -828,7 +807,7 @@ export default function ModelForgeClient() {
                       <SelectContent>
                           <SelectItem value="17">C++17</SelectItem>
                           <SelectItem value="20">C++20</SelectItem>
-                          <SelectItem value="03">C++03</SelectItem>
+                          <SelectItem value="03">C++03 (Legacy Pointers)</SelectItem>
                       </SelectContent>
                   </Select>
               </div>
@@ -928,6 +907,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 

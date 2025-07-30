@@ -8,7 +8,7 @@ export interface CppGeneratorOptions {
 
 const defaultOptions: CppGeneratorOptions = {
     namespace: "DataModels",
-    usePointersForNull: false, // std::optional is preferred for modern C++
+    usePointersForNull: false, // This will be determined by cppVersion
     cppVersion: '17'
 };
 
@@ -48,7 +48,9 @@ function getBaseCppType(value: any, key: string, structs: Set<string>, options: 
 
 
 function generateStruct(structName: string, jsonObject: Record<string, any>, structs: Set<string>, options: CppGeneratorOptions): { structDef: string, conversionDef: string } {
-    const useOptional = options.cppVersion !== '03' && !options.usePointersForNull;
+    // Determine which nullability mechanism to use based on C++ version
+    const useOptional = options.cppVersion !== '03';
+    
     let structDef = `struct ${structName} {\n`;
     let conversionDef = `NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(${structName}`;
 
@@ -159,10 +161,13 @@ export function generateCppCode(
         throw new Error("Invalid or empty JSON object provided.");
     }
     
+    // Automatically set usePointersForNull based on C++ version
+    const internalOptions = { ...options, usePointersForNull: options.cppVersion === '03' };
+    
     const finalRootClassName = toPascalCase(rootClassName);
-    const allStructs = collectAllStructs(json, finalRootClassName, options);
+    const allStructs = collectAllStructs(json, finalRootClassName, internalOptions);
     const orderedStructNames = Array.from(allStructs.keys()).reverse();
-    const useOptional = options.cppVersion !== '03' && !options.usePointersForNull;
+    const useOptional = internalOptions.cppVersion !== '03';
 
     let header = `#pragma once
 
@@ -208,3 +213,5 @@ using nlohmann::json;
 
     return header;
 }
+
+    
