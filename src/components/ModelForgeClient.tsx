@@ -25,6 +25,7 @@ import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
 import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
+import { generateRustCode } from "@/lib/rust-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -54,7 +55,7 @@ const languages = [
   { value: "javascript", label: "JavaScript", supported: true },
   { value: "cpp", label: "C++", supported: true },
   { value: "vbnet", label: "Visual Basic", supported: true },
-  { value: "rust", label: "Rust", supported: false },
+  { value: "rust", label: "Rust", supported: true },
   { value: "ruby", label: "Ruby", supported: false },
   { value: "r", label: "R", supported: false },
   { value: "objectivec", label: "Objective-C", supported: false },
@@ -419,6 +420,8 @@ export default function ModelForgeClient() {
               result = generateCppCode(parsedJson, rootClassName, cppOptions);
           } else if (selectedLanguage === "vbnet") {
               result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
+          } else if (selectedLanguage === "rust") {
+              result = generateRustCode(parsedJson, rootClassName);
           } else {
             toast({
               title: "Not Implemented",
@@ -809,7 +812,7 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
-              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+              <div className="flex items-center justify-center gap-2 pt-4">
                   <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
                   <Select 
                       value={cppOptions.cppVersion} 
@@ -824,6 +827,12 @@ export default function ModelForgeClient() {
                           <SelectItem value="03">C++03</SelectItem>
                       </SelectContent>
                   </Select>
+                  <FilterButton 
+                    checked={cppOptions.usePointersForNull} 
+                    onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
+                    label="Use Pointers (Legacy)"
+                    disabled={cppOptions.cppVersion !== '03'}
+                  />
               </div>
           </CardContent>
       </Card>
