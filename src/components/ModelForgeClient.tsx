@@ -15,6 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
 import { generateKotlinCode, KotlinGeneratorOptions } from "@/lib/kotlin-generator";
+import { generateSwiftCode, SwiftGeneratorOptions } from "@/lib/swift-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -34,7 +35,7 @@ import { Textarea } from "./ui/textarea";
 const languages = [
   { value: "dart", label: "Flutter (Dart)", supported: true },
   { value: "kotlin", label: "Kotlin", supported: true },
-  { value: "swift", label: "Swift", supported: false },
+  { value: "swift", label: "Swift", supported: true },
   { value: "python", label: "Python", supported: false },
   { value: "java", label: "Java", supported: false },
   { value: "csharp", label: "C#", supported: false },
@@ -133,6 +134,20 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
   defaultToNull: false,
 };
 
+const initialSwiftOptions: SwiftGeneratorOptions = {
+    isCodable: true,
+    useStruct: true,
+    isEquatable: false,
+    isHashable: false,
+    generateCodingKeys: true,
+    generateCustomInit: false,
+    generateSampleData: false,
+    isPublished: false,
+    isMainActor: false,
+    isCustomStringConvertible: false,
+    dateStrategy: 'none'
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -167,6 +182,7 @@ export default function ModelForgeClient() {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialDartOptions);
   const [kotlinOptions, setKotlinOptions] = useState<KotlinGeneratorOptions>(initialKotlinOptions);
+  const [swiftOptions, setSwiftOptions] = useState<SwiftGeneratorOptions>(initialSwiftOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -269,6 +285,8 @@ export default function ModelForgeClient() {
             result = generateDartCode(parsedJson, rootClassName, dartOptions);
           } else if (selectedLanguage === "kotlin") {
             result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
+          } else if (selectedLanguage === "swift") {
+            result = generateSwiftCode(parsedJson, rootClassName, swiftOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -321,7 +339,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -469,6 +487,16 @@ export default function ModelForgeClient() {
                         </SelectContent>
                     </Select>
                  </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'swift' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <div className="flex items-center justify-center text-sm text-muted-foreground">
+                    Swift options will be available here soon.
+                </div>
             </CardContent>
         </Card>
       )}
