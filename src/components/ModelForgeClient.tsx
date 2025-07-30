@@ -23,6 +23,7 @@ import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typesc
 import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
 import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
+import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -50,7 +51,7 @@ const languages = [
   { value: "go", label: "Go", supported: true },
   { value: "php", label: "PHP", supported: true },
   { value: "javascript", label: "JavaScript", supported: true },
-  { value: "cpp", label: "C++", supported: false },
+  { value: "cpp", label: "C++", supported: true },
   { value: "vbnet", label: "Visual Basic", supported: false },
   { value: "rust", label: "Rust", supported: false },
   { value: "ruby", label: "Ruby", supported: false },
@@ -231,6 +232,12 @@ const initialJavascriptOptions: JavaScriptGeneratorOptions = {
   convertDates: true,
 };
 
+const initialCppOptions: CppGeneratorOptions = {
+  namespace: "DataModels",
+  usePointersForNull: true,
+  cppVersion: "17",
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -241,6 +248,7 @@ type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
 type GoOptionKey = keyof GoGeneratorOptions;
 type PhpOptionKey = keyof PhpGeneratorOptions;
 type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
+type CppOptionKey = keyof CppGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -280,6 +288,7 @@ export default function ModelForgeClient() {
   const [goOptions, setGoOptions] = useState<GoGeneratorOptions>(initialGoOptions);
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
+  const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -398,6 +407,8 @@ export default function ModelForgeClient() {
             result = generatePhpCode(parsedJson, rootClassName, phpOptions);
           } else if (selectedLanguage === "javascript") {
               result = generateJavaScriptCode(parsedJson, rootClassName, javascriptOptions);
+          } else if (selectedLanguage === "cpp") {
+              result = generateCppCode(parsedJson, rootClassName, cppOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -450,7 +461,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -536,6 +547,10 @@ export default function ModelForgeClient() {
   
   const handleToggleJavascriptOption = (option: JavascriptOptionKey) => {
     setJavascriptOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleToggleCppOption = (option: CppOptionKey) => {
+    setCppOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
 
@@ -771,6 +786,16 @@ export default function ModelForgeClient() {
         </Card>
       )}
 
+      {selectedLanguage === 'cpp' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <p className="text-sm text-muted-foreground">C++ options coming soon!</p>
+              </div>
+            </CardContent>
+        </Card>
+      )}
+
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="shadow-lg flex flex-col">
@@ -863,9 +888,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-    
-
-    
-
-    
