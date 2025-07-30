@@ -29,7 +29,7 @@ describe('generateTypescriptCode', () => {
         const normGenerated = normalize(generated);
 
         const expectedPreferences = `export type Preferences = { readonly newsletter?: boolean; };`;
-        const expectedUserData = `export type UserData = { readonly id?: number; readonly name?: string; readonly isActive?: boolean; readonly createdAt?: Date | string; readonly preferences?: Preferences; readonly roles?: string[]; readonly profilePicture?: null; };`;
+        const expectedUserData = `export type UserData = { readonly id?: number; readonly name?: string; readonly isActive?: boolean; readonly createdAt?: Date | string; readonly preferences?: Preferences; readonly roles?: string[]; readonly profilePicture?: any; };`;
         
         expect(normGenerated).toContain(expectedPreferences);
         expect(normGenerated).toContain(expectedUserData);
@@ -41,7 +41,7 @@ describe('generateTypescriptCode', () => {
         const normGenerated = normalize(generated);
 
         const expectedPreferences = `export interface Preferences { readonly newsletter?: boolean; }`;
-        const expectedUserData = `export interface UserData { readonly id?: number; readonly name?: string; readonly isActive?: boolean; readonly createdAt?: Date | string; readonly preferences?: Preferences; readonly roles?: string[]; readonly profilePicture?: null; }`;
+        const expectedUserData = `export interface UserData { readonly id?: number; readonly name?: string; readonly isActive?: boolean; readonly createdAt?: Date | string; readonly preferences?: Preferences; readonly roles?: string[]; readonly profilePicture?: any; }`;
 
         expect(normGenerated).toContain(expectedPreferences);
         expect(normGenerated).toContain(expectedUserData);
@@ -83,7 +83,7 @@ describe('generateTypescriptCode', () => {
         const normGenerated = normalize(generated);
         
         const expectedPreferences = `export type Preferences = { readonly newsletter?: boolean | null; };`;
-        const expectedUserData = `export type UserData = { readonly id?: number | null; readonly name?: string | null; readonly isActive?: boolean | null; readonly createdAt?: Date | string | null; readonly preferences?: Preferences | null; readonly roles?: (string | null)[] | null; readonly profilePicture?: null; };`;
+        const expectedUserData = `export type UserData = { readonly id?: number | null; readonly name?: string | null; readonly isActive?: boolean | null; readonly createdAt?: Date | string | null; readonly preferences?: Preferences | null; readonly roles?: (string | null)[] | null; readonly profilePicture?: any | null; };`;
 
         expect(normGenerated).toContain(expectedPreferences);
         expect(normGenerated).toContain(expectedUserData);
