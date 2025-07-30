@@ -24,6 +24,7 @@ import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
 import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
+import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -52,7 +53,7 @@ const languages = [
   { value: "php", label: "PHP", supported: true },
   { value: "javascript", label: "JavaScript", supported: true },
   { value: "cpp", label: "C++", supported: true },
-  { value: "vbnet", label: "Visual Basic", supported: false },
+  { value: "vbnet", label: "Visual Basic", supported: true },
   { value: "rust", label: "Rust", supported: false },
   { value: "ruby", label: "Ruby", supported: false },
   { value: "r", label: "R", supported: false },
@@ -238,6 +239,12 @@ const initialCppOptions: CppGeneratorOptions = {
   cppVersion: "17",
 };
 
+const initialVbNetOptions: VbNetGeneratorOptions = {
+    moduleName: "DataModels",
+    jsonAnnotations: true,
+    pascalCase: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -289,6 +296,7 @@ export default function ModelForgeClient() {
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
+  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -409,6 +417,8 @@ export default function ModelForgeClient() {
               result = generateJavaScriptCode(parsedJson, rootClassName, javascriptOptions);
           } else if (selectedLanguage === "cpp") {
               result = generateCppCode(parsedJson, rootClassName, cppOptions);
+          } else if (selectedLanguage === "vbnet") {
+              result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -461,7 +471,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -557,6 +567,10 @@ export default function ModelForgeClient() {
         }
         return newOptions;
     });
+  };
+  
+  const handleToggleVbNetOption = (option: keyof VbNetGeneratorOptions) => {
+    setVbnetOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -795,7 +809,15 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                  <FilterButton 
+                      checked={cppOptions.usePointersForNull} 
+                      onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
+                      label="Use Pointers (Legacy)"
+                      disabled={cppOptions.cppVersion !== '03'}
+                   />
+              </div>
+               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                   <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
                   <Select 
                       value={cppOptions.cppVersion} 
@@ -807,7 +829,7 @@ export default function ModelForgeClient() {
                       <SelectContent>
                           <SelectItem value="17">C++17</SelectItem>
                           <SelectItem value="20">C++20</SelectItem>
-                          <SelectItem value="03">C++03 (Legacy Pointers)</SelectItem>
+                          <SelectItem value="03">C++03</SelectItem>
                       </SelectContent>
                   </Select>
               </div>
@@ -907,6 +929,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 
