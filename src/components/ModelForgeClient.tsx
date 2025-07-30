@@ -22,7 +22,7 @@ import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generat
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
 import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
-import { generateJavaScriptCode } from "@/lib/javascript-generator";
+import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -215,6 +215,12 @@ const initialPhpOptions: PhpGeneratorOptions = {
     toArray: true,
 };
 
+const initialJavascriptOptions: JavaScriptGeneratorOptions = {
+  includeJSDoc: true,
+  includeFromToJSON: true,
+  convertDates: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -224,6 +230,7 @@ type JavaOptionKey = keyof JavaGeneratorOptions;
 type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
 type GoOptionKey = keyof GoGeneratorOptions;
 type PhpOptionKey = keyof PhpGeneratorOptions;
+type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -262,6 +269,7 @@ export default function ModelForgeClient() {
   const [typescriptOptions, setTypescriptOptions] = useState<TypeScriptGeneratorOptions>(initialTypescriptOptions);
   const [goOptions, setGoOptions] = useState<GoGeneratorOptions>(initialGoOptions);
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
+  const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -379,7 +387,7 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "php") {
             result = generatePhpCode(parsedJson, rootClassName, phpOptions);
           } else if (selectedLanguage === "javascript") {
-              result = generateJavaScriptCode(parsedJson, rootClassName);
+              result = generateJavaScriptCode(parsedJson, rootClassName, javascriptOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -432,7 +440,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -513,7 +521,11 @@ export default function ModelForgeClient() {
   };
 
   const handleTogglePhpOption = (option: PhpOptionKey) => {
-    setPhpOptions(prev => ({...prev, [option]: !prev[option] }));
+    setPhpOptions(prev => ({ ...prev, [option]: !prev[option] }));
+  };
+  
+  const handleToggleJavascriptOption = (option: JavascriptOptionKey) => {
+    setJavascriptOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -737,6 +749,18 @@ export default function ModelForgeClient() {
         </Card>
       )}
 
+      {selectedLanguage === 'javascript' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={javascriptOptions.includeJSDoc} onClick={() => handleToggleJavascriptOption('includeJSDoc')} label="JSDoc Comments" />
+                <FilterButton checked={javascriptOptions.includeFromToJSON} onClick={() => handleToggleJavascriptOption('includeFromToJSON')} label="from/toJSON Methods" />
+                <FilterButton checked={javascriptOptions.convertDates} onClick={() => handleToggleJavascriptOption('convertDates')} label="Parse Dates" />
+              </div>
+            </CardContent>
+        </Card>
+      )}
+
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="shadow-lg flex flex-col">
@@ -829,6 +853,8 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
 
