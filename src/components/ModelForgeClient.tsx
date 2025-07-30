@@ -248,7 +248,7 @@ const initialVbNetOptions: VbNetGeneratorOptions = {
 const initialRustOptions: RustGeneratorOptions = {
     deriveClone: true,
     publicFields: true,
-    useSerdeDefault: false,
+    useSerdeDefault: true,
 };
 
 
@@ -841,12 +841,6 @@ export default function ModelForgeClient() {
                           <SelectItem value="03">C++03</SelectItem>
                       </SelectContent>
                   </Select>
-                  <FilterButton 
-                    checked={cppOptions.usePointersForNull} 
-                    onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
-                    label="Use Pointers (Legacy)"
-                    disabled={cppOptions.cppVersion !== '03'}
-                  />
               </div>
           </CardContent>
       </Card>

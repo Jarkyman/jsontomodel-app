@@ -24,7 +24,7 @@ const fullJsonInput = {
 const defaultOptions: RustGeneratorOptions = {
     deriveClone: true,
     publicFields: true,
-    useSerdeDefault: false,
+    useSerdeDefault: true,
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -42,16 +42,16 @@ describe('generateRustCode', () => {
         expect(normGenerated).toContain("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
 
         // Check for correct field renaming
-        expect(normGenerated).toContain('#[serde(rename = "user_id")]');
+        expect(normGenerated).toContain('#[serde(rename = "user_id", default)]');
         expect(normGenerated).toContain('pub user_id: Option<i64>,');
 
-        expect(normGenerated).toContain('#[serde(rename = "last_seen_at")]');
+        expect(normGenerated).toContain('#[serde(rename = "last_seen_at", default)]');
         expect(normGenerated).toContain('pub last_seen_at: Option<String>,');
 
         // Check for nested structs
         expect(normGenerated).toContain('pub user_profile: Option<UserProfile>,');
         expect(normGenerated).toContain('struct UserProfile {');
-        expect(normGenerated).toContain('#[serde(rename = "theme_preference")]');
+        expect(normGenerated).toContain('#[serde(rename = "theme_preference", default)]');
         expect(normGenerated).toContain('pub theme_preference: Option<String>,');
 
         // Check for vector types
@@ -102,10 +102,10 @@ describe('generateRustCode', () => {
             
             #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)] 
             pub struct Simple { 
-                #[serde(rename = "id")] 
+                #[serde(rename = "id", default)] 
                 pub id: Option<i64>, 
                 
-                #[serde(rename = "name")] 
+                #[serde(rename = "name", default)] 
                 pub name: Option<String>, 
             }
         `;
