@@ -19,7 +19,7 @@ const defaultOptions: JavaGeneratorOptions = {
   getters: true,
   setters: false,
   constructor: true,
-  noArgsConstructor: true,
+  noArgsConstructor: false,
   builder: true,
   equalsHashCode: true,
   toString: true,
@@ -199,8 +199,18 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
 
         classString += `        public ${className} build() {\n`;
-        const builderFields = fields.map(f => `this.${f.name}`).join(', ');
-        classString += `            return new ${className}(${builderFields});\n`;
+        if (options.constructor && fields.length > 0) {
+             const builderFields = fields.map(f => `this.${f.name}`).join(', ');
+             classString += `            return new ${className}(${builderFields});\n`;
+        } else {
+             classString += `            ${className} instance = new ${className}();\n`;
+             for(const field of fields) {
+                 if (options.setters && !options.finalFields) {
+                    classString += `            instance.set${toPascalCase(field.name)}(this.${field.name});\n`;
+                 }
+             }
+             classString += `            return instance;\n`;
+        }
         classString += `        }\n`;
         classString += `    }\n`;
     }

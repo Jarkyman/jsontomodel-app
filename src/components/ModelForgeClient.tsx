@@ -170,7 +170,7 @@ const initialJavaOptions: JavaGeneratorOptions = {
     getters: true,
     setters: false,
     constructor: true,
-    noArgsConstructor: true,
+    noArgsConstructor: false,
     builder: true,
     equalsHashCode: true,
     toString: true,
