@@ -29,6 +29,7 @@ import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
 import { generateRubyCode, RubyGeneratorOptions } from "@/lib/ruby-generator";
 import { generateRCode, RGeneratorOptions } from "@/lib/r-generator";
 import { generateObjCCode, ObjCGeneratorOptions } from "@/lib/objc-generator";
+import { generateSQLSchema, SQLGeneratorOptions } from "@/lib/sql-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -62,7 +63,7 @@ const languages = [
   { value: "ruby", label: "Ruby", supported: true },
   { value: "r", label: "R", supported: true },
   { value: "objectivec", label: "Objective-C", supported: true },
-  { value: "sql", label: "SQL", supported: false },
+  { value: "sql", label: "SQL", supported: true },
   { value: "elixir", label: "Elixir", supported: false },
   { value: "erlang", label: "Erlang", supported: false },
   { value: "scala", label: "Scala", supported: false },
@@ -275,6 +276,17 @@ const initialObjcOptions: ObjCGeneratorOptions = {
   rootClassPrefix: "",
 };
 
+const initialSqlOptions: SQLGeneratorOptions = {
+  tablePrefix: '',
+  useSnakeCase: true,
+  includePrimaryKey: true,
+  useNotNull: true,
+  includeTimestamps: false,
+  useForeignKeys: true,
+  useTypeInference: true,
+  defaultValues: false,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -290,7 +302,7 @@ type VbNetOptionKey = keyof VbNetGeneratorOptions;
 type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
 type ROptionKey = keyof RGeneratorOptions;
-type ObjcOptionKey = keyof ObjCGeneratorOptions;
+type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -336,6 +348,7 @@ export default function ModelForgeClient() {
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
   const [objcOptions, setObjcOptions] = useState<ObjCGeneratorOptions>(initialObjcOptions);
+  const [sqlOptions, setSqlOptions] = useState<SQLGeneratorOptions>(initialSqlOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -466,6 +479,8 @@ export default function ModelForgeClient() {
             result = generateRCode(parsedJson, rootClassName, rOptions);
           } else if (selectedLanguage === "objectivec") {
             result = generateObjCCode(parsedJson, rootClassName, objcOptions);
+          } else if (selectedLanguage === "sql") {
+            result = generateSQLSchema(parsedJson, rootClassName, sqlOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -518,7 +533,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -636,6 +651,14 @@ export default function ModelForgeClient() {
 
   const handleObjcOption = (option: keyof ObjCGeneratorOptions, value: any) => {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
+  };
+
+  const handleSqlOption = (option: keyof SQLGeneratorOptions, value: any) => {
+    setSqlOptions(prev => ({ ...prev, [option]: value }));
+  };
+  
+  const handleToggleSqlOption = (option: SqlOptionKey) => {
+    setSqlOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -984,7 +1007,7 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={objcOptions.properties} onClick={() => handleObjcOption('properties', !objcOptions.properties)} label="@property" />
+                <FilterButton checked={objcOptions.properties} onClick={() => handleObjcOption('properties', !objcOptions.properties)} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleObjcOption('initializers', !objcOptions.initializers)} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleObjcOption('nullability', !objcOptions.nullability)} label="Nullability" />
                 <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
@@ -995,6 +1018,31 @@ export default function ModelForgeClient() {
                       value={objcOptions.rootClassPrefix}
                       onChange={(e) => handleObjcOption('rootClassPrefix', e.target.value)}
                       placeholder="e.g. DM"
+                      className="w-24"
+                    />
+                 </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'sql' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={sqlOptions.useSnakeCase} onClick={() => handleToggleSqlOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={sqlOptions.includePrimaryKey} onClick={() => handleToggleSqlOption('includePrimaryKey')} label="Primary Key" />
+                <FilterButton checked={sqlOptions.useNotNull} onClick={() => handleToggleSqlOption('useNotNull')} label="NOT NULL" />
+                <FilterButton checked={sqlOptions.useForeignKeys} onClick={() => handleToggleSqlOption('useForeignKeys')} label="Foreign Keys" />
+                <FilterButton checked={sqlOptions.includeTimestamps} onClick={() => handleToggleSqlOption('includeTimestamps')} label="Timestamps" />
+                <FilterButton checked={sqlOptions.useTypeInference} onClick={() => handleToggleSqlOption('useTypeInference')} label="Infer Types" />
+                <FilterButton checked={sqlOptions.defaultValues} onClick={() => handleToggleSqlOption('defaultValues')} label="Default Values" />
+              </div>
+               <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                    <span className="text-sm font-medium text-muted-foreground">Table Prefix:</span>
+                    <Input 
+                      value={sqlOptions.tablePrefix}
+                      onChange={(e) => handleSqlOption('tablePrefix', e.target.value)}
+                      placeholder="e.g. tbl_"
                       className="w-24"
                     />
                  </div>
@@ -1094,3 +1142,4 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
