@@ -434,6 +434,16 @@ export default function ModelForgeClient() {
     });
   };
 
+  const handleToggleJavaOption = (option: JavaOptionKey) => {
+    setJavaOptions(prev => {
+        const newOptions = { ...prev, [option]: !prev[option] };
+        if (option === 'finalFields' && newOptions.finalFields) {
+            newOptions.setters = false; // Cannot have setters for final fields
+        }
+        return newOptions;
+    });
+  };
+
   const handleRename = () => {
     if (renameInputValue.trim()) {
       const newName = renameInputValue.trim();
@@ -552,12 +562,15 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
+                    <FilterButton checked={swiftOptions.isCodable} onClick={() => handleToggleSwiftOption('isCodable')} label="Codable" />
                     <FilterButton checked={swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="struct" />
                     <FilterButton checked={!swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="class" />
                     <FilterButton checked={swiftOptions.isEquatable} onClick={() => handleToggleSwiftOption('isEquatable')} label="Equatable" />
                     <FilterButton checked={swiftOptions.isHashable} onClick={() => handleToggleSwiftOption('isHashable')} label="Hashable" />
                     <FilterButton checked={swiftOptions.isCustomStringConvertible} onClick={() => handleToggleSwiftOption('isCustomStringConvertible')} label="Debug Description" />
                     <FilterButton checked={swiftOptions.generateSampleData} onClick={() => handleToggleSwiftOption('generateSampleData')} label="Sample Data" />
+                    <FilterButton checked={swiftOptions.isPublished} onClick={() => handleToggleSwiftOption('isPublished')} label="@Published" />
+                    <FilterButton checked={swiftOptions.isMainActor} onClick={() => handleToggleSwiftOption('isMainActor')} label="@MainActor" />
                 </div>
             </CardContent>
         </Card>
@@ -581,8 +594,17 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'java' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="text-center text-muted-foreground">
-                    Java options coming soon...
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
+                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} label="Setters" disabled={javaOptions.finalFields} />
+                  <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
+                  <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
+                  <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />
+                  <FilterButton checked={javaOptions.equalsHashCode} onClick={() => handleToggleJavaOption('equalsHashCode')} label="equals() & hashCode()" />
+                  <FilterButton checked={javaOptions.toString} onClick={() => handleToggleJavaOption('toString')} label="toString()" />
+                  <FilterButton checked={javaOptions.finalFields} onClick={() => handleToggleJavaOption('finalFields')} label="Final Fields" />
+                  <FilterButton checked={javaOptions.jsonAnnotations} onClick={() => handleToggleJavaOption('jsonAnnotations')} label="@JsonProperty" />
+                  <FilterButton checked={javaOptions.snakeCase} onClick={() => handleToggleJavaOption('snakeCase')} label="camelCase Fields" />
                 </div>
             </CardContent>
         </Card>

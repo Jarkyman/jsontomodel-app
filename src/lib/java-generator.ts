@@ -1,4 +1,6 @@
 
+import { off } from "process";
+
 export interface JavaGeneratorOptions {
   getters: boolean;
   setters: boolean;
@@ -76,17 +78,21 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `public class ${className} {\n`;
     }
 
-    const fields: { name: string, type: string, originalKey: string }[] = [];
+    const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
 
     // Fields
     for (const key in jsonObject) {
         if (key === '') continue;
         const fieldName = options.snakeCase ? toCamelCase(key) : key;
         const javaType = getJavaType(jsonObject[key], key, classes, options);
-        fields.push({ name: fieldName, type: javaType, originalKey: key });
+        fields.push({ name: fieldName, type: javaType, originalKey: key, value: jsonObject[key] });
 
         if (javaType.startsWith('List<')) {
             imports.add('import java.util.List;');
+        }
+        
+        if (javaType.includes("Date")) {
+            imports.add('import java.util.Date;');
         }
 
         if (options.jsonAnnotations) {
@@ -94,18 +100,25 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             classString += `    @JsonProperty("${key}")\n`;
         }
         
-        const finalModifier = options.finalFields ? 'final ' : '';
+        const finalModifier = options.finalFields ? "final " : "";
         classString += `    private ${finalModifier}${javaType} ${fieldName};\n\n`;
     }
 
-    // Constructor
+    // No-Args Constructor
+    if (options.noArgsConstructor) {
+        classString += `    public ${className}() {}\n\n`;
+    }
+
+    // All-Args Constructor
     if (options.constructor && fields.length > 0) {
         classString += `    public ${className}(`;
-        const params = fields.map((field, index) => {
+        const params = fields.map(field => {
+            let paramString = "";
             if (options.jsonAnnotations) {
-                return `@JsonProperty("${field.originalKey}") ${field.type} ${field.name}`;
+                paramString += `@JsonProperty("${field.originalKey}") `;
             }
-            return `${field.type} ${field.name}`;
+            paramString += `${field.type} ${field.name}`;
+            return paramString;
         }).join(', ');
         classString += `${params}) {\n`;
         for (const field of fields) {
@@ -124,6 +137,82 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
     }
 
+    // Setters
+    if (options.setters && !options.finalFields) {
+        for (const field of fields) {
+            const setterName = 'set' + toPascalCase(field.name);
+            classString += `    public void ${setterName}(${field.type} ${field.name}) {\n`;
+            classString += `        this.${field.name} = ${field.name};\n`;
+            classString += `    }\n\n`;
+        }
+    }
+
+    // toString
+    if (options.toString) {
+        imports.add('import java.util.StringJoiner;');
+        classString += `    @Override\n`;
+        classString += `    public String toString() {\n`;
+        classString += `        return new StringJoiner(", ", ${className}.class.getSimpleName() + "[", "]")\n`;
+        for (const field of fields) {
+            classString += `                .add("${field.name}=" + ${field.name})\n`;
+        }
+        classString += `                .toString();\n`;
+        classString += `    }\n\n`;
+    }
+    
+    // equals & hashCode
+    if (options.equalsHashCode) {
+        imports.add('import java.util.Objects;');
+        // equals
+        classString += `    @Override\n`;
+        classString += `    public boolean equals(Object o) {\n`;
+        classString += `        if (this == o) return true;\n`;
+        classString += `        if (o == null || getClass() != o.getClass()) return false;\n`;
+        classString += `        ${className} that = (${className}) o;\n`;
+        const comparisons = fields.map(f => `Objects.equals(${f.name}, that.${f.name})`).join(' && ');
+        classString += `        return ${comparisons || 'true'};\n`;
+        classString += `    }\n\n`;
+
+        // hashCode
+        classString += `    @Override\n`;
+        classString += `    public int hashCode() {\n`;
+        const fieldNames = fields.map(f => f.name).join(', ');
+        classString += `        return Objects.hash(${fieldNames});\n`;
+        classString += `    }\n\n`;
+    }
+
+
+    // Builder
+    if (options.builder) {
+        classString += `    public static final class Builder {\n`;
+        for (const field of fields) {
+            classString += `        private ${field.type} ${field.name};\n`;
+        }
+        classString += `\n        public Builder() {}\n\n`;
+
+        for (const field of fields) {
+            const withMethodName = options.snakeCase ? toCamelCase(field.originalKey) : field.originalKey;
+            classString += `        public Builder ${withMethodName}(${field.type} val) {\n`;
+            classString += `            ${field.name} = val;\n`;
+            classString += `            return this;\n`;
+            classString += `        }\n\n`;
+        }
+
+        classString += `        public ${className} build() {\n`;
+        if (options.noArgsConstructor) {
+             classString += `            ${className} instance = new ${className}();\n`;
+             for(const field of fields) {
+                classString += `            instance.${field.name} = this.${field.name};\n`
+             }
+             classString += `            return instance;\n`
+        } else {
+            const builderFields = fields.map(f => `this.${f.name}`).join(', ');
+            classString += `            return new ${className}(${builderFields});\n`;
+        }
+
+        classString += `        }\n`;
+        classString += `    }\n`;
+    }
 
     classString += `}\n`;
     
@@ -166,19 +255,41 @@ export function generateJavaCode(
     generateClass(finalRootClassName, { ...json }, classes, options);
 
     const orderedClasses = Array.from(classes.keys()).reverse();
-    const mainClass = classes.get(finalRootClassName) || '';
-    const nestedClasses = orderedClasses
-        .filter(name => name !== finalRootClassName)
-        .map(name => classes.get(name) || '')
-        .join('\n');
+    const mainClassDef = classes.get(finalRootClassName) || '';
     
-    // This is a simplified assembly. A more robust solution would properly nest the classes.
-    // For now, we'll just combine them, which works for static nested classes.
-    const mainClassBodyEnd = mainClass.lastIndexOf('}');
-    if (mainClassBodyEnd !== -1) {
-        const finalCode = mainClass.slice(0, mainClassBodyEnd) + nestedClasses + mainClass.slice(mainClassBodyEnd);
-        return finalCode;
+    // Find where to inject nested classes
+    const mainClassClosingBrace = mainClassDef.lastIndexOf('}');
+    if (mainClassClosingBrace === -1) {
+        return mainClassDef; // Should not happen
     }
+    
+    const mainClassStart = mainClassDef.substring(0, mainClassClosingBrace);
+    const mainClassEnd = mainClassDef.substring(mainClassClosingBrace);
 
-    return mainClass;
+    let finalCode = mainClassStart;
+
+    orderedClasses.forEach(name => {
+        if (name !== finalRootClassName) {
+            const classDef = classes.get(name) || '';
+            // Remove imports from nested classes as they are at the top level
+            const defWithoutImports = classDef.replace(/import\s+.*;\n/g, '').trim();
+            finalCode += `\n    ${defWithoutImports}\n`;
+        }
+    });
+
+    finalCode += mainClassEnd;
+
+    // Collect all unique imports
+    const allImports = new Set<string>();
+    classes.forEach(classDef => {
+        const importMatches = classDef.match(/import\s+.*;/g);
+        if (importMatches) {
+            importMatches.forEach(imp => allImports.add(imp));
+        }
+    });
+
+    const sortedImports = Array.from(allImports).sort().join('\n');
+    const finalCodeWithoutImports = finalCode.replace(/import\s+.*;\n\n/g, '').trim();
+
+    return `${sortedImports}\n\n${finalCodeWithoutImports}`;
 }
