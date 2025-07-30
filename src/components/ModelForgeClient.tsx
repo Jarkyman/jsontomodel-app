@@ -28,6 +28,7 @@ import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator"
 import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
 import { generateRubyCode, RubyGeneratorOptions } from "@/lib/ruby-generator";
 import { generateRCode, RGeneratorOptions } from "@/lib/r-generator";
+import { generateObjCCode, ObjCGeneratorOptions } from "@/lib/objc-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -60,7 +61,7 @@ const languages = [
   { value: "rust", label: "Rust", supported: true },
   { value: "ruby", label: "Ruby", supported: true },
   { value: "r", label: "R", supported: true },
-  { value: "objectivec", label: "Objective-C", supported: false },
+  { value: "objectivec", label: "Objective-C", supported: true },
   { value: "sql", label: "SQL", supported: false },
   { value: "elixir", label: "Elixir", supported: false },
   { value: "erlang", label: "Erlang", supported: false },
@@ -266,6 +267,14 @@ const initialROptions: RGeneratorOptions = {
   defaultValues: false,
 };
 
+const initialObjcOptions: ObjCGeneratorOptions = {
+  properties: true,
+  initializers: true,
+  nullability: true,
+  snakeCase: true,
+  rootClassPrefix: "",
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -276,11 +285,12 @@ type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
 type GoOptionKey = keyof GoGeneratorOptions;
 type PhpOptionKey = keyof PhpGeneratorOptions;
 type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
-type CppOptionKey = keyof CppGeneratorOptions;
+type CppOptionKey = Exclude<keyof CppGeneratorOptions, 'cppVersion'>;
 type VbNetOptionKey = keyof VbNetGeneratorOptions;
 type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
 type ROptionKey = keyof RGeneratorOptions;
+type ObjcOptionKey = keyof ObjCGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -325,6 +335,7 @@ export default function ModelForgeClient() {
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
+  const [objcOptions, setObjcOptions] = useState<ObjCGeneratorOptions>(initialObjcOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -453,6 +464,8 @@ export default function ModelForgeClient() {
               result = generateRubyCode(parsedJson, rootClassName, rubyOptions);
           } else if (selectedLanguage === "r") {
             result = generateRCode(parsedJson, rootClassName, rOptions);
+          } else if (selectedLanguage === "objectivec") {
+            result = generateObjCCode(parsedJson, rootClassName, objcOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -505,7 +518,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -619,6 +632,10 @@ export default function ModelForgeClient() {
 
   const handleToggleROption = (option: ROptionKey) => {
     setROptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleObjcOption = (option: keyof ObjCGeneratorOptions, value: any) => {
+    setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
 
 
@@ -959,6 +976,28 @@ export default function ModelForgeClient() {
                 label="Default Values"
               />
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'objectivec' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={objcOptions.properties} onClick={() => handleObjcOption('properties', !objcOptions.properties)} label="@property" />
+                <FilterButton checked={objcOptions.initializers} onClick={() => handleObjcOption('initializers', !objcOptions.initializers)} label="Initializer" />
+                <FilterButton checked={objcOptions.nullability} onClick={() => handleObjcOption('nullability', !objcOptions.nullability)} label="Nullability" />
+                <FilterButton checked={objcOptions.snakeCase} onClick={() => handleObjcOption('snakeCase', !objcOptions.snakeCase)} label="snake_case" />
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                    <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
+                    <Input 
+                      value={objcOptions.rootClassPrefix}
+                      onChange={(e) => handleObjcOption('rootClassPrefix', e.target.value)}
+                      placeholder="e.g. DM"
+                      className="w-24"
+                    />
+                 </div>
           </CardContent>
         </Card>
       )}
