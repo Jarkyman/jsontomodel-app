@@ -329,6 +329,7 @@ type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
 type ElixirOptionKey = keyof ElixirGeneratorOptions;
 type ErlangOptionKey = keyof ErlangGeneratorOptions;
 type ScalaOptionKey = keyof ScaleGeneratorOptions;
+type ObjcOptionKey = keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix'>;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -688,7 +689,7 @@ export default function ModelForgeClient() {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
   
-  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix' | 'toCamelCase'>) => {
+  const handleToggleObjcOption = (option: ObjcOptionKey) => {
      setObjcOptions(prev => ({ ...prev, [option]: !prev[option] }));
   }
 
@@ -756,7 +757,8 @@ export default function ModelForgeClient() {
         </p>
       </header>
 
-      <div className="mx-auto flex w-full max-w-sm items-center gap-4">
+      <section aria-labelledby="language-selection" className="mx-auto flex w-full max-w-sm items-center gap-4">
+        <h2 id="language-selection" className="sr-only">Language Selection</h2>
         <div className="relative w-full">
            <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
@@ -772,7 +774,7 @@ export default function ModelForgeClient() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </section>
 
       {selectedLanguage === 'dart' && (
       <Card className="max-w-2xl mx-auto shadow-sm">
@@ -1060,7 +1062,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties')} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers')} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability')} label="Nullability" />
-                <FilterButton checked={objcOptions.toCamelCase} onClick={() => setObjcOptions(prev => ({ ...prev, toCamelCase: !prev.toCamelCase }))} label="camelCase" />
+                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
@@ -1139,7 +1141,8 @@ export default function ModelForgeClient() {
       )}
 
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2" aria-labelledby="io-panels-title">
+        <h2 id="io-panels-title" className="sr-only">JSON Input and Generated Model Output</h2>
         <Card className="shadow-lg flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
@@ -1159,10 +1162,13 @@ export default function ModelForgeClient() {
                     className={cn("font-code h-[500px] resize-none", {
                         "border-destructive ring-destructive ring-2": jsonError,
                     })}
+                    aria-label="JSON Input Area"
+                    aria-invalid={!!jsonError}
+                    aria-describedby={jsonError ? "json-error-message" : undefined}
                 />
             </div>
              {jsonError && (
-              <p className="mt-2 flex items-center text-sm text-destructive">
+              <p id="json-error-message" className="mt-2 flex items-center text-sm text-destructive">
                 <AlertCircle className="mr-2 h-4 w-4" />
                 {jsonError}
               </p>
@@ -1226,7 +1232,7 @@ export default function ModelForgeClient() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   );
 }
