@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
 import { generateKotlinCode, KotlinGeneratorOptions } from "@/lib/kotlin-generator";
 import { generateSwiftCode, SwiftGeneratorOptions } from "@/lib/swift-generator";
+import { generatePythonCode, PythonGeneratorOptions } from "@/lib/python-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -36,7 +37,7 @@ const languages = [
   { value: "dart", label: "Flutter (Dart)", supported: true },
   { value: "kotlin", label: "Kotlin", supported: true },
   { value: "swift", label: "Swift", supported: true },
-  { value: "python", label: "Python", supported: false },
+  { value: "python", label: "Python", supported: true },
   { value: "java", label: "Java", supported: false },
   { value: "csharp", label: "C#", supported: false },
   { value: "typescript", label: "TypeScript", supported: false },
@@ -148,6 +149,22 @@ const initialSwiftOptions: SwiftGeneratorOptions = {
     dateStrategy: 'iso8601'
 };
 
+const initialPythonOptions: PythonGeneratorOptions = {
+    dataclass: true,
+    frozen: false,
+    slots: false,
+    fromDict: true,
+    toDict: true,
+    typeHints: true,
+    defaultValues: false,
+    camelCaseToSnakeCase: true,
+    includeRepr: true,
+    includeEq: true,
+    includeHash: false,
+    nestedClasses: true,
+    sampleInstance: false, // Default to false for now
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -184,6 +201,7 @@ export default function ModelForgeClient() {
   const [dartOptions, setDartOptions] = useState<DartGeneratorOptions>(initialDartOptions);
   const [kotlinOptions, setKotlinOptions] = useState<KotlinGeneratorOptions>(initialKotlinOptions);
   const [swiftOptions, setSwiftOptions] = useState<SwiftGeneratorOptions>(initialSwiftOptions);
+  const [pythonOptions, setPythonOptions] = useState<PythonGeneratorOptions>(initialPythonOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -288,6 +306,8 @@ export default function ModelForgeClient() {
             result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
           } else if (selectedLanguage === "swift") {
             result = generateSwiftCode(parsedJson, rootClassName, swiftOptions);
+          } else if (selectedLanguage === "python") {
+            result = generatePythonCode(parsedJson, rootClassName, pythonOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -340,7 +360,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -507,6 +527,14 @@ export default function ModelForgeClient() {
                     <FilterButton checked={swiftOptions.isCustomStringConvertible} onClick={() => handleToggleSwiftOption('isCustomStringConvertible')} label="Debug Description" />
                     <FilterButton checked={swiftOptions.generateSampleData} onClick={() => handleToggleSwiftOption('generateSampleData')} label="Sample Data" />
                 </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'python' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">Python options coming soon...</p>
             </CardContent>
         </Card>
       )}
