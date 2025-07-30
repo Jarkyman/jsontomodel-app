@@ -35,29 +35,40 @@ function isIsoDateString(value: any): boolean {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value);
 }
 
-function getPhpType(value: any, key: string, classes: Map<string, string>, options: PhpGeneratorOptions): string {
-    if (value === null) return 'mixed';
-    if (isIsoDateString(value)) return '\\DateTimeImmutable';
-    
-    const type = typeof value;
-    if (type === 'string') return 'string';
-    if (type === 'number') return value % 1 === 0 ? 'int' : 'float';
-    if (type === 'boolean') return 'bool';
-    if (Array.isArray(value)) {
-        if (value.length === 0) return 'array';
-        const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        const listType = getPhpType(value[0], singularKey, classes, options);
-        if (listType === 'mixed' || listType === 'array') return 'array';
-        return `array`; // Docblock will specify the type
-    }
-    if (type === 'object') {
-        const className = toPascalCase(key);
-        if (!classes.has(className)) {
-            generateClass(className, value, classes, options);
+function getPhpType(value: any, key: string, classes: Map<string, string>, options: PhpGeneratorOptions): { type: string, isObject: boolean, isObjectArray: boolean } {
+    let isObject = false;
+    let isObjectArray = false;
+    let type: string;
+
+    if (value === null) {
+        type = 'mixed';
+    } else if (isIsoDateString(value)) {
+        type = '\\DateTimeImmutable';
+    } else {
+        const valueType = typeof value;
+        if (valueType === 'string') {
+            type = 'string';
+        } else if (valueType === 'number') {
+            type = value % 1 === 0 ? 'int' : 'float';
+        } else if (valueType === 'boolean') {
+            type = 'bool';
+        } else if (Array.isArray(value)) {
+            type = 'array';
+            if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                isObjectArray = true;
+            }
+        } else if (valueType === 'object') {
+            const className = toPascalCase(key);
+            if (!classes.has(className)) {
+                generateClass(className, value, classes, options);
+            }
+            type = className;
+            isObject = true;
+        } else {
+            type = 'mixed';
         }
-        return className;
     }
-    return 'mixed';
+    return { type, isObject, isObjectArray };
 }
 
 function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: PhpGeneratorOptions): void {
@@ -67,20 +78,20 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     let classString = `<?php\n\ndeclare(strict_types=1);\n\n`;
     classString += `${final}class ${className}\n{\n`;
 
-    const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
+    const fields: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }[] = [];
     for (const key in jsonObject) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
-        const phpType = getPhpType(jsonObject[key], key, classes, options);
-        fields.push({ name: fieldName, type: phpType, originalKey: key, value: jsonObject[key] });
+        const { type: phpType, isObject, isObjectArray } = getPhpType(jsonObject[key], key, classes, options);
+        fields.push({ name: fieldName, type: phpType, originalKey: key, isObject, isObjectArray });
     }
 
     if (options.constructorPropertyPromotion) {
         classString += `    public function __construct(\n`;
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'public readonly ' : 'public ';
-            const nullable = field.value === null || field.type.startsWith('\\') || !options.typedProperties ? '?' : '';
-            const type = options.typedProperties ? `${nullable}${field.type}` : '';
+            // Properties are always nullable `?` to safely handle missing keys from JSON.
+            const type = options.typedProperties ? `?${field.type}` : '';
             classString += `        ${readonly}${type} $${field.name},\n`;
         }
         if (fields.length > 0) {
@@ -91,13 +102,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // Traditional properties and constructor
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'readonly ' : '';
-            const nullable = field.value === null || field.type.startsWith('\\') || !options.typedProperties ? '?' : '';
-            const type = options.typedProperties ? `${nullable}${field.type}` : 'mixed';
+            const type = options.typedProperties ? `?${field.type}` : 'mixed';
             classString += `    public ${readonly}${type} $${field.name};\n`;
         }
         classString += `\n    public function __construct(array $data)\n    {\n`;
         for (const field of fields) {
-            classString += `        $this->${field.name} = $data['${field.originalKey}'];\n`;
+             const key = field.originalKey;
+             const {parsingLogic} = getParsingLogic(field, key);
+             classString += `        $this->${field.name} = ${parsingLogic};\n`;
         }
         classString += `    }\n`;
     }
@@ -108,21 +120,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `        return new self(\n`;
         for (const field of fields) {
             const key = field.originalKey;
-            const fieldName = field.name;
-            const fieldType = field.type;
-            const value = field.value;
-
-            let parsingLogic = `$data['${key}'] ?? null`;
-            if (fieldType === '\\DateTimeImmutable') {
-                 parsingLogic = `isset($data['${key}']) ? new \\DateTimeImmutable($data['${key}']) : null`;
-            } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                parsingLogic = `isset($data['${key}']) ? array_map(fn($item) => ${singularType}::fromArray($item), $data['${key}']) : null`;
-            } else if (typeof value === 'object' && value !== null) {
-                 parsingLogic = `isset($data['${key}']) ? ${fieldType}::fromArray($data['${key}']) : null`;
-            }
-
-            classString += `            ${options.constructorPropertyPromotion ? '' : `/* ${fieldName}: */ `}${parsingLogic},\n`;
+            const { parsingLogic } = getParsingLogic(field, key, 'data');
+            
+            classString += `            ${parsingLogic},\n`;
         }
         if (fields.length > 0) {
             classString = classString.slice(0, -2);
@@ -135,26 +135,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `\n    public function toArray(): array\n    {\n        return [\n`;
         for (const field of fields) {
              const key = field.originalKey;
-             const fieldName = field.name;
-             const value = field.value;
-
-             let serializingLogic = `$this->${fieldName}`;
-             if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                 serializingLogic = `isset($this->${fieldName}) ? array_map(fn($item) => $item->toArray(), $this->${fieldName}) : null`;
-             } else if (typeof value === 'object' && value !== null) {
-                 serializingLogic = `$this->${fieldName}?->toArray()`;
-             } else if (field.type === '\\DateTimeImmutable') {
-                 serializingLogic = `$this->${fieldName}?->format(DateTimeInterface::ATOM)`;
-             }
-
-            classString += `            '${key}' => ${serializingLogic},\n`;
+             const { serializingLogic } = getSerializingLogic(field);
+             classString += `            '${key}' => ${serializingLogic},\n`;
         }
         classString += `        ];\n    }\n`;
     }
 
     classString += '}\n';
 
-    // Store the main class first
     classes.set(className, classString);
 
     // Generate dependent classes
@@ -172,6 +160,30 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 }
 
+function getParsingLogic(field: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }, key: string, dataVar: string = 'data') {
+    let parsingLogic = `$${dataVar}['${key}'] ?? null`;
+    if (field.type === '\\DateTimeImmutable') {
+         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
+    } else if (field.isObjectArray) {
+        const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        parsingLogic = `isset($${dataVar}['${key}']) ? array_map(fn($item) => ${singularType}::fromArray($item), $${dataVar}['${key}']) : null`;
+    } else if (field.isObject) {
+         parsingLogic = `isset($${dataVar}['${key}']) ? ${field.type}::fromArray($${dataVar}['${key}']) : null`;
+    }
+    return { parsingLogic };
+}
+
+function getSerializingLogic(field: { name: string, type: string, isObject: boolean, isObjectArray: boolean }) {
+    let serializingLogic = `$this->${field.name}`;
+    if (field.isObjectArray) {
+        serializingLogic = `isset($this->${field.name}) ? array_map(fn($item) => $item->toArray(), $this->${field.name}) : null`;
+    } else if (field.isObject) {
+        serializingLogic = `$this->${field.name}?->toArray()`;
+    } else if (field.type === '\\DateTimeImmutable') {
+        serializingLogic = `$this->${field.name}?->format(DateTimeInterface::ATOM)`;
+    }
+    return { serializingLogic };
+}
 
 export function generatePhpCode(
     json: any,
@@ -189,19 +201,20 @@ export function generatePhpCode(
     
     const orderedClasses = Array.from(classes.keys()).reverse();
 
-    // The first class in the file should not start with <?php
     const classDefs = orderedClasses.map((name, index) => {
-        const code = classes.get(name) || '';
-        let finalCode = code;
+        let code = classes.get(name) || '';
         
-        if (finalCode.includes('\\DateTimeImmutable') && !finalCode.includes('DateTimeInterface')) {
-             finalCode = finalCode.replace('<?php', '<?php\n\nuse DateTimeInterface;');
+        const hasDateTime = code.includes('\\DateTimeImmutable');
+        const needsInterface = code.includes('?->format(DateTimeInterface::ATOM)');
+
+        if (needsInterface && !code.includes('use DateTimeInterface;')) {
+             code = code.replace('<?php', '<?php\n\nuse DateTimeInterface;');
         }
 
         if (index > 0) {
-            return finalCode.replace(/<\?php\s*\n\n(use\s+DateTimeInterface;\s*\n\n)?declare\(strict_types=1\);\s*\n\n/, '');
+            return code.replace(/<\?php\s*\n\n(use\s+DateTimeInterface;\s*\n\n)?declare\(strict_types=1\);\s*\n\n/, '');
         }
-        return finalCode;
+        return code;
     });
 
     return classDefs.join('\n');
