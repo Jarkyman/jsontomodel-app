@@ -12,13 +12,20 @@ const defaultOptions: ElixirGeneratorOptions = {
   includeStruct: true,
 };
 
+// Better snake_case converter: handles camelCase, PascalCase, and mixed cases
 function toSnakeCase(str: string): string {
-  // Handles camelCase and PascalCase
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`).replace(/^_/, '');
+  return str
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')  // handle camelCase boundaries
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2') // handle ABCDef => ABC_Def
+    .toLowerCase();
 }
 
 function toPascalCase(str: string): string {
   return str.replace(/(?:^|_)(\w)/g, (_, c) => c.toUpperCase());
+}
+
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 }
 
 function inferElixirType(value: any): string {
@@ -43,17 +50,16 @@ function generateElixirModule(
   options: ElixirGeneratorOptions,
   modules: Map<string, string>
 ) {
-  const moduleName = toPascalCase(name);
+  const moduleName = toPascalCase(name); // Always PascalCase for module names
 
-  // avoid duplicate generation
   if (modules.has(moduleName)) return;
 
   const fields: string[] = [];
   const types: string[] = [];
 
-  for (const [key, value] of Object.entries(json)) {
-    const fieldName = options.useSnakeCase ? toSnakeCase(key) : key;
-    const typeName = options.useSnakeCase ? toSnakeCase(key) : key; // This is the fix
+  for (const [rawKey, value] of Object.entries(json)) {
+    const fieldName = options.useSnakeCase ? toSnakeCase(rawKey) : toCamelCase(rawKey);
+    const typeName = options.useSnakeCase ? toSnakeCase(rawKey) : toCamelCase(rawKey);
 
     const type = options.includeTypes ? `:: ${inferElixirType(value)}` : '';
     const defaultValue = options.defaultValues ? ` # default: ${formatDefaultValue(value)}` : '';
@@ -66,37 +72,36 @@ function generateElixirModule(
       types.push(`  @type ${typeName} ${type}`);
     }
 
-    // handle nested object
+    // Handle nested object
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      const nestedModuleName = `${name}_${key}`;
+      const nestedModuleName = `${name}_${rawKey}`;
       generateElixirModule(nestedModuleName, value, options, modules);
     }
 
-    // handle array of objects
+    // Handle array of objects
     if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-      const nestedModuleName = `${name}_${key.endsWith("s") ? key.slice(0, -1) : key}`;
+      const nestedModuleName = `${name}_${rawKey.endsWith('s') ? rawKey.slice(0, -1) : rawKey}`;
       generateElixirModule(nestedModuleName, value[0], options, modules);
     }
   }
 
   let code = `defmodule ${moduleName} do\n`;
 
-  if (options.includeTypes && types.length > 0) {
+  if (types.length > 0) {
     code += types.join('\n') + '\n\n';
   }
 
-  if (options.includeStruct && fields.length > 0) {
+  if (fields.length > 0) {
     code += `  defstruct [\n${fields.join(',\n')}\n  ]\n`;
-  } else if (!options.includeTypes) {
-    // If no types and no struct, ensure the module is not empty
+  } else if (types.length === 0) {
     code += `  # Module generated for ${moduleName}\n`;
   }
 
+  code += `end\n`; // ✅ Make sure this comes *before* modules.set()
 
-  code += `end\n`;
-
-  modules.set(moduleName, code);
+  modules.set(moduleName, code); // ✅ Now safe to store the module
 }
+
 
 export function generateElixirCode(
   json: any,
@@ -106,7 +111,8 @@ export function generateElixirCode(
   if (typeof json !== 'object' || json === null) {
     throw new Error('Invalid JSON object');
   }
-   if (Object.keys(json).length === 0) {
+
+  if (Object.keys(json).length === 0) {
     return `defmodule ${toPascalCase(rootName)} do\nend\n`;
   }
 
