@@ -234,7 +234,7 @@ const initialJavascriptOptions: JavaScriptGeneratorOptions = {
 
 const initialCppOptions: CppGeneratorOptions = {
   namespace: "DataModels",
-  usePointersForNull: true,
+  usePointersForNull: false,
   cppVersion: "17",
 };
 
@@ -549,8 +549,8 @@ export default function ModelForgeClient() {
     setJavascriptOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
-  const handleToggleCppOption = (option: CppOptionKey) => {
-    setCppOptions(prev => ({ ...prev, [option]: !prev[option] }));
+  const handleCppOption = (option: keyof CppGeneratorOptions, value: any) => {
+    setCppOptions(prev => ({ ...prev, [option]: value }));
   };
 
 
@@ -788,12 +788,33 @@ export default function ModelForgeClient() {
 
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
-            <CardContent className="p-6">
+          <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <p className="text-sm text-muted-foreground">C++ options coming soon!</p>
+                  <FilterButton 
+                      checked={cppOptions.usePointersForNull} 
+                      onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
+                      label="Use Pointers (Legacy)"
+                      disabled={true}
+                  />
+                   <p className="text-xs text-muted-foreground w-full text-center">Modern C++ uses std::optional by default, which is recommended over pointers.</p>
               </div>
-            </CardContent>
-        </Card>
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                  <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
+                  <Select 
+                      value={cppOptions.cppVersion} 
+                      onValueChange={(value) => handleCppOption('cppVersion', value as '17' | '20')}
+                  >
+                      <SelectTrigger className="w-auto">
+                          <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="17">C++17</SelectItem>
+                          <SelectItem value="20">C++20</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
+          </CardContent>
+      </Card>
       )}
 
 
@@ -877,7 +898,7 @@ export default function ModelForgeClient() {
                     </pre>
                 </div>
               ) : (
-                <div className="h-full items-center justify-center text-center text-muted-foreground">
+                <div className="h-full flex items-center justify-center text-center text-muted-foreground">
                   <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your generated model will appear here.'}</p>
                 </div>
               )}
@@ -888,3 +909,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    

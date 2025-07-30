@@ -60,12 +60,8 @@ describe('generateCppCode', () => {
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Inventory, item_id, quantity);');
     });
 
-    it('should handle empty JSON object', () => {
-        const generated = generateCppCode({}, 'Empty', defaultOptions);
-        const normGenerated = normalize(generated);
-
-        expect(normGenerated).toContain('struct Empty { };');
-        expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Empty);');
+    it('should handle empty JSON object by throwing an error', () => {
+        expect(() => generateCppCode({}, 'Empty', defaultOptions)).toThrow("Invalid or empty JSON object provided.");
     });
 
     it('should handle JSON with only null values', () => {
@@ -88,3 +84,5 @@ describe('generateCppCode', () => {
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EmptyList, empty_list);');
     });
 });
+
+    

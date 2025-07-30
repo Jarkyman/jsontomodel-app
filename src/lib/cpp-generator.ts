@@ -100,7 +100,7 @@ function collectAllStructs(json: any, rootStructName: string, options: CppGenera
     const structsToProcess = new Set<string>();
 
     function process(structName: string, currentJson: any) {
-        if (allStructs.has(structName)) {
+        if (allStructs.has(structName) || !currentJson || typeof currentJson !== 'object') {
             return;
         }
 
@@ -108,25 +108,25 @@ function collectAllStructs(json: any, rootStructName: string, options: CppGenera
         const { structDef, conversionDef } = generateStruct(structName, currentJson, identifiedSubStructs, options);
         allStructs.set(structName, { structDef, conversionDef });
 
-        for (const subStructName of identifiedSubStructs) {
+        identifiedSubStructs.forEach(subStructName => {
             const subJson = findJsonForStruct(subStructName, json);
             if (subJson) {
                 process(subStructName, subJson);
             }
-        }
+        });
     }
-
+    
     function findJsonForStruct(structName: string, currentJson: any): any {
         for (const key in currentJson) {
             const pascalKey = toPascalCase(key);
-            if (pascalKey === structName && typeof currentJson[key] === 'object' && !Array.isArray(currentJson[key])) {
+            if (pascalKey === structName && typeof currentJson[key] === 'object' && currentJson[key] !== null && !Array.isArray(currentJson[key])) {
                 return currentJson[key];
             }
-             const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+            const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
             if (singularPascalKey === structName && Array.isArray(currentJson[key]) && currentJson[key].length > 0) {
                 return currentJson[key][0];
             }
-             if (typeof currentJson[key] === 'object' && currentJson[key] !== null) {
+            if (typeof currentJson[key] === 'object' && currentJson[key] !== null) {
                 const result = findJsonForStruct(structName, currentJson[key]);
                 if (result) return result;
             }
@@ -152,10 +152,8 @@ export function generateCppCode(
     const allStructs = collectAllStructs(json, finalRootClassName, options);
     const orderedStructNames = Array.from(allStructs.keys()).reverse();
 
-    let header = `
-#pragma once
+    let header = `#pragma once
 
-#include <iostream>
 #include <string>
 #include <vector>
 #include <optional>
@@ -194,3 +192,5 @@ using nlohmann::json;
 
     return header;
 }
+
+    
