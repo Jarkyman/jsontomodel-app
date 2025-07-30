@@ -87,12 +87,24 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 
     if (options.constructorPropertyPromotion) {
+        
+        const docBlockParams = fields
+            .filter(field => field.isObjectArray)
+            .map(field => {
+                const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
+                return `     * @param ${singularType}[]|null $${field.name}`;
+            });
+
+        if (docBlockParams.length > 0) {
+            classString += `    /**\n${docBlockParams.join('\n')}\n     */\n`;
+        }
+        
         classString += `    public function __construct(\n`;
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'public readonly ' : 'public ';
             const type = options.typedProperties ? `?${field.type}` : '';
             
-            if (field.isObjectArray) {
+            if (field.isObjectArray && !docBlockParams.some(p => p.includes(`$${field.name}`))) {
                 const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
                 classString += `        /** @var ${singularType}[]|null */\n`;
             }
@@ -176,7 +188,7 @@ function getParsingLogic(field: { name: string, type: string, originalKey: strin
         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
     } else if (field.isObjectArray) {
         const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        parsingLogic = `isset($${dataVar}['${key}']) ? array_map(fn($item) => ${singularType}::fromArray($item), $${dataVar}['${key}']) : null`;
+        parsingLogic = `is_array($${dataVar}['${key}'] ?? null) ? array_map(fn($item) => ${singularType}::fromArray($item), $${dataVar}['${key}']) : null`;
     } else if (field.isObject) {
         parsingLogic = `isset($${dataVar}['${key}']) ? ${field.type}::fromArray($${dataVar}['${key}']) : null`;
     } else {

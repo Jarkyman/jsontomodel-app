@@ -10,7 +10,14 @@ const fullJsonInput = {
         "newsletter": false,
     },
     "roles": ["admin", "editor"],
-    "profile_picture": null
+    "profile_picture": null,
+    "projects": [
+      {
+        "id": "p1",
+        "name": "Project X"
+      }
+    ],
+    "nullable_projects": null
 };
 
 const defaultOptions: PhpGeneratorOptions = {
@@ -33,18 +40,22 @@ describe('generatePhpCode', () => {
         // Check for correct class structure
         expect(normGenerated).toContain('final class UserData');
         
-        // Check for constructor property promotion syntax
-        expect(normGenerated).toContain('public function __construct( public readonly ?int $id, public readonly ?string $name, public readonly ?bool $isActive, public readonly ?\\DateTimeImmutable $createdAt, public readonly ?Preferences $preferences, public readonly ?array $roles, public readonly mixed $profilePicture, )');
+        // Check for constructor property promotion syntax and @param docblock
+        expect(normGenerated).toContain('/** * @param Project[]|null $projects */');
+        expect(normGenerated).toContain('public function __construct( public readonly ?int $id, public readonly ?string $name, public readonly ?bool $isActive, public readonly ?\\DateTimeInterface $createdAt, public readonly ?Preferences $preferences, public readonly ?array $roles, public readonly mixed $profilePicture, public readonly ?array $projects, public readonly mixed $nullableProjects, )');
 
         // Check for fromArray method
         expect(normGenerated).toContain('public static function fromArray(array $data): self');
-        expect(normGenerated).toContain("new \\DateTimeImmutable($data['created_at'])");
-        expect(normGenerated).toContain("Preferences::fromArray($data['preferences'])");
+        expect(normGenerated).toContain("isset($data['created_at']) ? new \\DateTimeImmutable($data['created_at']) : null");
+        expect(normGenerated).toContain("isset($data['preferences']) ? Preferences::fromArray($data['preferences']) : null");
+        expect(normGenerated).toContain("is_array($data['projects'] ?? null) ? array_map(fn($item) => Project::fromArray($item), $data['projects']) : null");
+
 
         // Check for toArray method
         expect(normGenerated).toContain('public function toArray(): array');
         expect(normGenerated).toContain("'created_at' => $this->createdAt?->format(DateTimeInterface::ATOM)");
         expect(normGenerated).toContain("'preferences' => $this->preferences?->toArray()");
+        expect(normGenerated).toContain("'projects' => isset($this->projects) ? array_map(fn($item) => $item->toArray(), $this->projects) : null");
 
         // Check nested class
         expect(normGenerated).toContain('final class Preferences');
@@ -58,7 +69,7 @@ describe('generatePhpCode', () => {
         
         expect(normGenerated).toContain('public readonly ?string $name;');
         expect(normGenerated).toContain('public function __construct(array $data)');
-        expect(normGenerated).toContain('$this->name = $data[\'name\'];');
+        expect(normGenerated).toContain('$this->name = $data[\'name\'] ?? null;');
     });
 
     it('should generate non-final, non-readonly classes', () => {
@@ -88,6 +99,15 @@ describe('generatePhpCode', () => {
         expect(normGenerated).not.toContain('fromArray');
         expect(normGenerated).not.toContain('toArray');
     });
-});
 
-    
+    it('should handle null values for arrays safely', () => {
+        const jsonWithNullArray = {
+            "items": null
+        };
+        const generated = generatePhpCode(jsonWithNullArray, 'Container', defaultOptions);
+        const normGenerated = normalize(generated);
+        
+        // Ensure fromArray uses the safe check
+        expect(normGenerated).toContain("is_array($data['items'] ?? null) ? array_map(fn($item) => Item::fromArray($item), $data['items']) : null");
+    });
+});
