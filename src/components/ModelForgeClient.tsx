@@ -17,6 +17,7 @@ import { generateDartCode, DartGeneratorOptions } from "@/lib/dart-generator";
 import { generateKotlinCode, KotlinGeneratorOptions } from "@/lib/kotlin-generator";
 import { generateSwiftCode, SwiftGeneratorOptions } from "@/lib/swift-generator";
 import { generatePythonCode, PythonGeneratorOptions } from "@/lib/python-generator";
+import { generateJavaCode, JavaGeneratorOptions } from "@/lib/java-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -165,11 +166,26 @@ const initialPythonOptions: PythonGeneratorOptions = {
     sampleInstance: false,
 };
 
+const initialJavaOptions: JavaGeneratorOptions = {
+    getters: true,
+    setters: false,
+    constructor: true,
+    noArgsConstructor: true,
+    builder: true,
+    equalsHashCode: true,
+    toString: true,
+    snakeCase: true,
+    nested: true,
+    finalFields: true,
+    jsonAnnotations: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
 type SwiftOptionKey = keyof SwiftGeneratorOptions;
 type PythonOptionKey = keyof PythonGeneratorOptions;
+type JavaOptionKey = keyof JavaGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -203,6 +219,7 @@ export default function ModelForgeClient() {
   const [kotlinOptions, setKotlinOptions] = useState<KotlinGeneratorOptions>(initialKotlinOptions);
   const [swiftOptions, setSwiftOptions] = useState<SwiftGeneratorOptions>(initialSwiftOptions);
   const [pythonOptions, setPythonOptions] = useState<PythonGeneratorOptions>(initialPythonOptions);
+  const [javaOptions, setJavaOptions] = useState<JavaGeneratorOptions>(initialJavaOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -309,6 +326,8 @@ export default function ModelForgeClient() {
             result = generateSwiftCode(parsedJson, rootClassName, swiftOptions);
           } else if (selectedLanguage === "python") {
             result = generatePythonCode(parsedJson, rootClassName, pythonOptions);
+          } else if (selectedLanguage === "java") {
+            result = generateJavaCode(parsedJson, rootClassName, javaOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -361,7 +380,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
