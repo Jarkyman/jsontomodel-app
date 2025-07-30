@@ -35,7 +35,7 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
     let baseType: string;
 
     if (value === null) {
-        baseType = 'null';
+        baseType = 'any';
     } else if (isIsoDateString(value)) {
         baseType = 'Date | string';
     } else {
@@ -52,7 +52,13 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
             } else {
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                 const listType = getTypescriptType(value[0], singularKey, types, options);
-                baseType = `${listType}[]`;
+                
+                // If the inner type is a union (e.g., from allowNulls), wrap it in parentheses.
+                if (listType.includes('|')) {
+                    baseType = `(${listType})[]`;
+                } else {
+                    baseType = `${listType}[]`;
+                }
             }
         } else if (type === 'object') {
             const typeName = toPascalCase(key);
@@ -65,14 +71,18 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
         }
     }
 
-    if (options.allowNulls && baseType !== 'null' && baseType !== 'any') {
+    if (options.allowNulls && baseType !== 'null' && baseType !== 'any' && !baseType.endsWith(' | null')) {
         if (baseType.endsWith('[]')) {
             const arrayType = baseType.slice(0, -2);
             // Handle cases like string[] to (string | null)[]
-            return `(${arrayType})[] | null`;
+             if(arrayType.startsWith('(') && arrayType.endsWith(')')) {
+                 return `${arrayType.slice(0, -1)} | null)[] | null`;
+             }
+             return `(${arrayType} | null)[] | null`;
         }
         return `${baseType} | null`;
     }
+
     return baseType;
 }
 
@@ -148,7 +158,3 @@ export function generateTypescriptCode(
 
     return finalCode;
 }
-
-    
-
-    
