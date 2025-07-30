@@ -271,7 +271,7 @@ const initialObjcOptions: ObjCGeneratorOptions = {
   properties: true,
   initializers: true,
   nullability: true,
-  snakeCase: true,
+  toCamelCase: true,
   rootClassPrefix: "",
 };
 
@@ -987,7 +987,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={objcOptions.properties} onClick={() => handleObjcOption('properties', !objcOptions.properties)} label="@property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleObjcOption('initializers', !objcOptions.initializers)} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleObjcOption('nullability', !objcOptions.nullability)} label="Nullability" />
-                <FilterButton checked={objcOptions.snakeCase} onClick={() => handleObjcOption('snakeCase', !objcOptions.snakeCase)} label="snake_case" />
+                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>

@@ -15,7 +15,7 @@ const defaultOptions: ObjCGeneratorOptions = {
     properties: true,
     initializers: true,
     nullability: true,
-    snakeCase: true,
+    toCamelCase: true,
     rootClassPrefix: "DM"
 };
 
@@ -23,7 +23,7 @@ const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateObjCCode', () => {
 
-    it('should generate correct Objective-C code with default options (snakeCase: true -> camelCase)', () => {
+    it('should generate correct Objective-C code with default options (toCamelCase: true)', () => {
         const generated = generateObjCCode(fullJsonInput, 'User', defaultOptions);
         const normGenerated = normalize(generated);
 
@@ -51,8 +51,8 @@ describe('generateObjCCode', () => {
         expect(normGenerated).toContain('@property (nonatomic, strong, ) NSString *name;');
     });
     
-    it('should preserve snake_case when snakeCase option is false', () => {
-        const options = { ...defaultOptions, snakeCase: false };
+    it('should preserve snake_case when toCamelCase option is false', () => {
+        const options = { ...defaultOptions, toCamelCase: false };
         const generated = generateObjCCode({ "user_name": "test" }, 'User', options);
         const normGenerated = normalize(generated);
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSString *user_name;');
@@ -81,8 +81,8 @@ describe('generateObjCCode', () => {
         expect(() => generateObjCCode("invalid", 'Test', defaultOptions)).toThrow();
     });
 
-    it('should convert to camelCase when snakeCase is true (default)', () => {
-        const options = { ...defaultOptions, snakeCase: true };
+    it('should convert to camelCase when toCamelCase is true (default)', () => {
+        const options = { ...defaultOptions, toCamelCase: true };
         const generated = generateObjCCode({ "user_name": "test" }, 'User', options);
         const normGenerated = normalize(generated);
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSString *userName;');

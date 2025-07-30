@@ -3,7 +3,7 @@ export interface ObjCGeneratorOptions {
     properties: boolean;        // Use @property declarations
     initializers: boolean;      // Generate -initWith... method
     nullability: boolean;       // Annotate with nullable/nonnull
-    snakeCase: boolean;         // Convert snake_case to camelCase
+    toCamelCase: boolean;         // Convert snake_case to camelCase
     rootClassPrefix: string;    // Optional prefix like "DM"
   }
   
@@ -11,7 +11,7 @@ export interface ObjCGeneratorOptions {
     properties: true,
     initializers: true,
     nullability: true,
-    snakeCase: true,
+    toCamelCase: true,
     rootClassPrefix: "",
   };
   
@@ -47,7 +47,7 @@ export interface ObjCGeneratorOptions {
     for (const key in jsonObject) {
       if (!key) continue;
       const rawValue = jsonObject[key];
-      const objcName = options.snakeCase ? toCamelCase(key) : key;
+      const objcName = options.toCamelCase ? toCamelCase(key) : key;
       let type = getObjCType(rawValue);
   
       // Custom class handling
