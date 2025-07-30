@@ -78,4 +78,11 @@ describe('generateObjCCode', () => {
     it('should throw an error for invalid JSON', () => {
         expect(() => generateObjCCode("invalid", 'Test', defaultOptions)).toThrow();
     });
+
+    it('should use camelCase when snakeCase is true', () => {
+        const options = { ...defaultOptions, snakeCase: true };
+        const generated = generateObjCCode({ "user_name": "test" }, 'User', options);
+        const normGenerated = normalize(generated);
+        expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSString *userName;');
+    });
 });
