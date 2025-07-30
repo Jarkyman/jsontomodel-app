@@ -50,6 +50,16 @@ const languages = [
   { value: "go", label: "Go", supported: true },
   { value: "php", label: "PHP", supported: true },
   { value: "javascript", label: "JavaScript", supported: true },
+  { value: "cpp", label: "C++", supported: false },
+  { value: "vbnet", label: "Visual Basic", supported: false },
+  { value: "rust", label: "Rust", supported: false },
+  { value: "ruby", label: "Ruby", supported: false },
+  { value: "r", label: "R", supported: false },
+  { value: "objectivec", label: "Objective-C", supported: false },
+  { value: "sql", label: "SQL", supported: false },
+  { value: "elixir", label: "Elixir", supported: false },
+  { value: "erlang", label: "Erlang", supported: false },
+  { value: "scala", label: "Scala", supported: false },
 ];
 
 const kotlinSerializationLibraries = [
@@ -569,7 +579,7 @@ export default function ModelForgeClient() {
           Json To Model
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Instantly generate data models from any JSON structure. Select your language and forge your code.
+          Instantly generate data models for over 20 languages from any JSON structure. Select your language and forge your code.
         </p>
       </header>
 
