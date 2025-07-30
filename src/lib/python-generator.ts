@@ -83,8 +83,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (options.frozen) dataclassArgs.push('frozen=True');
     if (options.slots) dataclassArgs.push('slots=True');
     
-    // dataclasses implicitly handle repr and eq, these options turn them off.
-    // Hash is opt-in.
     if (!options.includeRepr) dataclassArgs.push('repr=False');
     if (!options.includeEq) dataclassArgs.push('eq=False');
     if (options.includeHash) dataclassArgs.push('unsafe_hash=True');
@@ -186,7 +184,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 export function generatePythonCode(
     json: any,
     rootClassName: string = 'DataModel',
-    options: PythonGeneratorOptions = defaultOptions
+    options: PythonGeneratorOptions
 ): string {
     if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
         throw new Error("Invalid or empty JSON object provided.");
@@ -198,7 +196,6 @@ export function generatePythonCode(
 
     generateClass(finalRootClassName, rootJson, classes, options);
     
-    // Find nested classes to determine imports
     const codeString = Array.from(classes.values()).join('\n');
     const needsTyping = options.typeHints && (codeString.includes('Optional[') || codeString.includes('List[') || codeString.includes('Dict[') || codeString.includes('Any'));
     const needsDatetime = codeString.includes('datetime');
@@ -218,7 +215,6 @@ export function generatePythonCode(
     imports += `\n`;
 
 
-    // Order classes correctly
     function findJsonForClass(className: string, currentJson: any, currentName: string): any {
         if (toPascalCase(currentName) === className) {
             return currentJson;
@@ -246,7 +242,6 @@ export function generatePythonCode(
     const orderedClasses = Array.from(classes.keys()).reverse();
     const finalClasses = new Map<string, string>();
 
-    // This re-generation ensures the order is correct for nested classes
     for (const className of orderedClasses) {
         const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
         if (jsonSource) {
@@ -254,8 +249,6 @@ export function generatePythonCode(
         }
     }
 
-    // Now, let's create the final string with classes in the correct dependency order.
-    // The reversed `orderedClasses` list gives us the correct order.
     const finalCode = orderedClasses
       .map(name => finalClasses.get(name))
       .filter(Boolean)
