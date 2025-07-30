@@ -248,6 +248,7 @@ const initialVbNetOptions: VbNetGeneratorOptions = {
 const initialRustOptions: RustGeneratorOptions = {
     deriveClone: true,
     publicFields: true,
+    useSerdeDefault: false,
 };
 
 
@@ -573,6 +574,8 @@ export default function ModelForgeClient() {
     setCppOptions(prev => {
         const newOptions = { ...prev, [option]: value };
         if (option === 'cppVersion') {
+            // When switching to C++03, legacy pointers are necessary.
+            // When switching away, std::optional is preferred.
             newOptions.usePointersForNull = value === '03';
         }
         return newOptions;
@@ -877,6 +880,11 @@ export default function ModelForgeClient() {
                 onClick={() => handleToggleRustOption('publicFields')} 
                 label="Public Fields"
               />
+              <FilterButton
+                checked={rustOptions.useSerdeDefault}
+                onClick={() => handleToggleRustOption('useSerdeDefault')}
+                label="Use `#[serde(default)]`"
+               />
             </div>
           </CardContent>
         </Card>

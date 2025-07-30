@@ -2,11 +2,13 @@
 export interface RustGeneratorOptions {
     deriveClone: boolean;
     publicFields: boolean;
+    useSerdeDefault: boolean;
 }
 
 const defaultOptions: RustGeneratorOptions = {
     deriveClone: true,
     publicFields: true,
+    useSerdeDefault: false,
 };
 
 function toPascalCase(str: string): string {
@@ -66,7 +68,8 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     }
 
     for (const field of fields) {
-        structString += `    #[serde(rename = "${field.originalKey}")]\n`;
+        const serdeDefault = options.useSerdeDefault ? ', default' : '';
+        structString += `    #[serde(rename = "${field.originalKey}"${serdeDefault})]\n`;
         const pubKeyword = options.publicFields ? 'pub ' : '';
         structString += `    ${pubKeyword}${field.name}: Option<${field.type}>,\n\n`;
     }
@@ -122,7 +125,7 @@ function findJsonForClass(className: string, currentJson: any, currentName: stri
 export function generateRustCode(
     json: any,
     rootStructName: string = 'DataModel',
-    options: RustGeneratorOptions = defaultOptions,
+    options: RustGeneratorOptions
 ): string {
     if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
         throw new Error("Invalid or empty JSON object provided.");

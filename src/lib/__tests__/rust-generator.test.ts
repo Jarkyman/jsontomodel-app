@@ -17,12 +17,14 @@ const fullJsonInput = {
         { "item_id": 2, "quantity": 5 }
     ],
     "metadata": null,
-    "empty_list": []
+    "empty_list": [],
+    "missing_field": undefined,
 };
 
 const defaultOptions: RustGeneratorOptions = {
     deriveClone: true,
-    publicFields: true
+    publicFields: true,
+    useSerdeDefault: false,
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -63,7 +65,7 @@ describe('generateRustCode', () => {
     });
 
     it('should generate without extra derives when disabled', () => {
-        const options: RustGeneratorOptions = { deriveClone: false, publicFields: true };
+        const options: RustGeneratorOptions = { deriveClone: false, publicFields: true, useSerdeDefault: false };
         const generated = generateRustCode({ id: 1 }, 'Simple', options);
         const normGenerated = normalize(generated);
 
@@ -73,12 +75,20 @@ describe('generateRustCode', () => {
     });
 
     it('should generate with private fields when disabled', () => {
-        const options: RustGeneratorOptions = { deriveClone: true, publicFields: false };
+        const options: RustGeneratorOptions = { deriveClone: true, publicFields: false, useSerdeDefault: false };
         const generated = generateRustCode({ id: 1 }, 'Simple', options);
         const normGenerated = normalize(generated);
 
         expect(normGenerated).toContain('id: Option<i64>,');
         expect(normGenerated).not.toContain('pub id');
+    });
+    
+    it('should include #[serde(default)] when enabled', () => {
+        const options: RustGeneratorOptions = { ...defaultOptions, useSerdeDefault: true };
+        const generated = generateRustCode({ id: 1 }, 'Simple', options);
+        const normGenerated = normalize(generated);
+        
+        expect(normGenerated).toContain('#[serde(rename = "id", default)]');
     });
 
 
