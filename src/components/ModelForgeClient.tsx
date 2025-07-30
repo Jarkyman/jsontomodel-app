@@ -723,8 +723,12 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {/* PHP Options will be added here in a future step */}
-                <p className="text-sm text-muted-foreground">PHP options coming soon!</p>
+                <FilterButton checked={phpOptions.constructorPropertyPromotion} onClick={() => handleTogglePhpOption('constructorPropertyPromotion')} label="Property Promotion" />
+                <FilterButton checked={phpOptions.readonlyProperties} onClick={() => handleTogglePhpOption('readonlyProperties')} label="Readonly Properties" />
+                <FilterButton checked={phpOptions.finalClasses} onClick={() => handleTogglePhpOption('finalClasses')} label="Final Classes" />
+                <FilterButton checked={phpOptions.typedProperties} onClick={() => handleTogglePhpOption('typedProperties')} label="Typed Properties" />
+                <FilterButton checked={phpOptions.fromArray} onClick={() => handleTogglePhpOption('fromArray')} label="fromArray()" />
+                <FilterButton checked={phpOptions.toArray} onClick={() => handleTogglePhpOption('toArray')} label="toArray()" />
               </div>
             </CardContent>
         </Card>

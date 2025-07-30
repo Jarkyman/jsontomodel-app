@@ -79,7 +79,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `    public function __construct(\n`;
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'public readonly ' : 'public ';
-            const nullable = field.value === null ? '?' : '';
+            const nullable = field.value === null || field.type.startsWith('\\') || !options.typedProperties ? '?' : '';
             const type = options.typedProperties ? `${nullable}${field.type}` : '';
             classString += `        ${readonly}${type} $${field.name},\n`;
         }
@@ -91,7 +91,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // Traditional properties and constructor
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'readonly ' : '';
-            const nullable = field.value === null ? '?' : '';
+            const nullable = field.value === null || field.type.startsWith('\\') || !options.typedProperties ? '?' : '';
             const type = options.typedProperties ? `${nullable}${field.type}` : 'mixed';
             classString += `    public ${readonly}${type} $${field.name};\n`;
         }
@@ -112,14 +112,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const fieldType = field.type;
             const value = field.value;
 
-            let parsingLogic = `$data['${key}']`;
+            let parsingLogic = `$data['${key}'] ?? null`;
             if (fieldType === '\\DateTimeImmutable') {
-                 parsingLogic = `$data['${key}'] ? new \\DateTimeImmutable($data['${key}']) : null`;
+                 parsingLogic = `isset($data['${key}']) ? new \\DateTimeImmutable($data['${key}']) : null`;
             } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
                 const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                parsingLogic = `array_map(fn($item) => ${singularType}::fromArray($item), $data['${key}'])`;
+                parsingLogic = `isset($data['${key}']) ? array_map(fn($item) => ${singularType}::fromArray($item), $data['${key}']) : null`;
             } else if (typeof value === 'object' && value !== null) {
-                 parsingLogic = `$data['${key}'] ? ${fieldType}::fromArray($data['${key}']) : null`;
+                 parsingLogic = `isset($data['${key}']) ? ${fieldType}::fromArray($data['${key}']) : null`;
             }
 
             classString += `            ${options.constructorPropertyPromotion ? '' : `/* ${fieldName}: */ `}${parsingLogic},\n`;
@@ -140,7 +140,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
              let serializingLogic = `$this->${fieldName}`;
              if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                 serializingLogic = `array_map(fn($item) => $item->toArray(), $this->${fieldName})`;
+                 serializingLogic = `isset($this->${fieldName}) ? array_map(fn($item) => $item->toArray(), $this->${fieldName}) : null`;
              } else if (typeof value === 'object' && value !== null) {
                  serializingLogic = `$this->${fieldName}?->toArray()`;
              } else if (field.type === '\\DateTimeImmutable') {
@@ -192,13 +192,17 @@ export function generatePhpCode(
     // The first class in the file should not start with <?php
     const classDefs = orderedClasses.map((name, index) => {
         const code = classes.get(name) || '';
-        if (index > 0) {
-            return code.replace(/<\?php\s*\n\ndeclare\(strict_types=1\);\s*\n\n/, '');
+        let finalCode = code;
+        
+        if (finalCode.includes('\\DateTimeImmutable') && !finalCode.includes('DateTimeInterface')) {
+             finalCode = finalCode.replace('<?php', '<?php\n\nuse DateTimeInterface;');
         }
-        return code;
+
+        if (index > 0) {
+            return finalCode.replace(/<\?php\s*\n\n(use\s+DateTimeInterface;\s*\n\n)?declare\(strict_types=1\);\s*\n\n/, '');
+        }
+        return finalCode;
     });
 
     return classDefs.join('\n');
 }
-
-    
