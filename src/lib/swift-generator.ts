@@ -93,9 +93,9 @@ function generateSampleValue(type: string, value: any, options: SwiftGeneratorOp
 function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: SwiftGeneratorOptions): void {
     if (classes.has(className)) return;
 
-    let classString = ``;
+    let classDefinition = ``;
     if (options.isMainActor) {
-        classString += `@MainActor\n`;
+        classDefinition += `@MainActor\n`;
     }
     
     const typeDeclaration = options.useStruct ? 'struct' : 'class';
@@ -106,7 +106,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if(options.isCustomStringConvertible) protocols.push('CustomStringConvertible');
     if(!options.useStruct) protocols.push('ObservableObject');
 
-    classString += `${typeDeclaration} ${className}${protocols.length > 0 ? `: ${protocols.join(', ')}` : ''} {\n`;
+    classDefinition += `${typeDeclaration} ${className}${protocols.length > 0 ? `: ${protocols.join(', ')}` : ''} {\n`;
 
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     for (const key in jsonObject) {
@@ -121,46 +121,55 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             propertyWrapper = `@Published `;
         }
         
-        classString += `    ${propertyWrapper}${keyword} ${fieldName}: ${swiftType}${isOptional}\n`;
+        classDefinition += `    ${propertyWrapper}${keyword} ${fieldName}: ${swiftType}${isOptional}\n`;
         fields.push({ name: fieldName, type: swiftType, originalKey: key, value: jsonObject[key] });
     }
 
     if (options.isCodable && options.generateCodingKeys) {
-        // Only generate CodingKeys if at least one field name differs from its original key
         const needsCodingKeys = fields.some(f => f.name !== f.originalKey);
         if (needsCodingKeys) {
-            classString += `\n    enum CodingKeys: String, CodingKey {\n`;
+            classDefinition += `\n    enum CodingKeys: String, CodingKey {\n`;
             for (const field of fields) {
                 if (field.name === field.originalKey) {
-                    classString += `        case ${field.name}\n`;
+                    classDefinition += `        case ${field.name}\n`;
                 } else {
-                    classString += `        case ${field.name} = "${field.originalKey}"\n`;
+                    classDefinition += `        case ${field.name} = "${field.originalKey}"\n`;
                 }
             }
-            classString += `    }\n`;
+            classDefinition += `    }\n`;
         }
     }
     
     if (options.isCustomStringConvertible) {
-        classString += `\n    var description: String {\n`;
+        classDefinition += `\n    var description: String {\n`;
         const descriptionFields = fields.map(f => `\\(${f.name} ?? "nil")`).join(', ');
-        classString += `        return "${className}(${fields.map(f => `${f.name}: \\(${f.name} ?? "nil")`).join(', ')})"\n`;
-        classString += `    }\n`;
+        classDefinition += `        return "${className}(${fields.map(f => `${f.name}: \\(${f.name} ?? "nil")`).join(', ')})"\n`;
+        classDefinition += `    }\n`;
     }
     
     if (options.generateSampleData) {
-        classString += `\n    static var sample: ${className} {\n`;
-        classString += `        return ${className}(\n`;
+        classDefinition += `\n    static var sample: ${className} {\n`;
+        classDefinition += `        return ${className}(\n`;
         for (const field of fields) {
             const sampleValue = generateSampleValue(field.type, field.value, options);
-            classString += `            ${field.name}: ${sampleValue},\n`;
+            classDefinition += `            ${field.name}: ${sampleValue},\n`;
         }
-        classString += `        )\n`;
-        classString += `    }\n`;
+        classDefinition += `        )\n`;
+        classDefinition += `    }\n`;
     }
 
-    classString += '}\n';
-    classes.set(className, classString);
+    classDefinition += '}\n';
+
+    // Add Equatable conformance for classes
+    if (!options.useStruct && options.isEquatable && fields.length > 0) {
+        classDefinition += `\nfunc == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+        const comparisons = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' &&\n        ');
+        classDefinition += `    return ${comparisons}\n`;
+        classDefinition += `}\n`;
+    }
+
+
+    classes.set(className, classDefinition);
 
     for (const key in jsonObject) {
         const value = jsonObject[key];
@@ -331,8 +340,10 @@ export function generateSwiftCode(
     }
     
     const needsAnyCodable = Array.from(finalClasses.values()).some(code => code.includes('AnyCodable'));
-    const needsDateComment = Array.from(finalClasses.values()).some(code => code.includes('let createdAt: Date?'));
     
+    // Check if any generated class is a class that conforms to Equatable
+    const needsDateComment = Array.from(finalClasses.values()).some(code => code.includes(': Date?'));
+
     const finalCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');
 
     let header = `import Foundation\n`;
