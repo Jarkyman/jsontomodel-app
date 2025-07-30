@@ -32,6 +32,7 @@ import { generateObjCCode, ObjCGeneratorOptions } from "@/lib/objc-generator";
 import { generateSQLSchema, SQLGeneratorOptions } from "@/lib/sql-generator";
 import { generateElixirCode, ElixirGeneratorOptions } from "@/lib/elixir-generator";
 import { generateErlangCode, ErlangGeneratorOptions } from "@/lib/erlang-generator";
+import { generateScaleCode, ScaleGeneratorOptions } from "@/lib/scala-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -68,7 +69,7 @@ const languages = [
   { value: "sql", label: "SQL", supported: true },
   { value: "elixir", label: "Elixir", supported: true },
   { value: "erlang", label: "Erlang", supported: true },
-  { value: "scala", label: "Scala", supported: false },
+  { value: "scala", label: "Scala", supported: true },
 ];
 
 const kotlinSerializationLibraries = [
@@ -302,6 +303,13 @@ const initialErlangOptions: ErlangGeneratorOptions = {
   includeDefaults: false,
 };
 
+const initialScalaOptions: ScaleGeneratorOptions = {
+  useSnakeCase: true,
+  includeTypes: true,
+  defaultValues: false,
+  includeStruct: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -320,6 +328,7 @@ type ROptionKey = keyof RGeneratorOptions;
 type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
 type ElixirOptionKey = keyof ElixirGeneratorOptions;
 type ErlangOptionKey = keyof ErlangGeneratorOptions;
+type ScalaOptionKey = keyof ScaleGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -368,6 +377,7 @@ export default function ModelForgeClient() {
   const [sqlOptions, setSqlOptions] = useState<SQLGeneratorOptions>(initialSqlOptions);
   const [elixirOptions, setElixirOptions] = useState<ElixirGeneratorOptions>(initialElixirOptions);
   const [erlangOptions, setErlangOptions] = useState<ErlangGeneratorOptions>(initialErlangOptions);
+  const [scalaOptions, setScalaOptions] = useState<ScaleGeneratorOptions>(initialScalaOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -504,6 +514,8 @@ export default function ModelForgeClient() {
             result = generateElixirCode(parsedJson, rootClassName, elixirOptions);
           } else if (selectedLanguage === "erlang") {
             result = generateErlangCode(parsedJson, rootClassName, erlangOptions);
+          } else if (selectedLanguage === "scala") {
+            result = generateScaleCode(parsedJson, rootClassName, scalaOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -556,7 +568,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, elixirOptions, erlangOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, elixirOptions, erlangOptions, scalaOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -676,7 +688,7 @@ export default function ModelForgeClient() {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
   
-  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix'>) => {
+  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix' | 'toCamelCase'>) => {
      setObjcOptions(prev => ({ ...prev, [option]: !prev[option] }));
   }
 
@@ -694,6 +706,10 @@ export default function ModelForgeClient() {
 
   const handleToggleErlangOption = (option: ErlangOptionKey) => {
     setErlangOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleToggleScalaOption = (option: ScalaOptionKey) => {
+    setScalaOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
   const handleRename = () => {
@@ -1044,7 +1060,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties')} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers')} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability')} label="Nullability" />
-                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleToggleObjcOption('toCamelCase')} label="camelCase" />
+                <FilterButton checked={objcOptions.toCamelCase} onClick={() => setObjcOptions(prev => ({ ...prev, toCamelCase: !prev.toCamelCase }))} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
@@ -1104,6 +1120,19 @@ export default function ModelForgeClient() {
                 <FilterButton checked={erlangOptions.useSnakeCase ?? true} onClick={() => handleToggleErlangOption('useSnakeCase')} label="snake_case" />
                 <FilterButton checked={erlangOptions.includeTypes ?? true} onClick={() => handleToggleErlangOption('includeTypes')} label="-type" />
                 <FilterButton checked={erlangOptions.includeDefaults ?? false} onClick={() => handleToggleErlangOption('includeDefaults')} label="Defaults" />
+              </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'scala' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={scalaOptions.useSnakeCase ?? true} onClick={() => handleToggleScalaOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={scalaOptions.includeTypes ?? true} onClick={() => handleToggleScalaOption('includeTypes')} label="Types" />
+                <FilterButton checked={scalaOptions.defaultValues ?? false} onClick={() => handleToggleScalaOption('defaultValues')} label="Defaults" />
+                <FilterButton checked={scalaOptions.includeStruct ?? true} onClick={() => handleToggleScalaOption('includeStruct')} label="Case Class" />
               </div>
           </CardContent>
         </Card>
