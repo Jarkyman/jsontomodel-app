@@ -192,18 +192,23 @@ export default function ModelForgeClient() {
   const validateJson = (value: string) => {
     if (!value.trim()) {
         setJsonError(null);
-        return;
+        setOutputCode("");
+        return false;
     }
     try {
       const parsedJson = JSON.parse(value);
        if (Object.keys(parsedJson).length === 0) {
         setJsonError("JSON object cannot be empty.");
-        return;
+        setOutputCode("");
+        return false;
       }
       if (hasEmptyKeys(parsedJson)) {
         setJsonError("JSON cannot contain empty keys.");
+        setOutputCode("");
+        return false;
       } else {
         setJsonError(null);
+        return true;
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -211,13 +216,10 @@ export default function ModelForgeClient() {
       } else {
         setJsonError("An unknown JSON parsing error occurred.");
       }
+      setOutputCode("");
+      return false;
     }
   };
-
-  useEffect(() => {
-    validateJson(jsonInput);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput]);
 
   const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -234,26 +236,14 @@ export default function ModelForgeClient() {
   useEffect(() => {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
-  
-  useEffect(() => {
-    if (hasGenerated) {
-      generateCode();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
-
 
   useEffect(() => {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
 
   const generateCode = () => {
-    if (jsonError) {
-      toast({
-        variant: "destructive",
-        title: "Invalid JSON",
-        description: "Please fix the errors in your JSON input before generating.",
-      });
+    const isValid = validateJson(jsonInput);
+    if (!isValid) {
       return;
     }
 
@@ -271,56 +261,69 @@ export default function ModelForgeClient() {
     }
     
     setIsGenerating(true);
-    setOutputCode('');
-    try {
-      let result = '';
-      if (selectedLanguage === "dart") {
-        result = generateDartCode(parsedJson, rootClassName, dartOptions);
-      } else if (selectedLanguage === "kotlin") {
-        result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
-      } else {
-        toast({
-          title: "Not Implemented",
-          description: `Code generation for ${
-            languages.find((l) => l.value === selectedLanguage)?.label
-          } is not yet supported.`,
-        });
-        setOutputCode("");
-        setIsGenerating(false);
-        return;
-      }
-      
-      setOutputCode(result);
-        
-      if (result && !hasGenerated) {
-          toast({
-              title: "Model Generated",
-              description: `Your root model is named "${rootClassName}". You can rename it.`,
-              action: (
-                  <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
-                      Rename
-                  </ToastAction>
-              ),
-          });
-      }
+    // Setting a timeout to allow the UI to update to the loading state before the potentially blocking code generation runs.
+    setTimeout(() => {
+        try {
+          let result = '';
+          if (selectedLanguage === "dart") {
+            result = generateDartCode(parsedJson, rootClassName, dartOptions);
+          } else if (selectedLanguage === "kotlin") {
+            result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
+          } else {
+            toast({
+              title: "Not Implemented",
+              description: `Code generation for ${
+                languages.find((l) => l.value === selectedLanguage)?.label
+              } is not yet supported.`,
+            });
+            setOutputCode("");
+            setIsGenerating(false);
+            return;
+          }
+          
+          setOutputCode(result);
+            
+          if (result && !hasGenerated) {
+              toast({
+                  title: "Model Generated",
+                  description: `Your root model is named "${rootClassName}". You can rename it.`,
+                  action: (
+                      <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
+                          Rename
+                      </ToastAction>
+                  ),
+              });
+              setHasGenerated(true);
+          }
 
-    } catch (error) {
-      console.error(error);
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-      toast({
-        variant: "destructive",
-        title: "Error Generating Model",
-        description: errorMessage,
-      });
-      setOutputCode("");
-    } finally {
-      setIsGenerating(false);
-      if (!hasGenerated && !jsonError) {
-        setHasGenerated(true);
-      }
-    }
+        } catch (error) {
+          console.error(error);
+          const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+          toast({
+            variant: "destructive",
+            title: "Error Generating Model",
+            description: errorMessage,
+          });
+          setOutputCode("");
+        } finally {
+          setIsGenerating(false);
+        }
+    }, 50); // A small delay
   };
   
+  // Main useEffect for live generation
+  useEffect(() => {
+      const handler = setTimeout(() => {
+          generateCode();
+      }, 500); // Debounce generation
+
+      return () => {
+          clearTimeout(handler);
+      };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jsonInput, dartOptions, kotlinOptions, rootClassName, selectedLanguage]);
+
+
   const handleToggleDartOption = (option: DartOptionKey) => {
     setDartOptions(prev => {
         const newOptions = { ...prev, [option]: !prev[option] };
@@ -354,10 +357,6 @@ export default function ModelForgeClient() {
 
         return newOptions;
     });
-  };
-  
-  const handleGenerate = () => {
-    generateCode();
   };
   
   const handleRename = () => {
@@ -404,7 +403,7 @@ export default function ModelForgeClient() {
         </p>
       </header>
 
-      <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 sm:flex-row sm:max-w-md">
+      <div className="mx-auto flex w-full max-w-sm items-center gap-4">
         <div className="relative w-full">
            <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
@@ -420,12 +419,6 @@ export default function ModelForgeClient() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={handleGenerate} disabled={isGenerating || !!jsonError} size="lg" className="w-full sm:w-auto shrink-0 bg-accent hover:bg-accent/90 text-accent-foreground">
-          {isGenerating ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : null}
-          Generate
-        </Button>
       </div>
 
       {selectedLanguage === 'dart' && (
@@ -562,7 +555,7 @@ export default function ModelForgeClient() {
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                  <p>Your generated model will appear here.</p>
+                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your generated model will appear here.'}</p>
                 </div>
               )}
             </div>
@@ -572,6 +565,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-    
-    
