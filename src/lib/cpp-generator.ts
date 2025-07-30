@@ -61,14 +61,23 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
         const baseCppType = getBaseCppType(jsonObject[key], key, structs, options);
         
         let finalType: string;
+        let fieldDefinition: string;
+
         if (useOptional) {
             finalType = `std::optional<${baseCppType}>`;
+            fieldDefinition = `    ${finalType} ${fieldName}`;
+            if (options.cppVersion === '20') {
+                fieldDefinition += ` = std::nullopt;`;
+            } else {
+                fieldDefinition += `;`;
+            }
         } else {
             // Legacy C++03 mode using raw pointers
             finalType = `${baseCppType}*`;
+            fieldDefinition = `    ${finalType} ${fieldName};`;
         }
 
-        structDef += `    ${finalType} ${fieldName};\n`;
+        structDef += `${fieldDefinition}\n`;
         fields.push({ name: fieldName, type: baseCppType, originalKey: key });
     }
     structDef += '};\n';
@@ -199,5 +208,3 @@ using nlohmann::json;
 
     return header;
 }
-
-    

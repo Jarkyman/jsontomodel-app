@@ -55,12 +55,28 @@ describe('generateCppCode', () => {
 
         // Ensure no raw pointers are present
         expect(normGenerated).not.toContain('*');
+        
+        // Ensure no default initializers are present for C++17
+        expect(normGenerated).not.toContain('= std::nullopt');
+
 
         // Check for NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE macros
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UserData, balance, inventory, is_active, last_seen, metadata, tags, user_id, user_name, user_profile);');
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(UserProfile, show_email, theme);');
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Inventory, item_id, quantity);');
     });
+    
+    it('should generate a C++20 header with default member initializers', () => {
+        const options: CppGeneratorOptions = { ...defaultOptions, cppVersion: '20' };
+        const generated = generateCppCode(fullJsonInput, 'UserData', options);
+        const normGenerated = normalize(generated);
+
+        // Check for C++20 specific default initializers
+        expect(normGenerated).toContain('struct UserData { std::optional<double> balance = std::nullopt; std::optional<std::vector<Inventory>> inventory = std::nullopt; std::optional<bool> is_active = std::nullopt; std::optional<std::string> last_seen = std::nullopt; std::optional<nlohmann::json> metadata = std::nullopt; std::optional<std::vector<std::string>> tags = std::nullopt; std::optional<int> user_id = std::nullopt; std::optional<std::string> user_name = std::nullopt; std::optional<UserProfile> user_profile = std::nullopt; };');
+        expect(normGenerated).toContain('struct UserProfile { std::optional<bool> show_email = std::nullopt; std::optional<std::string> theme = std::nullopt; };');
+        expect(normGenerated).toContain('struct Inventory { std::optional<int> item_id = std::nullopt; std::optional<int> quantity = std::nullopt; };');
+    });
+
 
     it('should generate raw pointers for C++03', () => {
         const options: CppGeneratorOptions = { ...defaultOptions, cppVersion: '03', usePointersForNull: true };
@@ -97,7 +113,3 @@ describe('generateCppCode', () => {
         expect(normGenerated).toContain('NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(EmptyList, empty_list);');
     });
 });
-
-    
-
-    
