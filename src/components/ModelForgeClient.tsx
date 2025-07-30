@@ -256,6 +256,7 @@ type GoOptionKey = keyof GoGeneratorOptions;
 type PhpOptionKey = keyof PhpGeneratorOptions;
 type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
 type CppOptionKey = keyof CppGeneratorOptions;
+type VbNetOptionKey = keyof VbNetGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -569,7 +570,7 @@ export default function ModelForgeClient() {
     });
   };
   
-  const handleToggleVbNetOption = (option: keyof VbNetGeneratorOptions) => {
+  const handleToggleVbNetOption = (option: VbNetOptionKey) => {
     setVbnetOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
@@ -809,15 +810,7 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                  <FilterButton 
-                      checked={cppOptions.usePointersForNull} 
-                      onClick={() => handleCppOption('usePointersForNull', !cppOptions.usePointersForNull)} 
-                      label="Use Pointers (Legacy)"
-                      disabled={cppOptions.cppVersion !== '03'}
-                   />
-              </div>
-               <div className="flex items-center justify-center gap-2 pt-4 border-t">
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
                   <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
                   <Select 
                       value={cppOptions.cppVersion} 
@@ -835,6 +828,25 @@ export default function ModelForgeClient() {
               </div>
           </CardContent>
       </Card>
+      )}
+
+      {selectedLanguage === 'vbnet' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <FilterButton 
+                checked={vbnetOptions.jsonAnnotations} 
+                onClick={() => handleToggleVbNetOption('jsonAnnotations')} 
+                label="[JsonProperty]"
+              />
+              <FilterButton 
+                checked={vbnetOptions.pascalCase} 
+                onClick={() => handleToggleVbNetOption('pascalCase')} 
+                label="PascalCase Properties"
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
 

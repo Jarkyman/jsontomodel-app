@@ -60,7 +60,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 
     for (const field of fields) {
-        if (options.jsonAnnotations) {
+        if (options.jsonAnnotations && field.originalKey !== field.name) {
             classString += `    <JsonProperty("${field.originalKey}")>\n`;
         }
         classString += `    Public Property ${field.name} As ${field.type}\n\n`;
