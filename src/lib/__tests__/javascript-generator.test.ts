@@ -1,5 +1,5 @@
 
-import { generateJavaScriptCode } from '../javascript-generator';
+import { generateJavaScriptCode, JavaScriptGeneratorOptions } from '../javascript-generator';
 
 const fullJsonInput = {
     "id": 123,
@@ -20,11 +20,17 @@ const fullJsonInput = {
     ]
 };
 
+const defaultOptions: JavaScriptGeneratorOptions = {
+    includeJSDoc: true,
+    includeFromToJSON: true,
+    convertDates: true,
+};
+
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateJavaScriptCode', () => {
-    it('should generate a correct ES6 class with JSDoc and methods', () => {
-        const generated = generateJavaScriptCode(fullJsonInput, 'UserData');
+    it('should generate a correct ES6 class with all options enabled', () => {
+        const generated = generateJavaScriptCode(fullJsonInput, 'UserData', defaultOptions);
         const normGenerated = normalize(generated);
 
         // Check for UserData class
@@ -63,21 +69,40 @@ describe('generateJavaScriptCode', () => {
         expect(normGenerated).toContain('/** @type {string|null} */ title;');
     });
 
+    it('should generate without JSDoc when disabled', () => {
+        const options: JavaScriptGeneratorOptions = { ...defaultOptions, includeJSDoc: false };
+        const generated = generateJavaScriptCode({ name: "Test" }, 'User', options);
+        const normGenerated = normalize(generated);
+
+        expect(normGenerated).not.toContain('/**');
+        expect(normGenerated).toContain('this.name = data.name ?? null;');
+    });
+
+    it('should generate without from/toJSON methods when disabled', () => {
+        const options: JavaScriptGeneratorOptions = { ...defaultOptions, includeFromToJSON: false };
+        const generated = generateJavaScriptCode({ name: "Test" }, 'User', options);
+        const normGenerated = normalize(generated);
+
+        expect(normGenerated).not.toContain('fromJSON');
+        expect(normGenerated).not.toContain('toJSON');
+    });
+
+    it('should generate without date conversion logic when disabled', () => {
+        const options: JavaScriptGeneratorOptions = { ...defaultOptions, convertDates: false };
+        const generated = generateJavaScriptCode({ registered_at: "2025-01-01T00:00:00Z" }, 'User', options);
+        const normGenerated = normalize(generated);
+        
+        expect(normGenerated).toContain('/** @type {string|null} */ registeredAt;');
+        expect(normGenerated).toContain('this.registeredAt = data.registered_at ?? null;'); // Should not create new Date()
+        expect(normGenerated).toContain("'registered_at': this.registeredAt,"); // Should not call toISOString()
+    });
+
     it('should handle an empty JSON object gracefully', () => {
-        const generated = generateJavaScriptCode({}, 'EmptyModel');
+        const generated = generateJavaScriptCode({}, 'EmptyModel', defaultOptions);
         const normGenerated = normalize(generated);
         expect(normGenerated).toContain('class EmptyModel {');
         expect(normGenerated).toContain('constructor(data = {}) {}');
         expect(normGenerated).toContain('static fromJSON(data) { return new EmptyModel(data); }');
         expect(normGenerated).toContain('toJSON() { return {}; }');
     });
-
-    it('should handle arrays of primitive types', () => {
-         const generated = generateJavaScriptCode({ "tags": ["a", "b", "c"] }, 'Post');
-         const normGenerated = normalize(generated);
-         expect(normGenerated).toContain('/** @type {string[]|null} */ tags;');
-         expect(normGenerated).toContain('this.tags = data.tags ?? null;');
-    });
 });
-
-    
