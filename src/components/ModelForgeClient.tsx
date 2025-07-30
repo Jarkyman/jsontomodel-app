@@ -26,6 +26,7 @@ import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javasc
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
 import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
+import { generateRubyCode, RubyGeneratorOptions } from "@/lib/ruby-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -56,7 +57,7 @@ const languages = [
   { value: "cpp", label: "C++", supported: true },
   { value: "vbnet", label: "Visual Basic", supported: true },
   { value: "rust", label: "Rust", supported: true },
-  { value: "ruby", label: "Ruby", supported: false },
+  { value: "ruby", label: "Ruby", supported: true },
   { value: "r", label: "R", supported: false },
   { value: "objectivec", label: "Objective-C", supported: false },
   { value: "sql", label: "SQL", supported: false },
@@ -251,6 +252,14 @@ const initialRustOptions: RustGeneratorOptions = {
     useSerdeDefault: true,
 };
 
+const initialRubyOptions: RubyGeneratorOptions = {
+  attrAccessor: true,
+  snakeCase: true,
+  initialize: true,
+  defaultValues: false,
+  useStruct: false,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -264,6 +273,7 @@ type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
 type CppOptionKey = keyof CppGeneratorOptions;
 type VbNetOptionKey = keyof VbNetGeneratorOptions;
 type RustOptionKey = keyof RustGeneratorOptions;
+type RubyOptionKey = keyof RubyGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -306,6 +316,7 @@ export default function ModelForgeClient() {
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
   const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
+  const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -430,6 +441,8 @@ export default function ModelForgeClient() {
               result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
           } else if (selectedLanguage === "rust") {
               result = generateRustCode(parsedJson, rootClassName, rustOptions);
+          } else if (selectedLanguage === "ruby") {
+              result = generateRubyCode(parsedJson, rootClassName, rubyOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -482,7 +495,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -588,6 +601,10 @@ export default function ModelForgeClient() {
   
   const handleToggleRustOption = (option: RustOptionKey) => {
     setRustOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleToggleRubyOption = (option: RubyOptionKey) => {
+    setRubyOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -878,6 +895,40 @@ export default function ModelForgeClient() {
                 checked={rustOptions.useSerdeDefault}
                 onClick={() => handleToggleRustOption('useSerdeDefault')}
                 label="Use `#[serde(default)]`"
+               />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'ruby' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <FilterButton 
+                checked={rubyOptions.attrAccessor} 
+                onClick={() => handleToggleRubyOption('attrAccessor')} 
+                label="attr_accessor"
+              />
+              <FilterButton 
+                checked={rubyOptions.snakeCase} 
+                onClick={() => handleToggleRubyOption('snakeCase')} 
+                label="snake_case"
+              />
+              <FilterButton
+                checked={rubyOptions.initialize}
+                onClick={() => handleToggleRubyOption('initialize')}
+                label="initialize"
+               />
+               <FilterButton
+                checked={rubyOptions.defaultValues}
+                onClick={() => handleToggleRubyOption('defaultValues')}
+                label="Default Values"
+               />
+               <FilterButton
+                checked={rubyOptions.useStruct}
+                onClick={() => handleToggleRubyOption('useStruct')}
+                label="Use Struct"
                />
             </div>
           </CardContent>
