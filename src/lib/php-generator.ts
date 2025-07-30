@@ -131,7 +131,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `\n    public function __construct(array $data)\n    {\n`;
         for (const field of fields) {
              const key = field.originalKey;
-             const {parsingLogic} = getParsingLogic(field, key, 'data');
+             const {parsingLogic} = getParsingLogic(field, key, options, 'data');
              classString += `        $this->${field.name} = ${parsingLogic};\n`;
         }
         classString += `    }\n`;
@@ -143,7 +143,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `        return new self(\n`;
         for (const field of fields) {
             const key = field.originalKey;
-            const { parsingLogic } = getParsingLogic(field, key, 'data');
+            const { parsingLogic } = getParsingLogic(field, key, options, 'data');
             
             classString += `            ${parsingLogic},\n`;
         }
@@ -185,15 +185,21 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 }
 
-function getParsingLogic(field: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }, key: string, dataVar: string = 'data') {
+function getParsingLogic(field: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }, key: string, options: PhpGeneratorOptions, dataVar: string = 'data') {
     let parsingLogic: string;
+    const instantiationMethod = options.fromArray ? '::fromArray($item)' : '($item)';
+
     if (field.type === '\\DateTimeInterface') {
         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
     } else if (field.isObjectArray) {
         const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        parsingLogic = `is_array($${dataVar}['${key}'] ?? null) ? array_map(fn($item) => ${singularType}::fromArray($item), $${dataVar}['${key}']) : null`;
+        const mapLogic = options.fromArray ? `${singularType}::fromArray($item)` : `new ${singularType}($item)`;
+        parsingLogic = `is_array($${dataVar}['${key}'] ?? null) ? array_map(fn($item) => ${mapLogic}, $${dataVar}['${key}']) : null`;
     } else if (field.isObject) {
-        parsingLogic = `isset($${dataVar}['${key}']) ? ${field.type}::fromArray($${dataVar}['${key}']) : null`;
+        const fromArrayLogic = `${field.type}::fromArray($${dataVar}['${key}'])`;
+        const constructorLogic = `new ${field.type}($${dataVar}['${key}'])`;
+        const instantiation = options.fromArray ? fromArrayLogic : constructorLogic;
+        parsingLogic = `isset($${dataVar}['${key}']) ? ${instantiation} : null`;
     } else {
         parsingLogic = `$${dataVar}['${key}'] ?? null`;
     }
