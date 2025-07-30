@@ -19,6 +19,7 @@ import { generateSwiftCode, SwiftGeneratorOptions } from "@/lib/swift-generator"
 import { generatePythonCode, PythonGeneratorOptions } from "@/lib/python-generator";
 import { generateJavaCode, JavaGeneratorOptions } from "@/lib/java-generator";
 import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generator";
+import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -42,7 +43,7 @@ const languages = [
   { value: "python", label: "Python", supported: true },
   { value: "java", label: "Java", supported: true },
   { value: "csharp", label: "C#", supported: true },
-  { value: "typescript", label: "TypeScript", supported: false },
+  { value: "typescript", label: "TypeScript", supported: true },
   { value: "go", label: "Go", supported: false },
   { value: "php", label: "PHP", supported: false },
   { value: "javascript", label: "JavaScript", supported: false },
@@ -189,6 +190,12 @@ const initialCSharpOptions: CSharpGeneratorOptions = {
     listType: "List<T>"
 };
 
+const initialTypescriptOptions: TypeScriptGeneratorOptions = {
+    useType: true,
+    optionalFields: true,
+    readonlyFields: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -230,6 +237,7 @@ export default function ModelForgeClient() {
   const [pythonOptions, setPythonOptions] = useState<PythonGeneratorOptions>(initialPythonOptions);
   const [javaOptions, setJavaOptions] = useState<JavaGeneratorOptions>(initialJavaOptions);
   const [csharpOptions, setCSharpOptions] = useState<CSharpGeneratorOptions>(initialCSharpOptions);
+  const [typescriptOptions, setTypescriptOptions] = useState<TypeScriptGeneratorOptions>(initialTypescriptOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -340,6 +348,8 @@ export default function ModelForgeClient() {
             result = generateJavaCode(parsedJson, rootClassName, javaOptions);
           } else if (selectedLanguage === "csharp") {
             result = generateCSharpCode(parsedJson, rootClassName, csharpOptions);
+          } else if (selectedLanguage === "typescript") {
+            result = generateTypescriptCode(parsedJson, rootClassName, typescriptOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -392,7 +402,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -645,6 +655,16 @@ export default function ModelForgeClient() {
         </Card>
       )}
 
+      {selectedLanguage === 'typescript' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <div className="text-center text-muted-foreground">
+                    TypeScript options coming soon...
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="shadow-lg flex flex-col">
@@ -737,3 +757,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
