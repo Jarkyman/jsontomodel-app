@@ -4,7 +4,6 @@ export interface ElixirGeneratorOptions {
     includeTypes?: boolean;
     defaultValues?: boolean;
     includeStruct?: boolean;
-    modulePrefix?: string; // optional prefix for module names, e.g. "MyApp."
   }
   
   const defaultOptions: ElixirGeneratorOptions = {
@@ -12,7 +11,6 @@ export interface ElixirGeneratorOptions {
     includeTypes: true,
     defaultValues: false,
     includeStruct: true,
-    modulePrefix: '',
   };
   
   function toSnakeCase(str: string): string {
@@ -47,7 +45,6 @@ export interface ElixirGeneratorOptions {
     if (modules.has(name)) return;
   
     const modName = toPascalCase(name);
-    const prefix = options.modulePrefix;
     const fields: string[] = [];
     const types: string[] = [];
   
@@ -72,7 +69,7 @@ export interface ElixirGeneratorOptions {
       }
     }
   
-    let code = `defmodule ${prefix}${modName} do\n`;
+    let code = `defmodule ${modName} do\n`;
   
     if (options.includeTypes && types.length > 0) {
       code += types.join('\n') + '\n\n';
@@ -100,4 +97,3 @@ export interface ElixirGeneratorOptions {
   
     return Array.from(modules.values()).reverse().join('\n\n');
   }
-  

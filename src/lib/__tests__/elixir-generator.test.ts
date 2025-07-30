@@ -15,7 +15,6 @@ const defaultOptions: ElixirGeneratorOptions = {
     includeTypes: true,
     defaultValues: false,
     includeStruct: true,
-    modulePrefix: 'MyApp.',
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -26,12 +25,12 @@ describe('generateElixirCode', () => {
         const normGenerated = normalize(generated);
 
         // Check for Profile module
-        expect(normGenerated).toContain('defmodule MyApp.UserProfile do');
+        expect(normGenerated).toContain('defmodule UserProfile do');
         expect(normGenerated).toContain('@type theme :: String.t()');
         expect(normGenerated).toContain('defstruct [ theme: nil ]');
 
         // Check for User module
-        expect(normGenerated).toContain('defmodule MyApp.User do');
+        expect(normGenerated).toContain('defmodule User do');
         expect(normGenerated).toContain('@type user_id :: integer');
         expect(normGenerated).toContain('@type user_name :: String.t()');
         expect(normGenerated).toContain('@type is_active :: boolean');

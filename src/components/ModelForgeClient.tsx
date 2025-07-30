@@ -293,7 +293,6 @@ const initialElixirOptions: ElixirGeneratorOptions = {
   includeTypes: true,
   defaultValues: false,
   includeStruct: true,
-  modulePrefix: '',
 };
 
 
@@ -312,7 +311,7 @@ type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
 type ROptionKey = keyof RGeneratorOptions;
 type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
-type ElixirOptionKey = keyof Omit<ElixirGeneratorOptions, 'modulePrefix'>;
+type ElixirOptionKey = keyof ElixirGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -666,8 +665,8 @@ export default function ModelForgeClient() {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
 
-  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix' | 'toCamelCase'>, value: any) => {
-     setObjcOptions(prev => ({ ...prev, [option]: !value }));
+  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix'>, value: any) => {
+     setObjcOptions(prev => ({ ...prev, [option]: value }));
   }
 
   const handleSqlOption = (option: keyof SQLGeneratorOptions, value: any) => {
@@ -676,10 +675,6 @@ export default function ModelForgeClient() {
   
   const handleToggleSqlOption = (option: SqlOptionKey) => {
     setSqlOptions(prev => ({...prev, [option]: !prev[option] }));
-  };
-
-  const handleElixirOption = (option: keyof ElixirGeneratorOptions, value: any) => {
-    setElixirOptions(prev => ({ ...prev, [option]: value }));
   };
 
   const handleToggleElixirOption = (option: ElixirOptionKey) => {
@@ -1032,9 +1027,9 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties', objcOptions.properties)} label="property" />
-                <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers', objcOptions.initializers)} label="Initializer" />
-                <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability', objcOptions.nullability)} label="Nullability" />
+                <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties', !objcOptions.properties)} label="property" />
+                <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers', !objcOptions.initializers)} label="Initializer" />
+                <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability', !objcOptions.nullability)} label="Nullability" />
                 <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
@@ -1084,15 +1079,6 @@ export default function ModelForgeClient() {
                 <FilterButton checked={elixirOptions.includeStruct ?? true} onClick={() => handleToggleElixirOption('includeStruct')} label="defstruct" />
                 <FilterButton checked={elixirOptions.defaultValues ?? false} onClick={() => handleToggleElixirOption('defaultValues')} label="Default Comments" />
               </div>
-               <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                    <span className="text-sm font-medium text-muted-foreground">Module Prefix:</span>
-                    <Input 
-                      value={elixirOptions.modulePrefix}
-                      onChange={(e) => handleElixirOption('modulePrefix', e.target.value)}
-                      placeholder="e.g. MyApp."
-                      className="w-24"
-                    />
-                 </div>
           </CardContent>
         </Card>
       )}
