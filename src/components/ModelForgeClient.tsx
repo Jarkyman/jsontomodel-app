@@ -210,6 +210,7 @@ type SwiftOptionKey = keyof SwiftGeneratorOptions;
 type PythonOptionKey = keyof PythonGeneratorOptions;
 type JavaOptionKey = keyof JavaGeneratorOptions;
 type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
+type GoOptionKey = keyof GoGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -489,6 +490,10 @@ export default function ModelForgeClient() {
     setTypescriptOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
+  const handleToggleGoOption = (option: GoOptionKey) => {
+    setGoOptions(prev => ({ ...prev, [option]: !prev[option] }));
+  };
+
 
   const handleRename = () => {
     if (renameInputValue.trim()) {
@@ -688,7 +693,7 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                 <p className="text-sm text-muted-foreground">Go options coming soon...</p>
+                <FilterButton checked={goOptions.usePointers} onClick={() => handleToggleGoOption('usePointers')} label="Use Pointers (for nulls)" />
               </div>
             </CardContent>
         </Card>
@@ -786,11 +791,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    

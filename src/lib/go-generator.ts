@@ -40,6 +40,7 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
                 goType = '[]interface{}';
             } else {
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                // We pass the raw type to getGoType, which will then handle the pointer if needed
                 const sliceType = getGoType(value[0], singularKey, structs, options);
                 goType = `[]${sliceType}`;
             }
@@ -127,5 +128,3 @@ export function generateGoCode(
 
     return finalCode;
 }
-
-    

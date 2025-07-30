@@ -136,5 +136,3 @@ describe('generateGoCode', () => {
         expect(normGenerated).toContain('package api');
     });
 });
-
-    
