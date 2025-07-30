@@ -126,11 +126,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     }
 
     if (options.isCodable && options.generateCodingKeys) {
-        const codingKeyFields = fields.filter(f => f.name !== f.originalKey);
-        if (codingKeyFields.length > 0) {
+        // Only generate CodingKeys if at least one field name differs from its original key
+        const needsCodingKeys = fields.some(f => f.name !== f.originalKey);
+        if (needsCodingKeys) {
             classString += `\n    enum CodingKeys: String, CodingKey {\n`;
-            for (const field of codingKeyFields) {
-                classString += `        case ${field.name} = "${field.originalKey}"\n`;
+            for (const field of fields) {
+                if (field.name === field.originalKey) {
+                    classString += `        case ${field.name}\n`;
+                } else {
+                    classString += `        case ${field.name} = "${field.originalKey}"\n`;
+                }
             }
             classString += `    }\n`;
         }
@@ -251,6 +256,18 @@ extension Equatable {
 }
 `;
 
+function generateDateHandlingComment(options: SwiftGeneratorOptions): string {
+    if (options.dateStrategy === 'iso8601') {
+        return `// To decode dates automatically, use this with your JSONDecoder:
+//
+// let decoder = JSONDecoder()
+// decoder.dateDecodingStrategy = .iso8601
+`;
+    }
+    // Could add more comments for other strategies later
+    return '';
+}
+
 
 export function generateSwiftCode(
     json: any,
@@ -314,6 +331,8 @@ export function generateSwiftCode(
     }
     
     const needsAnyCodable = Array.from(finalClasses.values()).some(code => code.includes('AnyCodable'));
+    const needsDateComment = Array.from(finalClasses.values()).some(code => code.includes('let createdAt: Date?'));
+    
     const finalCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');
 
     let header = `import Foundation\n`;
@@ -321,5 +340,7 @@ export function generateSwiftCode(
         header += `import Combine\n`;
     }
 
-    return `${header}\n${finalCode}${needsAnyCodable ? `\n${anyCodableStruct}`: ''}`;
+    const dateComment = needsDateComment ? generateDateHandlingComment(options) : '';
+
+    return `${header}\n${dateComment}${finalCode}${needsAnyCodable ? `\n${anyCodableStruct}`: ''}`;
 }
