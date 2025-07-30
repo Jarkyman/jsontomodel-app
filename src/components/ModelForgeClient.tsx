@@ -30,6 +30,7 @@ import { generateRubyCode, RubyGeneratorOptions } from "@/lib/ruby-generator";
 import { generateRCode, RGeneratorOptions } from "@/lib/r-generator";
 import { generateObjCCode, ObjCGeneratorOptions } from "@/lib/objc-generator";
 import { generateSQLSchema, SQLGeneratorOptions } from "@/lib/sql-generator";
+import { generateElixirCode, ElixirGeneratorOptions } from "@/lib/elixir-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -64,7 +65,7 @@ const languages = [
   { value: "r", label: "R", supported: true },
   { value: "objectivec", label: "Objective-C", supported: true },
   { value: "sql", label: "SQL", supported: true },
-  { value: "elixir", label: "Elixir", supported: false },
+  { value: "elixir", label: "Elixir", supported: true },
   { value: "erlang", label: "Erlang", supported: false },
   { value: "scala", label: "Scala", supported: false },
 ];
@@ -287,6 +288,14 @@ const initialSqlOptions: SQLGeneratorOptions = {
   defaultValues: false,
 };
 
+const initialElixirOptions: ElixirGeneratorOptions = {
+  useSnakeCase: true,
+  includeTypes: true,
+  defaultValues: false,
+  includeStruct: true,
+  modulePrefix: '',
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -303,6 +312,7 @@ type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
 type ROptionKey = keyof RGeneratorOptions;
 type SqlOptionKey = keyof Omit<SQLGeneratorOptions, 'tablePrefix'>;
+type ElixirOptionKey = keyof Omit<ElixirGeneratorOptions, 'modulePrefix'>;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -349,6 +359,7 @@ export default function ModelForgeClient() {
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
   const [objcOptions, setObjcOptions] = useState<ObjCGeneratorOptions>(initialObjcOptions);
   const [sqlOptions, setSqlOptions] = useState<SQLGeneratorOptions>(initialSqlOptions);
+  const [elixirOptions, setElixirOptions] = useState<ElixirGeneratorOptions>(initialElixirOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -481,6 +492,8 @@ export default function ModelForgeClient() {
             result = generateObjCCode(parsedJson, rootClassName, objcOptions);
           } else if (selectedLanguage === "sql") {
             result = generateSQLSchema(parsedJson, rootClassName, sqlOptions);
+          } else if (selectedLanguage === "elixir") {
+            result = generateElixirCode(parsedJson, rootClassName, elixirOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -533,7 +546,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, elixirOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -653,12 +666,24 @@ export default function ModelForgeClient() {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
 
+  const handleToggleObjcOption = (option: keyof Omit<ObjCGeneratorOptions, 'rootClassPrefix' | 'toCamelCase'>, value: any) => {
+     setObjcOptions(prev => ({ ...prev, [option]: !value }));
+  }
+
   const handleSqlOption = (option: keyof SQLGeneratorOptions, value: any) => {
     setSqlOptions(prev => ({ ...prev, [option]: value }));
   };
   
   const handleToggleSqlOption = (option: SqlOptionKey) => {
     setSqlOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
+  const handleElixirOption = (option: keyof ElixirGeneratorOptions, value: any) => {
+    setElixirOptions(prev => ({ ...prev, [option]: value }));
+  };
+
+  const handleToggleElixirOption = (option: ElixirOptionKey) => {
+    setElixirOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
 
@@ -1007,9 +1032,9 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={objcOptions.properties} onClick={() => handleObjcOption('properties', !objcOptions.properties)} label="property" />
-                <FilterButton checked={objcOptions.initializers} onClick={() => handleObjcOption('initializers', !objcOptions.initializers)} label="Initializer" />
-                <FilterButton checked={objcOptions.nullability} onClick={() => handleObjcOption('nullability', !objcOptions.nullability)} label="Nullability" />
+                <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties', objcOptions.properties)} label="property" />
+                <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers', objcOptions.initializers)} label="Initializer" />
+                <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability', objcOptions.nullability)} label="Nullability" />
                 <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleObjcOption('toCamelCase', !objcOptions.toCamelCase)} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
@@ -1043,6 +1068,28 @@ export default function ModelForgeClient() {
                       value={sqlOptions.tablePrefix}
                       onChange={(e) => handleSqlOption('tablePrefix', e.target.value)}
                       placeholder="e.g. tbl_"
+                      className="w-24"
+                    />
+                 </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {selectedLanguage === 'elixir' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={elixirOptions.useSnakeCase ?? true} onClick={() => handleToggleElixirOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={elixirOptions.includeTypes ?? true} onClick={() => handleToggleElixirOption('includeTypes')} label="@types" />
+                <FilterButton checked={elixirOptions.includeStruct ?? true} onClick={() => handleToggleElixirOption('includeStruct')} label="defstruct" />
+                <FilterButton checked={elixirOptions.defaultValues ?? false} onClick={() => handleToggleElixirOption('defaultValues')} label="Default Comments" />
+              </div>
+               <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                    <span className="text-sm font-medium text-muted-foreground">Module Prefix:</span>
+                    <Input 
+                      value={elixirOptions.modulePrefix}
+                      onChange={(e) => handleElixirOption('modulePrefix', e.target.value)}
+                      placeholder="e.g. MyApp."
                       className="w-24"
                     />
                  </div>
