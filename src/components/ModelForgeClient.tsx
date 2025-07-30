@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Languages, Loader2, Pencil, AlertCircle, Wand2 } from "lucide-react";
+import { Copy, Check, Code2, Loader2, Pencil, AlertCircle, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,11 +45,11 @@ const languages = [
 ];
 
 const kotlinSerializationLibraries = [
+    { value: "kotlinx", label: "kotlinx" },
     { value: "none", label: "None" },
     { value: "manual", label: "Manual" },
     { value: "gson", label: "Gson" },
     { value: "moshi", label: "Moshi" },
-    { value: "kotlinx", label: "kotlinx" },
 ];
 
 const defaultJson = JSON.stringify(
@@ -406,7 +406,7 @@ export default function ModelForgeClient() {
 
       <div className="mx-auto flex w-full max-w-sm flex-col items-center gap-4 sm:flex-row sm:max-w-md">
         <div className="relative w-full">
-           <Languages className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+           <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
             <SelectTrigger className="w-full pl-10">
               <SelectValue placeholder="Select language..." />
@@ -573,4 +573,5 @@ export default function ModelForgeClient() {
   );
 }
 
+    
     
