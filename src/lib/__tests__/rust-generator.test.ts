@@ -24,15 +24,15 @@ const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateRustCode', () => {
 
-    it('should generate correct Rust structs with serde attributes', () => {
+    it('should generate correct Rust structs with serde attributes and extra derives', () => {
         const generated = generateRustCode(fullJsonInput, 'UserData');
         const normGenerated = normalize(generated);
 
         // Check for serde imports
         expect(normGenerated).toContain("use serde::{Serialize, Deserialize};");
 
-        // Check for derive macros
-        expect(normGenerated).toContain("#[derive(Serialize, Deserialize, Debug)]");
+        // Check for derive macros including new ones
+        expect(normGenerated).toContain("#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]");
 
         // Check for correct field renaming
         expect(normGenerated).toContain('#[serde(rename = "user_id")]');
@@ -65,7 +65,7 @@ describe('generateRustCode', () => {
         const expected = `
             use serde::{Serialize, Deserialize}; 
             
-            #[derive(Serialize, Deserialize, Debug)] 
+            #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)] 
             pub struct Simple { 
                 #[serde(rename = "id")] 
                 pub id: Option<i64>, 

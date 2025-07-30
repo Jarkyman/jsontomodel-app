@@ -39,7 +39,7 @@ function getRustType(value: any, key: string, structs: Map<string, string>): str
 function generateStruct(structName: string, jsonObject: Record<string, any>, structs: Map<string, string>): void {
     if (structs.has(structName)) return;
 
-    let structString = `#[derive(Serialize, Deserialize, Debug)]\npub struct ${structName} {\n`;
+    let structString = `#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]\npub struct ${structName} {\n`;
     const fields: { name: string, type: string, originalKey: string }[] = [];
 
     const sortedKeys = Object.keys(jsonObject).sort();
