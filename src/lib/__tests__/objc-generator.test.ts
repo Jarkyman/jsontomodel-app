@@ -23,7 +23,7 @@ const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateObjCCode', () => {
 
-    it('should generate correct Objective-C code with default options', () => {
+    it('should generate correct Objective-C code with default options (snakeCase: true -> camelCase)', () => {
         const generated = generateObjCCode(fullJsonInput, 'User', defaultOptions);
         const normGenerated = normalize(generated);
 
@@ -35,6 +35,7 @@ describe('generateObjCCode', () => {
         // Check for User class
         expect(normGenerated).toContain('@interface DMUser : NSObject');
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSNumber *userId;');
+        expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSString *userName;');
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) DMProfile *profile;');
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSArray *tags;');
         
@@ -50,7 +51,7 @@ describe('generateObjCCode', () => {
         expect(normGenerated).toContain('@property (nonatomic, strong, ) NSString *name;');
     });
     
-    it('should not convert to camelCase when snakeCase is false', () => {
+    it('should preserve snake_case when snakeCase option is false', () => {
         const options = { ...defaultOptions, snakeCase: false };
         const generated = generateObjCCode({ "user_name": "test" }, 'User', options);
         const normGenerated = normalize(generated);
@@ -79,7 +80,7 @@ describe('generateObjCCode', () => {
         expect(() => generateObjCCode("invalid", 'Test', defaultOptions)).toThrow();
     });
 
-    it('should use camelCase when snakeCase is true', () => {
+    it('should convert to camelCase when snakeCase is true (default)', () => {
         const options = { ...defaultOptions, snakeCase: true };
         const generated = generateObjCCode({ "user_name": "test" }, 'User', options);
         const normGenerated = normalize(generated);
