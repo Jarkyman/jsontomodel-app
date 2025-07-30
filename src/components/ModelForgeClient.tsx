@@ -18,6 +18,7 @@ import { generateKotlinCode, KotlinGeneratorOptions } from "@/lib/kotlin-generat
 import { generateSwiftCode, SwiftGeneratorOptions } from "@/lib/swift-generator";
 import { generatePythonCode, PythonGeneratorOptions } from "@/lib/python-generator";
 import { generateJavaCode, JavaGeneratorOptions } from "@/lib/java-generator";
+import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -40,7 +41,7 @@ const languages = [
   { value: "swift", label: "Swift", supported: true },
   { value: "python", label: "Python", supported: true },
   { value: "java", label: "Java", supported: true },
-  { value: "csharp", label: "C#", supported: false },
+  { value: "csharp", label: "C#", supported: true },
   { value: "typescript", label: "TypeScript", supported: false },
   { value: "go", label: "Go", supported: false },
   { value: "php", label: "PHP", supported: false },
@@ -180,6 +181,14 @@ const initialJavaOptions: JavaGeneratorOptions = {
     jsonAnnotations: true,
 };
 
+const initialCSharpOptions: CSharpGeneratorOptions = {
+    namespace: "DataModels",
+    useRecords: true,
+    propertySetters: "init",
+    jsonAnnotations: true,
+    listType: "List<T>"
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -220,6 +229,7 @@ export default function ModelForgeClient() {
   const [swiftOptions, setSwiftOptions] = useState<SwiftGeneratorOptions>(initialSwiftOptions);
   const [pythonOptions, setPythonOptions] = useState<PythonGeneratorOptions>(initialPythonOptions);
   const [javaOptions, setJavaOptions] = useState<JavaGeneratorOptions>(initialJavaOptions);
+  const [csharpOptions, setCSharpOptions] = useState<CSharpGeneratorOptions>(initialCSharpOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -328,6 +338,8 @@ export default function ModelForgeClient() {
             result = generatePythonCode(parsedJson, rootClassName, pythonOptions);
           } else if (selectedLanguage === "java") {
             result = generateJavaCode(parsedJson, rootClassName, javaOptions);
+          } else if (selectedLanguage === "csharp") {
+            result = generateCSharpCode(parsedJson, rootClassName, csharpOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -380,7 +392,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -605,6 +617,16 @@ export default function ModelForgeClient() {
                   <FilterButton checked={javaOptions.finalFields} onClick={() => handleToggleJavaOption('finalFields')} label="Final Fields" />
                   <FilterButton checked={javaOptions.jsonAnnotations} onClick={() => handleToggleJavaOption('jsonAnnotations')} label="@JsonProperty" />
                   <FilterButton checked={javaOptions.snakeCase} onClick={() => handleToggleJavaOption('snakeCase')} label="camelCase Fields" />
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'csharp' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <p className="text-sm text-muted-foreground">C# options coming soon...</p>
                 </div>
             </CardContent>
         </Card>
