@@ -242,7 +242,6 @@ const initialCppOptions: CppGeneratorOptions = {
 const initialVbNetOptions: VbNetGeneratorOptions = {
     moduleName: "DataModels",
     jsonAnnotations: true,
-    pascalCase: true,
 };
 
 
@@ -839,11 +838,6 @@ export default function ModelForgeClient() {
                 onClick={() => handleToggleVbNetOption('jsonAnnotations')} 
                 label="[JsonProperty]"
               />
-              <FilterButton 
-                checked={vbnetOptions.pascalCase} 
-                onClick={() => handleToggleVbNetOption('pascalCase')} 
-                label="PascalCase Properties"
-              />
             </div>
           </CardContent>
         </Card>
@@ -941,11 +935,3 @@ export default function ModelForgeClient() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-    

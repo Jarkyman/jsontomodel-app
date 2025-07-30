@@ -16,7 +16,6 @@ const fullJsonInput = {
 const defaultOptions: VbNetGeneratorOptions = {
     moduleName: "ApiModels",
     jsonAnnotations: true,
-    pascalCase: true,
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
@@ -31,7 +30,7 @@ describe('generateVbNetCode', () => {
         expect(normGenerated).toContain('Imports Newtonsoft.Json');
         expect(normGenerated).toContain('Public Module ApiModels');
         
-        // Check for UserData class and properties
+        // Check for UserData class and properties (always PascalCase)
         expect(normGenerated).toContain('Public Class UserData');
         expect(normGenerated).toContain('<JsonProperty("id")> Public Property Id As Integer?');
         expect(normGenerated).toContain('<JsonProperty("is_active")> Public Property IsActive As Boolean?');
@@ -52,49 +51,41 @@ describe('generateVbNetCode', () => {
 
         expect(normGenerated).not.toContain('<JsonProperty("user_name")>');
         expect(normGenerated).not.toContain('Imports Newtonsoft.Json');
-        expect(normGenerated).toContain('Public Property UserName As String'); // Still PascalCased
+        // Property is still PascalCase
+        expect(normGenerated).toContain('Public Property UserName As String');
     });
 
-    it('should not use PascalCase if disabled', () => {
-        const options: VbNetGeneratorOptions = { ...defaultOptions, pascalCase: false };
-        const generated = generateVbNetCode({ "user_name": "Test" }, 'User', options);
-        const normGenerated = normalize(generated);
-        
-        // The attribute should now be present because the key differs, but the property name is not PascalCase
-        expect(normGenerated).toContain('<JsonProperty("user_name")> Public Property user_name As String');
-    });
-
-    it('should not add JsonProperty if name does not change, even if annotations are on', () => {
-        const options: VbNetGeneratorOptions = { jsonAnnotations: true, pascalCase: false, moduleName: 'Test' };
-        const generated = generateVbNetCode({ "name": "Test" }, 'User', options);
+    it('should still use PascalCase even if JSON key is already PascalCase', () => {
+        const options: VbNetGeneratorOptions = { ...defaultOptions };
+        const generated = generateVbNetCode({ "UserName": "Test" }, 'User', options);
         const normGenerated = normalize(generated);
 
-        // Since pascalCase is off, property name is "name", same as JSON key. No attribute needed.
-        expect(normGenerated).not.toContain('<JsonProperty("name")>');
-        expect(normGenerated).toContain('Public Property name As String');
+        // JsonProperty should not be added because the name doesn't change
+        expect(normGenerated).not.toContain('<JsonProperty("UserName")>');
+        expect(normGenerated).toContain('Public Property UserName As String');
     });
 
     it('should handle complex nested structures', () => {
         const complexJson = {
-            "outer": {
+            "outer_level": {
                 "inner_list": [
-                    { "value": 1 },
-                    { "value": 2 }
+                    { "item_value": 1 },
+                    { "item_value": 2 }
                 ]
             }
         };
-        const generated = generateVbNetCode(complexJson, 'Complex', defaultOptions);
+        const generated = generateVbNetCode(complexJson, 'ComplexData', defaultOptions);
         const normGenerated = normalize(generated);
 
         // Check for correct class structure and property types
-        expect(normGenerated).toContain('Public Class Complex');
-        expect(normGenerated).toContain('<JsonProperty("outer")> Public Property Outer As Outer');
+        expect(normGenerated).toContain('Public Class ComplexData');
+        expect(normGenerated).toContain('<JsonProperty("outer_level")> Public Property OuterLevel As OuterLevel');
         
-        expect(normGenerated).toContain('Public Class Outer');
+        expect(normGenerated).toContain('Public Class OuterLevel');
         expect(normGenerated).toContain('<JsonProperty("inner_list")> Public Property InnerList As List(Of InnerList)');
         
         expect(normGenerated).toContain('Public Class InnerList');
-        expect(normGenerated).toContain('<JsonProperty("value")> Public Property Value As Integer?');
+        expect(normGenerated).toContain('<JsonProperty("item_value")> Public Property ItemValue As Integer?');
     });
 
     it('should handle empty lists by typing them as List(Of Object)', () => {

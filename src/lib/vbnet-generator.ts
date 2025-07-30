@@ -3,13 +3,11 @@
 export interface VbNetGeneratorOptions {
     moduleName: string;
     jsonAnnotations: boolean;
-    pascalCase: boolean;
 }
 
 const defaultOptions: VbNetGeneratorOptions = {
     moduleName: "DataModels",
     jsonAnnotations: true,
-    pascalCase: true,
 };
 
 function toPascalCase(str: string): string {
@@ -54,7 +52,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     for (const key in jsonObject) {
         if (key === '') continue;
-        const propertyName = options.pascalCase ? toPascalCase(key) : key;
+        const propertyName = toPascalCase(key);
         const vbNetType = getVbNetType(jsonObject[key], key, classes, options);
         fields.push({ name: propertyName, type: vbNetType, originalKey: key });
     }
