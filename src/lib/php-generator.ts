@@ -43,7 +43,7 @@ function getPhpType(value: any, key: string, classes: Map<string, string>, optio
     if (value === null) {
         type = 'mixed';
     } else if (isIsoDateString(value)) {
-        type = '\\DateTimeImmutable';
+        type = '\\DateTimeInterface';
     } else {
         const valueType = typeof value;
         if (valueType === 'string') {
@@ -90,12 +90,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `    public function __construct(\n`;
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'public readonly ' : 'public ';
-            // Properties are always nullable `?` to safely handle missing keys from JSON.
             const type = options.typedProperties ? `?${field.type}` : '';
+            
+            if (field.isObjectArray) {
+                const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
+                classString += `        /** @var ${singularType}[]|null */\n`;
+            }
+
             classString += `        ${readonly}${type} $${field.name},\n`;
         }
         if (fields.length > 0) {
-            classString = classString.slice(0, -2); // Remove last comma and newline
+            classString = classString.slice(0, -2);
         }
         classString += `\n    ) {}\n`;
     } else {
@@ -103,12 +108,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const readonly = options.readonlyProperties ? 'readonly ' : '';
             const type = options.typedProperties ? `?${field.type}` : 'mixed';
+
+            if (field.isObjectArray) {
+                const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
+                classString += `    /** @var ${singularType}[]|null */\n`;
+            }
             classString += `    public ${readonly}${type} $${field.name};\n`;
         }
         classString += `\n    public function __construct(array $data)\n    {\n`;
         for (const field of fields) {
              const key = field.originalKey;
-             const {parsingLogic} = getParsingLogic(field, key);
+             const {parsingLogic} = getParsingLogic(field, key, 'data');
              classString += `        $this->${field.name} = ${parsingLogic};\n`;
         }
         classString += `    }\n`;
@@ -122,7 +132,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             const key = field.originalKey;
             const { parsingLogic } = getParsingLogic(field, key, 'data');
             
-            classString += `            ${parsingLogic},\n`;
+            classString += `            ${field.name}: ${parsingLogic},\n`;
         }
         if (fields.length > 0) {
             classString = classString.slice(0, -2);
@@ -161,14 +171,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 }
 
 function getParsingLogic(field: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }, key: string, dataVar: string = 'data') {
-    let parsingLogic = `$${dataVar}['${key}'] ?? null`;
-    if (field.type === '\\DateTimeImmutable') {
-         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
+    let parsingLogic: string;
+    if (field.type === '\\DateTimeInterface') {
+        parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
     } else if (field.isObjectArray) {
         const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         parsingLogic = `isset($${dataVar}['${key}']) ? array_map(fn($item) => ${singularType}::fromArray($item), $${dataVar}['${key}']) : null`;
     } else if (field.isObject) {
-         parsingLogic = `isset($${dataVar}['${key}']) ? ${field.type}::fromArray($${dataVar}['${key}']) : null`;
+        parsingLogic = `isset($${dataVar}['${key}']) ? ${field.type}::fromArray($${dataVar}['${key}']) : null`;
+    } else {
+        parsingLogic = `$${dataVar}['${key}'] ?? null`;
     }
     return { parsingLogic };
 }
@@ -179,8 +191,8 @@ function getSerializingLogic(field: { name: string, type: string, isObject: bool
         serializingLogic = `isset($this->${field.name}) ? array_map(fn($item) => $item->toArray(), $this->${field.name}) : null`;
     } else if (field.isObject) {
         serializingLogic = `$this->${field.name}?->toArray()`;
-    } else if (field.type === '\\DateTimeImmutable') {
-        serializingLogic = `$this->${field.name}?->format(DateTimeInterface::ATOM)`;
+    } else if (field.type === '\\DateTimeInterface') {
+        serializingLogic = `$this->${field.name}?->format(\\DateTimeInterface::ATOM)`;
     }
     return { serializingLogic };
 }
@@ -204,8 +216,7 @@ export function generatePhpCode(
     const classDefs = orderedClasses.map((name, index) => {
         let code = classes.get(name) || '';
         
-        const hasDateTime = code.includes('\\DateTimeImmutable');
-        const needsInterface = code.includes('?->format(DateTimeInterface::ATOM)');
+        const needsInterface = code.includes('?->format(\\DateTimeInterface::ATOM)');
 
         if (needsInterface && !code.includes('use DateTimeInterface;')) {
              code = code.replace('<?php', '<?php\n\nuse DateTimeInterface;');
