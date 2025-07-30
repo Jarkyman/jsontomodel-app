@@ -140,6 +140,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
     }
     
+    if (!options.useStruct && options.isHashable) {
+        classDefinition += `\n    func hash(into hasher: inout Hasher) {\n`;
+        for (const field of fields) {
+            classDefinition += `        hasher.combine(${field.name})\n`;
+        }
+        classDefinition += `    }\n`;
+    }
+    
     if (options.isCustomStringConvertible) {
         classDefinition += `\n    var description: String {\n`;
         const descriptionFields = fields.map(f => `\\(${f.name} ?? "nil")`).join(', ');
@@ -153,6 +161,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const sampleValue = generateSampleValue(field.type, field.value, options);
             classDefinition += `            ${field.name}: ${sampleValue},\n`;
+        }
+        if (fields.length > 0) {
+            classDefinition = classDefinition.slice(0, -2) + '\n';
         }
         classDefinition += `        )\n`;
         classDefinition += `    }\n`;
