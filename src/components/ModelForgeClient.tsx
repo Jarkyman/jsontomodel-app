@@ -145,12 +145,13 @@ const initialSwiftOptions: SwiftGeneratorOptions = {
     isPublished: false,
     isMainActor: false,
     isCustomStringConvertible: false,
-    dateStrategy: 'none'
+    dateStrategy: 'iso8601'
 };
 
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
+type SwiftOptionKey = keyof SwiftGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -376,6 +377,10 @@ export default function ModelForgeClient() {
         return newOptions;
     });
   };
+
+  const handleToggleSwiftOption = (option: SwiftOptionKey) => {
+    setSwiftOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
   
   const handleRename = () => {
     if (renameInputValue.trim()) {
@@ -494,8 +499,13 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'swift' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex items-center justify-center text-sm text-muted-foreground">
-                    Swift options will be available here soon.
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <FilterButton checked={swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="struct" />
+                    <FilterButton checked={!swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="class" />
+                    <FilterButton checked={swiftOptions.isEquatable} onClick={() => handleToggleSwiftOption('isEquatable')} label="Equatable" />
+                    <FilterButton checked={swiftOptions.isHashable} onClick={() => handleToggleSwiftOption('isHashable')} label="Hashable" />
+                    <FilterButton checked={swiftOptions.isCustomStringConvertible} onClick={() => handleToggleSwiftOption('isCustomStringConvertible')} label="Debug Description" />
+                    <FilterButton checked={swiftOptions.generateSampleData} onClick={() => handleToggleSwiftOption('generateSampleData')} label="Sample Data" />
                 </div>
             </CardContent>
         </Card>
