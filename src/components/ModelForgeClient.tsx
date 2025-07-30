@@ -162,13 +162,14 @@ const initialPythonOptions: PythonGeneratorOptions = {
     includeEq: true,
     includeHash: false,
     nestedClasses: true,
-    sampleInstance: false, // Default to false for now
+    sampleInstance: false,
 };
 
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
 type SwiftOptionKey = keyof SwiftGeneratorOptions;
+type PythonOptionKey = keyof PythonGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -402,6 +403,10 @@ export default function ModelForgeClient() {
     setSwiftOptions(prev => ({...prev, [option]: !prev[option] }));
   };
   
+  const handleTogglePythonOption = (option: PythonOptionKey) => {
+    setPythonOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+
   const handleRename = () => {
     if (renameInputValue.trim()) {
       const newName = renameInputValue.trim();
@@ -534,7 +539,14 @@ export default function ModelForgeClient() {
       {selectedLanguage === 'python' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <p className="text-center text-muted-foreground">Python options coming soon...</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
+                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
+                    <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
+                    <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
+                    <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
+                    <FilterButton checked={pythonOptions.nestedClasses} onClick={() => handleTogglePythonOption('nestedClasses')} label="nested" />
+                </div>
             </CardContent>
         </Card>
       )}

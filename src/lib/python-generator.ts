@@ -36,8 +36,12 @@ function toPascalCase(str: string): string {
 }
 
 function toSnakeCase(str: string): string {
-    return str.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, '');
+    return str
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2') // Add underscore between camelCase
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2') // Add underscore for acronyms like 'ID'
+        .toLowerCase();
 }
+
 
 function isIsoDateString(value: any): boolean {
     if (typeof value !== 'string') return false;
@@ -45,7 +49,7 @@ function isIsoDateString(value: any): boolean {
 }
 
 function getPythonType(value: any, key: string, classes: Map<string, string>, options: PythonGeneratorOptions): string {
-    if (value === null) return 'Optional[Any]';
+    if (value === null) return 'Any';
 
     const type = typeof value;
     if (type === 'string') {
@@ -78,14 +82,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     const dataclassArgs = [];
     if (options.frozen) dataclassArgs.push('frozen=True');
     if (options.slots) dataclassArgs.push('slots=True');
+    
+    // dataclasses implicitly handle repr and eq, these options turn them off.
+    // Hash is opt-in.
     if (!options.includeRepr) dataclassArgs.push('repr=False');
     if (!options.includeEq) dataclassArgs.push('eq=False');
     if (options.includeHash) dataclassArgs.push('unsafe_hash=True');
 
-    let classString = `@dataclass(${dataclassArgs.join(', ')})\n`;
-    classString += `class ${className}:\n`;
+    const decorator = options.dataclass ? `@dataclass(${dataclassArgs.join(', ')})\n` : '';
+    let classString = `${decorator}class ${className}:\n`;
 
-    const fields: { name: string, type: string, originalKey: string }[] = [];
+    const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     if (Object.keys(jsonObject).length === 0) {
         classString += `    pass\n`;
     } else {
@@ -93,11 +100,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             if (key === '') continue;
             const fieldName = options.camelCaseToSnakeCase ? toSnakeCase(key) : key;
             const pythonType = getPythonType(jsonObject[key], key, classes, options);
-            const isOptional = pythonType.includes('Optional[');
-            const finalType = isOptional ? pythonType : `Optional[${pythonType}]`;
+            const finalType = `Optional[${pythonType}]`;
             
-            classString += `    ${fieldName}: ${finalType}\n`;
-            fields.push({ name: fieldName, type: finalType, originalKey: key });
+            if (options.typeHints) {
+                classString += `    ${fieldName}: ${finalType}\n`;
+            } else {
+                 classString += `    ${fieldName}\n`;
+            }
+            fields.push({ name: fieldName, type: pythonType, originalKey: key, value: jsonObject[key] });
         }
     }
 
@@ -108,19 +118,19 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             const key = field.originalKey;
             const fieldName = field.name;
-            const fieldType = getPythonType(jsonObject[key], key, classes, options);
+            const fieldType = field.type;
 
-            if (fieldType.startsWith('List[')) {
+            if (fieldType.startsWith('List[') && options.nestedClasses) {
                  const itemType = fieldType.substring(5, fieldType.length - 1);
                  if (classes.has(itemType)) {
-                    classString += `            ${fieldName}=[${itemType}.from_dict(item) for item in data.get("${key}", [])],\n`;
+                    classString += `            ${fieldName}=[${itemType}.from_dict(item) for item in data.get("${key}", []) if item is not None],\n`;
                  } else {
                     classString += `            ${fieldName}=data.get("${key}"),\n`;
                  }
-            } else if (classes.has(fieldType)) {
-                classString += `            ${fieldName}=${fieldType}.from_dict(data["${key}"]) if "${key}" in data and data["${key}"] is not None else None,\n`;
+            } else if (classes.has(fieldType) && options.nestedClasses) {
+                classString += `            ${fieldName}=${fieldType}.from_dict(data["${key}"]) if data.get("${key}") is not None else None,\n`;
             } else if (fieldType === 'datetime') {
-                 classString += `            ${fieldName}=datetime.fromisoformat(data["${key}"]) if "${key}" in data and data["${key}"] is not None else None,\n`;
+                 classString += `            ${fieldName}=datetime.fromisoformat(data["${key}"]) if data.get("${key}") is not None else None,\n`;
             }
             else {
                 classString += `            ${fieldName}=data.get("${key}"),\n`;
@@ -135,16 +145,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
          for (const field of fields) {
             const key = field.originalKey;
             const fieldName = field.name;
-            const fieldType = getPythonType(jsonObject[key], key, classes, options);
+            const fieldType = field.type;
 
-            if (fieldType.startsWith('List[')) {
+            if (fieldType.startsWith('List[') && options.nestedClasses) {
                  const itemType = fieldType.substring(5, fieldType.length - 1);
                  if (classes.has(itemType)) {
                     classString += `            "${key}": [item.to_dict() for item in self.${fieldName}] if self.${fieldName} is not None else [],\n`;
                  } else {
                     classString += `            "${key}": self.${fieldName},\n`;
                  }
-            } else if (classes.has(fieldType)) {
+            } else if (classes.has(fieldType) && options.nestedClasses) {
                 classString += `            "${key}": self.${fieldName}.to_dict() if self.${fieldName} is not None else None,\n`;
             } else if (fieldType === 'datetime') {
                  classString += `            "${key}": self.${fieldName}.isoformat() if self.${fieldName} is not None else None,\n`;
@@ -190,11 +200,16 @@ export function generatePythonCode(
     
     // Find nested classes to determine imports
     const codeString = Array.from(classes.values()).join('\n');
-    const needsTyping = codeString.includes('Optional[') || codeString.includes('List[') || codeString.includes('Dict[') || codeString.includes('Any');
+    const needsTyping = options.typeHints && (codeString.includes('Optional[') || codeString.includes('List[') || codeString.includes('Dict[') || codeString.includes('Any'));
     const needsDatetime = codeString.includes('datetime');
+    const needsDataclass = options.dataclass;
 
-    let imports = `from dataclasses import dataclass\n`;
-    if (needsTyping) {
+
+    let imports = '';
+    if (needsDataclass) {
+        imports += `from dataclasses import dataclass\n`;
+    }
+     if (needsTyping) {
         imports += `from typing import Any, Dict, List, Optional\n`;
     }
     if (needsDatetime) {
@@ -231,6 +246,7 @@ export function generatePythonCode(
     const orderedClasses = Array.from(classes.keys()).reverse();
     const finalClasses = new Map<string, string>();
 
+    // This re-generation ensures the order is correct for nested classes
     for (const className of orderedClasses) {
         const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
         if (jsonSource) {
@@ -238,13 +254,13 @@ export function generatePythonCode(
         }
     }
 
-    const generatedClassNames = Array.from(finalClasses.keys());
-    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
+    // Now, let's create the final string with classes in the correct dependency order.
+    // The reversed `orderedClasses` list gives us the correct order.
+    const finalCode = orderedClasses
+      .map(name => finalClasses.get(name))
+      .filter(Boolean)
+      .join('\n\n');
 
-    if (rootClassIndex > -1) {
-        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
-        generatedClassNames.unshift(rootClassName);
-    }
 
-    return `${imports}\n` + generatedClassNames.map(name => finalClasses.get(name)).join('\n\n');
+    return `${imports}\n` + finalCode;
 }
