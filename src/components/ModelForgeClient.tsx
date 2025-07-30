@@ -22,6 +22,7 @@ import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generat
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
 import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
+import { generateJavaScriptCode } from "@/lib/javascript-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -378,18 +379,7 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "php") {
             result = generatePhpCode(parsedJson, rootClassName, phpOptions);
           } else if (selectedLanguage === "javascript") {
-              const tsCode = generateTypescriptCode(parsedJson, rootClassName, {
-                  useType: false, // Generate interfaces for a class-like structure
-                  optionalFields: false,
-                  readonlyFields: false,
-                  allowNulls: false,
-              });
-              // Convert TypeScript interface to JavaScript class
-              result = tsCode
-                  .replace(/export interface/g, 'class')
-                  .replace(/readonly /g, '')
-                  .replace(/: [a-zA-Z\s|\[\]]+;/g, ';') // Remove type annotations
-                  .replace(/;/g, ''); // Remove trailing semicolons
+              result = generateJavaScriptCode(parsedJson, rootClassName);
           } else {
             toast({
               title: "Not Implemented",
@@ -664,7 +654,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
-                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('to_dict')} label="to_dict" />
+                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
                     <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
                     <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
                     <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
@@ -839,5 +829,7 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
