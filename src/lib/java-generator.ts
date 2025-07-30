@@ -199,17 +199,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
 
         classString += `        public ${className} build() {\n`;
-        if (options.noArgsConstructor) {
-             classString += `            ${className} instance = new ${className}();\n`;
-             for(const field of fields) {
-                classString += `            instance.${field.name} = this.${field.name};\n`
-             }
-             classString += `            return instance;\n`
-        } else {
-            const builderFields = fields.map(f => `this.${f.name}`).join(', ');
-            classString += `            return new ${className}(${builderFields});\n`;
-        }
-
+        const builderFields = fields.map(f => `this.${f.name}`).join(', ');
+        classString += `            return new ${className}(${builderFields});\n`;
         classString += `        }\n`;
         classString += `    }\n`;
     }
