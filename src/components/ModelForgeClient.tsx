@@ -25,7 +25,7 @@ import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
 import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
-import { generateRustCode } from "@/lib/rust-generator";
+import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -245,6 +245,11 @@ const initialVbNetOptions: VbNetGeneratorOptions = {
     jsonAnnotations: true,
 };
 
+const initialRustOptions: RustGeneratorOptions = {
+    deriveClone: true,
+    publicFields: true,
+};
+
 
 type DartOptionKey = keyof DartGeneratorOptions;
 type KotlinOptionKey = Exclude<keyof KotlinGeneratorOptions, 'serializationLibrary'>;
@@ -257,6 +262,7 @@ type PhpOptionKey = keyof PhpGeneratorOptions;
 type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
 type CppOptionKey = keyof CppGeneratorOptions;
 type VbNetOptionKey = keyof VbNetGeneratorOptions;
+type RustOptionKey = keyof RustGeneratorOptions;
 
 
 const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => void, checked: boolean, label: string, disabled?: boolean }) => (
@@ -298,6 +304,7 @@ export default function ModelForgeClient() {
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
   const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
+  const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { toast } = useToast();
 
@@ -421,7 +428,7 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "vbnet") {
               result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
           } else if (selectedLanguage === "rust") {
-              result = generateRustCode(parsedJson, rootClassName);
+              result = generateRustCode(parsedJson, rootClassName, rustOptions);
           } else {
             toast({
               title: "Not Implemented",
@@ -474,7 +481,7 @@ export default function ModelForgeClient() {
           clearTimeout(handler);
       };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rootClassName, selectedLanguage]);
+  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rootClassName, selectedLanguage]);
 
 
   const handleToggleDartOption = (option: DartOptionKey) => {
@@ -574,6 +581,10 @@ export default function ModelForgeClient() {
   
   const handleToggleVbNetOption = (option: VbNetOptionKey) => {
     setVbnetOptions(prev => ({...prev, [option]: !prev[option] }));
+  };
+  
+  const handleToggleRustOption = (option: RustOptionKey) => {
+    setRustOptions(prev => ({...prev, [option]: !prev[option] }));
   };
 
 
@@ -846,6 +857,25 @@ export default function ModelForgeClient() {
                 checked={vbnetOptions.jsonAnnotations} 
                 onClick={() => handleToggleVbNetOption('jsonAnnotations')} 
                 label="[JsonProperty]"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedLanguage === 'rust' && (
+        <Card className="max-w-2xl mx-auto shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <FilterButton 
+                checked={rustOptions.deriveClone} 
+                onClick={() => handleToggleRustOption('deriveClone')} 
+                label="Derive Clone/PartialEq"
+              />
+              <FilterButton 
+                checked={rustOptions.publicFields} 
+                onClick={() => handleToggleRustOption('publicFields')} 
+                label="Public Fields"
               />
             </div>
           </CardContent>

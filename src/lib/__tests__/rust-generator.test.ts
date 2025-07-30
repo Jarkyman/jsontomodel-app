@@ -1,11 +1,11 @@
 
-import { generateRustCode } from '../rust-generator';
+import { generateRustCode, RustGeneratorOptions } from '../rust-generator';
 
 const fullJsonInput = {
     "user_id": 123,
     "user_name": "John Doe",
     "is_active": true,
-    "last_seen_at": "2023-10-27T10:00:00Z", // Should be a string
+    "last_seen_at": "2023-10-27T10:00:00Z",
     "balance": 1050.75,
     "user_profile": {
         "theme_preference": "dark",
@@ -20,12 +20,17 @@ const fullJsonInput = {
     "empty_list": []
 };
 
+const defaultOptions: RustGeneratorOptions = {
+    deriveClone: true,
+    publicFields: true
+};
+
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
 describe('generateRustCode', () => {
 
-    it('should generate correct Rust structs with serde attributes and extra derives', () => {
-        const generated = generateRustCode(fullJsonInput, 'UserData');
+    it('should generate correct Rust structs with default options', () => {
+        const generated = generateRustCode(fullJsonInput, 'UserData', defaultOptions);
         const normGenerated = normalize(generated);
 
         // Check for serde imports
@@ -36,30 +41,50 @@ describe('generateRustCode', () => {
 
         // Check for correct field renaming
         expect(normGenerated).toContain('#[serde(rename = "user_id")]');
-        expect(normGenerated).toContain('user_id: Option<i64>,');
+        expect(normGenerated).toContain('pub user_id: Option<i64>,');
 
         expect(normGenerated).toContain('#[serde(rename = "last_seen_at")]');
-        expect(normGenerated).toContain('last_seen_at: Option<String>,');
+        expect(normGenerated).toContain('pub last_seen_at: Option<String>,');
 
         // Check for nested structs
-        expect(normGenerated).toContain('user_profile: Option<UserProfile>,');
+        expect(normGenerated).toContain('pub user_profile: Option<UserProfile>,');
         expect(normGenerated).toContain('struct UserProfile {');
         expect(normGenerated).toContain('#[serde(rename = "theme_preference")]');
-        expect(normGenerated).toContain('theme_preference: Option<String>,');
+        expect(normGenerated).toContain('pub theme_preference: Option<String>,');
 
         // Check for vector types
-        expect(normGenerated).toContain('inventory: Option<Vec<Inventory>>,');
+        expect(normGenerated).toContain('pub inventory: Option<Vec<Inventory>>,');
         expect(normGenerated).toContain('struct Inventory {');
         
         // Check for null and empty list handling
-        expect(normGenerated).toContain('metadata: Option<serde_json::Value>,');
-        expect(normGenerated).toContain('empty_list: Option<Vec<serde_json::Value>>,');
+        expect(normGenerated).toContain('pub metadata: Option<serde_json::Value>,');
+        expect(normGenerated).toContain('pub empty_list: Option<Vec<serde_json::Value>>,');
         expect(normGenerated).toContain('use serde_json;');
     });
 
+    it('should generate without extra derives when disabled', () => {
+        const options: RustGeneratorOptions = { deriveClone: false, publicFields: true };
+        const generated = generateRustCode({ id: 1 }, 'Simple', options);
+        const normGenerated = normalize(generated);
+
+        expect(normGenerated).toContain('#[derive(Debug, Serialize, Deserialize)]');
+        expect(normGenerated).not.toContain('Clone');
+        expect(normGenerated).not.toContain('PartialEq');
+    });
+
+    it('should generate with private fields when disabled', () => {
+        const options: RustGeneratorOptions = { deriveClone: true, publicFields: false };
+        const generated = generateRustCode({ id: 1 }, 'Simple', options);
+        const normGenerated = normalize(generated);
+
+        expect(normGenerated).toContain('id: Option<i64>,');
+        expect(normGenerated).not.toContain('pub id');
+    });
+
+
     it('should handle a simple JSON object correctly', () => {
         const simpleJson = { "id": 1, "name": "test" };
-        const generated = generateRustCode(simpleJson, 'Simple');
+        const generated = generateRustCode(simpleJson, 'Simple', defaultOptions);
         const normGenerated = normalize(generated);
 
         const expected = `
@@ -79,16 +104,7 @@ describe('generateRustCode', () => {
     });
 
     it('should throw an error for empty JSON', () => {
-        expect(() => generateRustCode({}, 'Empty')).toThrow("Invalid or empty JSON object provided.");
+        expect(() => generateRustCode({}, 'Empty', defaultOptions)).toThrow("Invalid or empty JSON object provided.");
     });
     
-    it('should correctly handle fields that do not require renaming', () => {
-        const jsonWithSnakeCase = { "user_id": 1 };
-        const generated = generateRustCode(jsonWithSnakeCase, 'User');
-        const normGenerated = normalize(generated);
-
-        // Even if it matches, the rename attribute is added for consistency and safety
-        expect(normGenerated).toContain('#[serde(rename = "user_id")]');
-        expect(normGenerated).toContain('pub user_id: Option<i64>,');
-    });
 });
