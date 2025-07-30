@@ -150,8 +150,16 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     
     if (options.isCustomStringConvertible) {
         classDefinition += `\n    var description: String {\n`;
-        const descriptionFields = fields.map(f => `\\(${f.name} ?? "nil")`).join(', ');
-        classDefinition += `        return "${className}(${fields.map(f => `${f.name}: \\(${f.name} ?? "nil")`).join(', ')})"\n`;
+        if (fields.length > 0) {
+            const descriptionFields = fields.map(f => `        ${f.name}: \\(String(describing: ${f.name}))`).join(',\n');
+            classDefinition += `        return """\n`;
+            classDefinition += `    ${className}(\n`;
+            classDefinition += `${descriptionFields}\n`;
+            classDefinition += `    )\n`;
+            classDefinition += `    """\n`;
+        } else {
+            classDefinition += `        return "${className}()"\n`;
+        }
         classDefinition += `    }\n`;
     }
     
