@@ -353,7 +353,7 @@ export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState(defaultJson);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [outputCode, setOutputCode] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("dart");
+  const [selectedLanguage, setSelectedLanguage] = useState("typescript");
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [rootClassName, setRootClassName] = useState("DataModel");
@@ -714,11 +714,11 @@ export default function ModelForgeClient() {
   };
 
   const handleToggleErlangOption = (option: ErlangOptionKey) => {
-    setErlangOptions(prev => ({...prev, [option]: !prev[option] }));
+    setErlangOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleScalaOption = (option: ScalaOptionKey) => {
-    setScalaOptions(prev => ({...prev, [option]: !prev[option] }));
+    setScalaOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleRename = () => {
@@ -1245,4 +1245,4 @@ export default function ModelForgeClient() {
   );
 }
     
-
+    
