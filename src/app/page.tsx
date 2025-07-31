@@ -1,5 +1,5 @@
-import ModelForgeClient from '@/components/ModelForgeClient';
 import { ThemeToggle } from '@/components/theme-toggle';
+import ModelForgeLoader from '@/components/ModelForgeLoader';
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <ModelForgeClient />
+      <ModelForgeLoader />
     </main>
   );
 }
