@@ -1226,7 +1226,7 @@ export default function ModelForgeClient() {
       <AdPlaceholder 
         className="h-24 w-full"
         adClient="ca-pub-9894760850635221" 
-        adSlot="YOUR_AD_SLOT_ID_2" 
+        adSlot="3992378950" 
       />
     </div>
   );
