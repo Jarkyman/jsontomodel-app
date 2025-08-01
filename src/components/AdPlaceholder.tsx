@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState }from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 declare global {
@@ -41,26 +41,25 @@ export default function AdPlaceholder({
   }, [adClient, adSlot]);
 
   useEffect(() => {
+    const adElement = document.querySelector(`ins[data-ad-slot="${adSlot}"]`);
+    if (!adElement) return;
+
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-            if (mutation.target.hasChildNodes()) {
+            if (adElement.getAttribute('data-ad-status') === 'filled') {
                 setAdLoaded(true);
                 observer.disconnect();
             }
         });
     });
 
-    const adElement = document.querySelector(`ins[data-ad-slot="${adSlot}"]`);
-    if (adElement) {
-        observer.observe(adElement, { childList: true });
-    }
+    observer.observe(adElement, { attributes: true });
 
     return () => observer.disconnect();
   }, [adSlot]);
 
-
   return (
-    <div className={cn(className, adLoaded ? 'h-24' : 'h-0 transition-[height]')}>
+    <div className={cn(className, adLoaded ? 'h-auto' : 'h-0 transition-[height]')}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
