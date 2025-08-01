@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -30,7 +29,7 @@ export default function AdPlaceholder({
     } catch (err) {
       console.error("AdSense error:", err);
     }
-  }, []);
+  }, [adClient, adSlot]);
 
   return (
     <div className={className}>
