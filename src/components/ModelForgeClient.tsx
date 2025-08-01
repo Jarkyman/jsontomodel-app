@@ -82,57 +82,12 @@ const kotlinSerializationLibraries = [
 
 const defaultJson = JSON.stringify(
   {
-    "id": 123,
-    "name": "Test User",
-    "email": "test@example.com",
-    "is_active": true,
-    "created_at": "2025-07-29T12:00:00Z",
-    "score": 89.75,
-    "preferences": {
-      "newsletter": false,
-      "notifications": {
-        "email": true,
-        "sms": false,
-        "push": true
-      }
-    },
-    "roles": ["admin", "editor", "viewer"],
-    "tags": [],
-    "profile_picture": null,
-    "address": {
-      "street": "123 Example St",
-      "city": "Copenhagen",
-      "zipcode": "2100",
-      "coordinates": {
-        "lat": 55.6761,
-        "lng": 12.5683
-      }
-    },
-    "projects": [
-      {
-        "id": "p1",
-        "title": "Website Redesign",
-        "status": "active",
-        "budget": 10000,
-        "members": [
-          {
-            "id": "u1",
-            "name": "Alice"
-          },
-          {
-            "id": "u2",
-            "name": "Bob"
-          }
-        ]
-      },
-      {
-        "id": "p2",
-        "title": "Mobile App",
-        "status": "planning",
-        "budget": 5000,
-        "members": []
-      }
-    ]
+    "id": 1,
+    "title": "A Sample Post",
+    "body": "This is the content of the post.",
+    "userId": 1,
+    "tags": ["news", "featured"],
+    "isPublished": true
   },
   null,
   2
@@ -1264,5 +1219,6 @@ export default function ModelForgeClient() {
     
 
     
+
 
 
