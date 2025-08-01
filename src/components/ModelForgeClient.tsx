@@ -50,13 +50,13 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
 
 const languages = [
+  { value: "typescript", label: "TypeScript", supported: true },
   { value: "dart", label: "Flutter (Dart)", supported: true },
   { value: "kotlin", label: "Kotlin", supported: true },
   { value: "swift", label: "Swift", supported: true },
   { value: "python", label: "Python", supported: true },
   { value: "java", label: "Java", supported: true },
   { value: "csharp", label: "C#", supported: true },
-  { value: "typescript", label: "TypeScript", supported: true },
   { value: "go", label: "Go", supported: true },
   { value: "php", label: "PHP", supported: true },
   { value: "javascript", label: "JavaScript", supported: true },
@@ -350,7 +350,7 @@ const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => vo
 
 
 export default function ModelForgeClient() {
-  const [jsonInput, setJsonInput] = useState(defaultJson);
+  const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [outputCode, setOutputCode] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("typescript");
@@ -447,6 +447,9 @@ export default function ModelForgeClient() {
     if (storedLang) {
       setSelectedLanguage(storedLang);
     }
+
+    const storedJson = localStorage.getItem("jsonInput");
+    setJsonInput(storedJson || defaultJson);
   }, []);
 
   useEffect(() => {
@@ -454,10 +457,17 @@ export default function ModelForgeClient() {
   }, [selectedLanguage]);
 
   useEffect(() => {
+    if (userHasInteracted) {
+      localStorage.setItem("jsonInput", jsonInput);
+    }
+  }, [jsonInput, userHasInteracted]);
+
+  useEffect(() => {
     setRenameInputValue(rootClassName);
   }, [rootClassName]);
 
   const generateCode = () => {
+    if (!jsonInput) return;
     const isValid = validateJson(jsonInput);
     if (!isValid) {
       return;
@@ -569,6 +579,7 @@ export default function ModelForgeClient() {
   
   // Main useEffect for live generation
   useEffect(() => {
+      if (!jsonInput) return;
       const handler = setTimeout(() => {
           generateCode();
       }, 500); // Debounce generation
@@ -1249,4 +1260,6 @@ export default function ModelForgeClient() {
   );
 }
     
+    
+
     
