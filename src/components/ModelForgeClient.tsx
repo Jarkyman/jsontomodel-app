@@ -353,7 +353,13 @@ export default function ModelForgeClient() {
   const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [outputCode, setOutputCode] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("typescript");
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const storedLang = localStorage.getItem("selectedLanguage");
+      return storedLang || "typescript";
+    }
+    return "typescript";
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [rootClassName, setRootClassName] = useState("DataModel");
@@ -443,15 +449,10 @@ export default function ModelForgeClient() {
   };
 
   useEffect(() => {
-    const storedLang = localStorage.getItem("selectedLanguage");
-    if (storedLang) {
-      setSelectedLanguage(storedLang);
-    }
-
     const storedJson = localStorage.getItem("jsonInput");
     setJsonInput(storedJson || defaultJson);
   }, []);
-
+  
   useEffect(() => {
     localStorage.setItem("selectedLanguage", selectedLanguage);
   }, [selectedLanguage]);
@@ -1263,4 +1264,5 @@ export default function ModelForgeClient() {
     
 
     
+
 
