@@ -763,7 +763,7 @@ export default function ModelForgeClient() {
       <AdPlaceholder 
         className="h-24 max-w-2xl w-full mx-auto" 
         adClient="ca-pub-9894760850635221" 
-        adSlot="YOUR_AD_SLOT_ID_1" 
+        adSlot="3849241862" 
       />
 
       {selectedLanguage === 'dart' && (
