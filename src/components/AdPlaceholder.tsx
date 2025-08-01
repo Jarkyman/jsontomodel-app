@@ -1,32 +1,47 @@
 
-import { cn } from "@/lib/utils";
+"use client";
 
-interface AdPlaceholderProps {
-  type: 'banner' | 'footer';
-  className?: string;
+import { useEffect } from 'react';
+
+declare global {
+  interface Window {
+    adsbygoogle: any;
+  }
 }
 
-export default function AdPlaceholder({ type, className }: AdPlaceholderProps) {
-  // In a real scenario, you would integrate AdSense scripts here.
-  // This component serves as a visual placeholder.
-  
-  const styles = {
-    banner: "h-24 w-full max-w-2xl", // e.g., 728x90 leaderboard
-    footer: "h-24 w-full",
-  };
-  
+interface AdPlaceholderProps {
+  className?: string;
+  adClient: string;
+  adSlot: string;
+  adFormat?: string;
+  fullWidthResponsive?: boolean;
+}
+
+export default function AdPlaceholder({
+  className,
+  adClient,
+  adSlot,
+  adFormat = "auto",
+  fullWidthResponsive = true
+}: AdPlaceholderProps) {
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error("AdSense error:", err);
+    }
+  }, []);
+
   return (
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-lg bg-muted/50 border border-dashed text-muted-foreground",
-        styles[type],
-        className
-      )}
-    >
-      <div className="text-center">
-        <p className="font-medium">Advertisement</p>
-        <p className="text-xs">{type === 'banner' ? 'Responsive Banner Ad' : 'Footer Ad'}</p>
-      </div>
+    <div className={className}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={adClient}
+        data-ad-slot={adSlot}
+        data-ad-format={adFormat}
+        data-full-width-responsive={fullWidthResponsive.toString()}
+      ></ins>
     </div>
   );
 }

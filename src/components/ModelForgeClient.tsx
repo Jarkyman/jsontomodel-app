@@ -760,7 +760,11 @@ export default function ModelForgeClient() {
         </div>
       </section>
 
-      <AdPlaceholder type="banner" className="mx-auto" />
+      <AdPlaceholder 
+        className="h-24 max-w-2xl w-full mx-auto" 
+        adClient="ca-pub-9894760850635221" 
+        adSlot="YOUR_AD_SLOT_ID_1" 
+      />
 
       {selectedLanguage === 'dart' && (
       <Card className="max-w-2xl mx-auto shadow-sm">
@@ -1219,21 +1223,11 @@ export default function ModelForgeClient() {
           </CardContent>
         </Card>
       </section>
-      <AdPlaceholder type="footer" />
+      <AdPlaceholder 
+        className="h-24 w-full"
+        adClient="ca-pub-9894760850635221" 
+        adSlot="YOUR_AD_SLOT_ID_2" 
+      />
     </div>
   );
 }
-    
-    
-
-    
-
-
-
-
-
-
-
-
-
-    
