@@ -48,6 +48,7 @@ import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
+import AdPlaceholder from "./AdPlaceholder";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -335,7 +336,7 @@ export default function ModelForgeClient() {
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
-  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
+  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbnetOptions);
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
@@ -758,6 +759,8 @@ export default function ModelForgeClient() {
           </Select>
         </div>
       </section>
+
+      <AdPlaceholder type="banner" />
 
       {selectedLanguage === 'dart' && (
       <Card className="max-w-2xl mx-auto shadow-sm">
@@ -1216,6 +1219,7 @@ export default function ModelForgeClient() {
           </CardContent>
         </Card>
       </section>
+      <AdPlaceholder type="footer" />
     </div>
   );
 }
@@ -1223,6 +1227,7 @@ export default function ModelForgeClient() {
     
 
     
+
 
 
 
