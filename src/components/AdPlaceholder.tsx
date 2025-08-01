@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 declare global {
@@ -24,45 +24,17 @@ export default function AdPlaceholder({
   adFormat = "auto",
   fullWidthResponsive = true
 }: AdPlaceholderProps) {
-  const [adLoaded, setAdLoaded] = useState(false);
 
   useEffect(() => {
-    const pushAd = () => {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        console.error("AdSense error:", err);
-      }
-    };
-
-    const timeoutId = setTimeout(pushAd, 50);
-
-    return () => clearTimeout(timeoutId);
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error("AdSense error:", err);
+    }
   }, [adClient, adSlot]);
 
-  useEffect(() => {
-    const adElement = document.querySelector(`ins[data-ad-slot="${adSlot}"]`);
-    if (!adElement) return;
-
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (adElement.getAttribute('data-ad-status') === 'filled') {
-                setAdLoaded(true);
-                observer.disconnect();
-            }
-        });
-    });
-
-    observer.observe(adElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, [adSlot]);
-
-  // We simply wrap the <ins> tag. If no ad is loaded, the height will be 0.
-  // If an ad is loaded, the <ins> tag itself will expand to the correct height.
-  // This prevents layout shifts and overlapping issues.
   return (
-    <div className={cn(className, !adLoaded && 'hidden')}>
+    <div className={cn(className)}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
