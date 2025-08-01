@@ -83,11 +83,15 @@ const kotlinSerializationLibraries = [
 const defaultJson = JSON.stringify(
   {
     "id": 1,
-    "title": "A Sample Post",
-    "body": "This is the content of the post.",
-    "userId": 1,
-    "tags": ["news", "featured"],
-    "isPublished": true
+    "name": "Alice",
+    "email": "alice@example.com",
+    "isActive": true,
+    "createdAt": "2025-07-31T10:00:00Z",
+    "roles": ["admin", "editor"],
+    "profile": {
+      "age": 30,
+      "country": "Denmark"
+    }
   },
   null,
   2
@@ -1219,6 +1223,7 @@ export default function ModelForgeClient() {
     
 
     
+
 
 
 
