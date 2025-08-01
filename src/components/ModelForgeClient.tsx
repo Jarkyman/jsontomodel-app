@@ -760,7 +760,7 @@ export default function ModelForgeClient() {
         </div>
       </section>
 
-      <AdPlaceholder type="banner" />
+      <AdPlaceholder type="banner" className="mx-auto" />
 
       {selectedLanguage === 'dart' && (
       <Card className="max-w-2xl mx-auto shadow-sm">
@@ -1234,3 +1234,6 @@ export default function ModelForgeClient() {
 
 
 
+
+
+    
