@@ -1064,13 +1064,13 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={sqlOptions.useSnakeCase} onClick={() => handleToggleSqlOption('useSnakeCase')} label="snake_case" />
-                <FilterButton checked={sqlOptions.includePrimaryKey} onClick={() => handleToggleSqlOption('includePrimaryKey')} label="Primary Key" />
-                <FilterButton checked={sqlOptions.useNotNull} onClick={() => handleToggleSqlOption('useNotNull')} label="NOT NULL" />
-                <FilterButton checked={sqlOptions.useForeignKeys} onClick={() => handleToggleSqlOption('useForeignKeys')} label="Foreign Keys" />
-                <FilterButton checked={sqlOptions.includeTimestamps} onClick={() => handleToggleSqlOption('includeTimestamps')} label="Timestamps" />
-                <FilterButton checked={sqlOptions.useTypeInference} onClick={() => handleToggleSqlOption('useTypeInference')} label="Infer Types" />
-                <FilterButton checked={sqlOptions.defaultValues} onClick={() => handleToggleSqlOption('defaultValues')} label="Default Values" />
+                <FilterButton checked={sqlOptions.useSnakeCase ?? false} onClick={() => handleToggleSqlOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={sqlOptions.includePrimaryKey ?? false} onClick={() => handleToggleSqlOption('includePrimaryKey')} label="Primary Key" />
+                <FilterButton checked={sqlOptions.useNotNull ?? false} onClick={() => handleToggleSqlOption('useNotNull')} label="NOT NULL" />
+                <FilterButton checked={sqlOptions.useForeignKeys ?? false} onClick={() => handleToggleSqlOption('useForeignKeys')} label="Foreign Keys" />
+                <FilterButton checked={sqlOptions.includeTimestamps ?? false} onClick={() => handleToggleSqlOption('includeTimestamps')} label="Timestamps" />
+                <FilterButton checked={sqlOptions.useTypeInference ?? false} onClick={() => handleToggleSqlOption('useTypeInference')} label="Infer Types" />
+                <FilterButton checked={sqlOptions.defaultValues ?? false} onClick={() => handleToggleSqlOption('defaultValues')} label="Default Values" />
               </div>
                <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Table Prefix:</span>
@@ -1223,6 +1223,7 @@ export default function ModelForgeClient() {
     
 
     
+
 
 
 
