@@ -1129,10 +1129,10 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={elixirOptions.useSnakeCase ?? true} onClick={() => handleToggleElixirOption('useSnakeCase')} label="snake_case" />
-                <FilterButton checked={elixirOptions.includeTypes ?? true} onClick={() => handleToggleElixirOption('includeTypes')} label="@types" />
-                <FilterButton checked={elixirOptions.includeStruct ?? true} onClick={() => handleToggleElixirOption('includeStruct')} label="defstruct" />
-                <FilterButton checked={elixirOptions.defaultValues ?? false} onClick={() => handleToggleElixirOption('defaultValues')} label="Default Comments" />
+                <FilterButton checked={elixirOptions.useSnakeCase} onClick={() => handleToggleElixirOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={elixirOptions.includeTypes} onClick={() => handleToggleElixirOption('includeTypes')} label="@types" />
+                <FilterButton checked={elixirOptions.includeStruct} onClick={() => handleToggleElixirOption('includeStruct')} label="defstruct" />
+                <FilterButton checked={elixirOptions.defaultValues} onClick={() => handleToggleElixirOption('defaultValues')} label="Default Comments" />
               </div>
           </CardContent>
         </Card>
@@ -1142,9 +1142,9 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={erlangOptions.useSnakeCase ?? true} onClick={() => handleToggleErlangOption('useSnakeCase')} label="snake_case" />
-                <FilterButton checked={erlangOptions.includeTypes ?? true} onClick={() => handleToggleErlangOption('includeTypes')} label="-type" />
-                <FilterButton checked={erlangOptions.includeDefaults ?? false} onClick={() => handleToggleErlangOption('includeDefaults')} label="Defaults" />
+                <FilterButton checked={erlangOptions.useSnakeCase} onClick={() => handleToggleErlangOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={erlangOptions.includeTypes} onClick={() => handleToggleErlangOption('includeTypes')} label="-type" />
+                <FilterButton checked={erlangOptions.includeDefaults} onClick={() => handleToggleErlangOption('includeDefaults')} label="Defaults" />
               </div>
           </CardContent>
         </Card>
@@ -1154,10 +1154,10 @@ export default function ModelForgeClient() {
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <FilterButton checked={scalaOptions.useSnakeCase ?? true} onClick={() => handleToggleScalaOption('useSnakeCase')} label="snake_case" />
-                <FilterButton checked={scalaOptions.includeTypes ?? true} onClick={() => handleToggleScalaOption('includeTypes')} label="Types" />
-                <FilterButton checked={scalaOptions.defaultValues ?? false} onClick={() => handleToggleScalaOption('defaultValues')} label="Defaults" />
-                <FilterButton checked={scalaOptions.includeStruct ?? true} onClick={() => handleToggleScalaOption('includeStruct')} label="Case Class" />
+                <FilterButton checked={scalaOptions.useSnakeCase} onClick={() => handleToggleScalaOption('useSnakeCase')} label="snake_case" />
+                <FilterButton checked={scalaOptions.includeTypes} onClick={() => handleToggleScalaOption('includeTypes')} label="Types" />
+                <FilterButton checked={scalaOptions.defaultValues} onClick={() => handleToggleScalaOption('defaultValues')} label="Defaults" />
+                <FilterButton checked={scalaOptions.includeStruct} onClick={() => handleToggleScalaOption('includeStruct')} label="Case Class" />
               </div>
           </CardContent>
         </Card>
