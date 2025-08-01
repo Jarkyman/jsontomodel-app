@@ -24,11 +24,18 @@ export default function AdPlaceholder({
   fullWidthResponsive = true
 }: AdPlaceholderProps) {
   useEffect(() => {
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error("AdSense error:", err);
-    }
+    const pushAd = () => {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (err) {
+        console.error("AdSense error:", err);
+      }
+    };
+
+    // Use a timeout to ensure the ad container has been rendered and has a size
+    const timeoutId = setTimeout(pushAd, 50);
+
+    return () => clearTimeout(timeoutId);
   }, [adClient, adSlot]);
 
   return (
