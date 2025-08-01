@@ -58,8 +58,11 @@ export default function AdPlaceholder({
     return () => observer.disconnect();
   }, [adSlot]);
 
+  // We simply wrap the <ins> tag. If no ad is loaded, the height will be 0.
+  // If an ad is loaded, the <ins> tag itself will expand to the correct height.
+  // This prevents layout shifts and overlapping issues.
   return (
-    <div className={cn(className, adLoaded ? 'h-auto' : 'h-0 transition-[height]')}>
+    <div className={cn(className, !adLoaded && 'hidden')}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
