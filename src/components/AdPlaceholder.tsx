@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 declare global {
@@ -24,10 +24,16 @@ export default function AdPlaceholder({
   adFormat = "auto",
   fullWidthResponsive = true
 }: AdPlaceholderProps) {
+  const hasPushedAd = useRef(false);
 
   useEffect(() => {
+    if (hasPushedAd.current) {
+      return;
+    }
+
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
+      hasPushedAd.current = true;
     } catch (err) {
       console.error("AdSense error:", err);
     }
