@@ -33,8 +33,8 @@ To get a local copy up and running, follow these simple steps.
 
 1.  **Clone the repository:**
     ```sh
-    git clone https://github.com/[YOUR_GITHUB_USERNAME]/[YOUR_REPO_NAME].git
-    cd [YOUR_REPO_NAME]
+    git clone https://github.com/Jarkyman/jsontomodel-app.git
+    cd jsontomodel-app
     ```
 
 2.  **Install NPM packages:**
