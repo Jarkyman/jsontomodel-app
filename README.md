@@ -18,4 +18,4 @@ The live application can be found at: **[jsontomodel.com](https://jsontomodel.co
 -   **Language:** [TypeScript](https://www.typescriptlang.org/)
 -   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 -   **UI Components:** [Shadcn/ui](https://ui.shadcn.com/)
--   **Deployment:** Ready for deployment on platforms like [Vercel](https://vercel.com/), [Cloudflare Pages](https://pages.cloudflare.com/), or [Netlify](https://www.netlify.com/).
+-   **Deployment:** [Cloudflare Pages](https://pages.cloudflare.com/).
