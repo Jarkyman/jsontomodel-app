@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState }from 'react';
+import { cn } from '@/lib/utils';
 
 declare global {
   interface Window {
@@ -23,6 +24,8 @@ export default function AdPlaceholder({
   adFormat = "auto",
   fullWidthResponsive = true
 }: AdPlaceholderProps) {
+  const [adLoaded, setAdLoaded] = useState(false);
+
   useEffect(() => {
     const pushAd = () => {
       try {
@@ -32,14 +35,32 @@ export default function AdPlaceholder({
       }
     };
 
-    // Use a timeout to ensure the ad container has been rendered and has a size
     const timeoutId = setTimeout(pushAd, 50);
 
     return () => clearTimeout(timeoutId);
   }, [adClient, adSlot]);
 
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.target.hasChildNodes()) {
+                setAdLoaded(true);
+                observer.disconnect();
+            }
+        });
+    });
+
+    const adElement = document.querySelector(`ins[data-ad-slot="${adSlot}"]`);
+    if (adElement) {
+        observer.observe(adElement, { childList: true });
+    }
+
+    return () => observer.disconnect();
+  }, [adSlot]);
+
+
   return (
-    <div className={className}>
+    <div className={cn(className, adLoaded ? 'h-24' : 'h-0 transition-[height]')}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}

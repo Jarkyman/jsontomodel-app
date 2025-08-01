@@ -761,7 +761,7 @@ export default function ModelForgeClient() {
       </section>
 
       <AdPlaceholder 
-        className="h-24 max-w-2xl w-full mx-auto" 
+        className="max-w-2xl w-full mx-auto" 
         adClient="ca-pub-9894760850635221" 
         adSlot="3849241862" 
       />
@@ -1224,7 +1224,7 @@ export default function ModelForgeClient() {
         </Card>
       </section>
       <AdPlaceholder 
-        className="h-24 w-full"
+        className="w-full"
         adClient="ca-pub-9894760850635221" 
         adSlot="3992378950" 
       />
