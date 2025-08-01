@@ -1,0 +1,9 @@
+name = "jsontomodel"
+compatibility_date = "2024-07-25"
+
+[pages]
+# The compatibility_flags option is ignored for Pages projects that use a Functions configuration file.
+# We recommend that you move your compatibility flags to your Functions configuration file (`/functions/_middleware.ts`).
+# We will be removing this option in a future version of Wrangler.
+# For more information, see https://developers.cloudflare.com/pages/functions/wrangler-configuration.
+compatibility_flags = ["nodejs_compat"]
