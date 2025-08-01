@@ -34,7 +34,7 @@ export default function AdPlaceholder({
   }, [adClient, adSlot]);
 
   return (
-    <div className={cn(className)}>
+    <div className={cn('h-24', className)}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
