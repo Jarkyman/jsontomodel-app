@@ -514,7 +514,11 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "objectivec") {
             result = generateObjCCode(parsedJson, rootClassName, objcOptions);
           } else if (selectedLanguage === "sql") {
-            result = generateSQLSchema(parsedJson, rootClassName, sqlOptions);
+            const finalSqlOptions: SQLGeneratorOptions = {
+                ...sqlOptions,
+                tablePrefix: sqlOptions.tablePrefix ? `${sqlOptions.tablePrefix}_` : '',
+            };
+            result = generateSQLSchema(parsedJson, rootClassName, finalSqlOptions);
           } else if (selectedLanguage === "elixir") {
             result = generateElixirCode(parsedJson, rootClassName, elixirOptions);
           } else if (selectedLanguage === "erlang") {
@@ -1102,7 +1106,7 @@ export default function ModelForgeClient() {
                     <Input 
                       value={sqlOptions.tablePrefix}
                       onChange={(e) => handleSqlOption('tablePrefix', e.target.value)}
-                      placeholder="e.g. tbl_"
+                      placeholder="e.g. tbl"
                       className="w-24"
                     />
                  </div>

@@ -1,3 +1,4 @@
+
 export interface SQLGeneratorOptions {
   tablePrefix?: string;
   useSnakeCase?: boolean;
@@ -21,7 +22,10 @@ const defaultOptions: SQLGeneratorOptions = {
 };
 
 function toSnakeCase(str: string): string {
-  return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+    return str
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
+        .toLowerCase();
 }
 
 function inferSQLType(value: any): string {
@@ -42,8 +46,9 @@ function generateSQLTable(
   tables: Map<string, string>,
   parent?: string
 ) {
-  const rawName = `${options.tablePrefix || ''}${options.useSnakeCase ? toSnakeCase(name) : name}`;
-  const tableName = rawName;
+  const baseName = options.useSnakeCase ? toSnakeCase(name) : name;
+  const tableName = options.tablePrefix ? `${options.tablePrefix}${baseName}` : baseName;
+
   const lines: string[] = [];
   const foreignKeys: string[] = [];
 
@@ -66,7 +71,7 @@ function generateSQLTable(
         foreignKeys.push(`  FOREIGN KEY (${fieldName}_id) REFERENCES ${nestedTableName}(id)`);
       }
     } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-      const nestedName = `${name}_${key}`;
+      const nestedName = `${name}_${key.endsWith('s') ? key.slice(0, -1) : key}`;
       generateSQLTable(nestedName, value[0], options, tables, tableName);
     } else {
       const nullStr = options.useNotNull ? ' NOT NULL' : '';
