@@ -67,6 +67,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap"
           rel="stylesheet"
         />
+        <Script
+          strategy="beforeInteractive"
+          src={`https://fundingchoicesmessages.google.com/i/pub-9894760850635221?ers=1`}
+        />
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9894760850635221" crossOrigin="anonymous"></script>
       </head>
       <body className="font-body antialiased">
