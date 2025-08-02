@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 import Analytics from '@/components/Analytics';
+import SuspenseWrapper from '@/components/SuspenseWrapper';
 
 export const metadata: Metadata = {
   title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
@@ -86,7 +87,9 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
-        <Analytics />
+        <SuspenseWrapper>
+          <Analytics />
+        </SuspenseWrapper>
       </body>
     </html>
   );

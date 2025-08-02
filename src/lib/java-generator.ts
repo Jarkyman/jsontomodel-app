@@ -1,6 +1,4 @@
 
-import { off } from "process";
-
 export interface JavaGeneratorOptions {
   getters: boolean;
   setters: boolean;
