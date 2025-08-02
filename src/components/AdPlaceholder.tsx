@@ -1,8 +1,7 @@
-
 "use client";
 
-import { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
+import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -23,33 +22,32 @@ export default function AdPlaceholder({
   adClient,
   adSlot,
   adFormat = "auto",
-  fullWidthResponsive = true
+  fullWidthResponsive = true,
 }: AdPlaceholderProps) {
   const adRef = useRef<HTMLDivElement>(null);
+  const adInitialized = useRef(false); // 🔐 Prevent double init
 
   useEffect(() => {
-    if (adRef.current && adRef.current.firstChild) {
-      const insElement = adRef.current.firstChild as HTMLElement;
-      // If the 'ins' element already has a 'data-ad-status' attribute,
-      // it means AdSense has already processed this slot.
-      // This is the most reliable way to prevent the "already have ads" error in Strict Mode.
-      if (insElement.getAttribute('data-ad-status')) {
-        return;
-      }
-    }
+    if (adInitialized.current) return;
 
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error("AdSense error:", err);
+    const ins = adRef.current?.querySelector("ins.adsbygoogle") as HTMLElement | null;
+
+    // Check both AdSense's internal flag AND our own
+    if (ins && !ins.getAttribute("data-ad-status")) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        adInitialized.current = true; // ✅ Mark as pushed
+      } catch (err) {
+        console.error("AdSense error:", err);
+      }
     }
   }, [adClient, adSlot]);
 
   return (
-    <div ref={adRef} className={cn('h-auto', className)}>
+    <div ref={adRef} className={cn("h-auto", className)}>
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: "block" }}
         data-ad-client={adClient}
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
