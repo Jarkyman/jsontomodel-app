@@ -493,7 +493,7 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "sql") {
             const finalSqlOptions: SQLGeneratorOptions = {
                 ...sqlOptions,
-                tablePrefix: sqlOptions.tablePrefix ? `\${sqlOptions.tablePrefix}_` : '',
+                tablePrefix: sqlOptions.tablePrefix ? `${sqlOptions.tablePrefix}_` : '',
             };
             result = generateSQLSchema(parsedJson, rootClassName, finalSqlOptions);
           } else if (selectedLanguage === "elixir") {
@@ -505,7 +505,7 @@ export default function ModelForgeClient() {
           } else {
             toast({
               title: "Not Implemented",
-              description: `Code generation for \${
+              description: `Code generation for ${
                 languages.find((l) => l.value === selectedLanguage)?.label
               } is not yet supported.`,
             });
@@ -519,7 +519,7 @@ export default function ModelForgeClient() {
           if (result && !hasGenerated && userHasInteracted) {
               toast({
                   title: "Model Generated",
-                  description: `Your root model is named "\${rootClassName}". You can rename it.`,
+                  description: `Your root model is named "${rootClassName}". You can rename it.`,
                   action: (
                       <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
                           Rename
@@ -1257,6 +1257,42 @@ export default function ModelForgeClient() {
             <AccordionTrigger>Why is a JSON to data model tool useful?</AccordionTrigger>
             <AccordionContent>
               Using a <strong>JSON to model</strong> tool is crucial for efficiency and code quality. It eliminates manual, error-prone work, ensuring that your <strong>type-safe</strong> models perfectly match your JSON data. This is especially useful in projects that consume APIs, as it helps prevent runtime errors caused by mismatched data types in languages like <strong>TypeScript</strong>, <strong>Dart</strong>, or <strong>Java</strong>.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-5">
+            <AccordionTrigger>Is this JSON to Model converter free to use?</AccordionTrigger>
+            <AccordionContent>
+              Yes, absolutely! Our <strong>code generator</strong> is completely free to use. We believe in providing powerful, accessible tools to help developers streamline their workflows without any cost.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-6">
+            <AccordionTrigger>How does the tool handle complex or nested JSON?</AccordionTrigger>
+            <AccordionContent>
+                Our <strong>JSON converter</strong> is designed to handle even deeply nested JSON objects and arrays. It intelligently traverses your entire JSON structure, automatically creating separate <strong>data models</strong> or classes for each nested object. This ensures that your entire data structure is correctly and fully represented in the generated code for languages like <strong>Python</strong>, <strong>Java</strong>, and <strong>C#</strong>.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-7">
+            <AccordionTrigger>Can I customize the generated code?</AccordionTrigger>
+            <AccordionContent>
+                Yes. For each supported language, we provide a range of options to fine-tune the output. You can control things like nullability, making fields final or readonly, generating helper methods (like `fromJson` or `copyWith`), and choosing between `classes` and `structs` in languages like <strong>Swift</strong>. This flexibility allows the <strong>code generator</strong> to fit perfectly into your existing project's coding style.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-8">
+            <AccordionTrigger>Is my JSON data safe? Is it sent to your servers?</AccordionTrigger>
+            <AccordionContent>
+                Your data is completely safe. All JSON processing and <strong>code generation</strong> happen entirely within your browser. We do not send your JSON data to our servers, ensuring your information remains private and secure.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-9">
+            <AccordionTrigger>What are "type-safe" models and why are they important?</AccordionTrigger>
+            <AccordionContent>
+                A <strong>type-safe model</strong> is a class or struct where each property has a specific data type (e.g., `String`, `Int`, `Bool`). This is a cornerstone of modern, robust programming in languages like <strong>TypeScript</strong>, <strong>Swift</strong>, and <strong>Kotlin</strong>. Using type-safe models helps you catch data-related bugs at compile time, rather than discovering them as crashes at runtime. It also improves code readability and enables better autocompletion in your IDE.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-10">
+            <AccordionTrigger>How can I change the name of the main model?</AccordionTrigger>
+            <AccordionContent>
+              The main model generated from your JSON is named "DataModel" by default. You can easily change this. Once you've generated your code, click the "Rename" button located at the top of the output panel. A dialog will appear, allowing you to enter a new name for your root <strong>JSON class</strong>.
             </AccordionContent>
           </AccordionItem>
         </Accordion>
