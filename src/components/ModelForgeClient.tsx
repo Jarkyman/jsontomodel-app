@@ -33,6 +33,12 @@ import { generateSQLSchema, SQLGeneratorOptions } from "@/lib/sql-generator";
 import { generateElixirCode, ElixirGeneratorOptions } from "@/lib/elixir-generator";
 import { generateErlangCode, ErlangGeneratorOptions } from "@/lib/erlang-generator";
 import { generateScaleCode, ScaleGeneratorOptions } from "@/lib/scala-generator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -1223,6 +1229,39 @@ export default function ModelForgeClient() {
           </CardContent>
         </Card>
       </section>
+
+       <section className="mx-auto max-w-4xl py-8">
+        <h2 className="font-headline text-3xl font-bold text-center mb-6">
+          Frequently Asked Questions
+        </h2>
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>What is a JSON to Model converter?</AccordionTrigger>
+            <AccordionContent>
+              A JSON to Model converter is a developer tool that automates the creation of <strong>type-safe</strong> <strong>data models</strong> and <strong>JSON classes</strong> from a given JSON structure. This process saves significant time by generating boilerplate code for various programming languages, including <strong>Swift</strong>, <strong>Kotlin</strong>, <strong>Dart</strong>, <strong>TypeScript</strong>, <strong>Python</strong>, <strong>Java</strong>, <strong>C#</strong>, <strong>Go</strong>, and <strong>PHP</strong>. Our <strong>code generator</strong> ensures your models are accurate and consistent with your data.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-2">
+            <AccordionTrigger>Which languages does this code generator support?</AccordionTrigger>
+            <AccordionContent>
+              Our <strong>JSON converter</strong> supports a wide range of popular languages essential for modern development. You can generate models for <strong>TypeScript</strong>, <strong>Swift</strong> (for iOS), <strong>Kotlin</strong> (for Android), <strong>Dart</strong> (for Flutter), <strong>Python</strong>, <strong>Java</strong>, <strong>C#</strong>, <strong>Rust</strong>, <strong>Go</strong>, and <strong>PHP</strong>. We are always working to expand our language support.
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="item-3">
+            <AccordionTrigger>How do I generate a type-safe model for Swift or Kotlin?</AccordionTrigger>
+            <AccordionContent>
+              It's simple. Paste your JSON data into the input field on the left, then select your desired language—like <strong>Swift</strong> or <strong>Kotlin</strong>—from the dropdown menu. The corresponding <strong>data models</strong> will be generated instantly on the right. You can further tailor the output using the options provided for each language, such as making properties optional or choosing between `structs` and `classes`.
+            </AccordionContent>
+          </AccordionItem>
+           <AccordionItem value="item-4">
+            <AccordionTrigger>Why is a JSON to data model tool useful?</AccordionTrigger>
+            <AccordionContent>
+              Using a <strong>JSON to model</strong> tool is crucial for efficiency and code quality. It eliminates manual, error-prone work, ensuring that your <strong>type-safe</strong> models perfectly match your JSON data. This is especially useful in projects that consume APIs, as it helps prevent runtime errors caused by mismatched data types in languages like <strong>TypeScript</strong>, <strong>Dart</strong>, or <strong>Java</strong>.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
+
       <AdPlaceholder 
         className="w-full"
         adClient="ca-pub-9894760850635221" 
