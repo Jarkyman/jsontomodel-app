@@ -55,6 +55,7 @@ import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
 import AdPlaceholder from "./AdPlaceholder";
+import { Separator } from "./ui/separator";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -1327,11 +1328,19 @@ export default function ModelForgeClient() {
               The main model generated from your JSON is named "DataModel" by default. You can easily change this. Once you've generated your code, click the "Rename" button located at the top of the output panel. A dialog will appear, allowing you to enter a new name for your root <strong>JSON class</strong>.
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="item-11">
+            <AccordionTrigger>How do I format my JSON code?</AccordionTrigger>
+            <AccordionContent>
+              Yes, you can! If your JSON is minified or poorly formatted, it can be hard to read. Our tool includes a built-in <strong>JSON formatter</strong>. Simply paste your code into the 'JSON Input' panel and click the 'Format' button. This will automatically <strong>pretty-print</strong> your JSON, adding proper indentation and line breaks, which significantly improves <strong>code readability</strong> and helps you spot any structural errors.
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </section>
     </div>
   );
 }
 
+
+    
 
     
