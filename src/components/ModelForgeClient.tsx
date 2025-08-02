@@ -49,7 +49,7 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle, 
   AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
+} from "./ui/alert-dialog";
 import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
@@ -342,7 +342,7 @@ export default function ModelForgeClient() {
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
-  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
+  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbnetOptions);
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
@@ -1216,7 +1216,7 @@ export default function ModelForgeClient() {
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-center text-muted-foreground">
-                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your generated model will appear here.'}</p>
+                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Click "Generate" to see your model.'}</p>
                 </div>
               )}
             </div>
