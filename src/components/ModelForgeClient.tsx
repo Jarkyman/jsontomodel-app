@@ -547,6 +547,33 @@ export default function ModelForgeClient() {
     }, 50); // A small delay
   };
   
+  useEffect(() => {
+    generateCode();
+  }, [
+    jsonInput,
+    selectedLanguage,
+    rootClassName,
+    dartOptions,
+    kotlinOptions,
+    swiftOptions,
+    pythonOptions,
+    javaOptions,
+    csharpOptions,
+    typescriptOptions,
+    goOptions,
+    phpOptions,
+    javascriptOptions,
+    cppOptions,
+    vbnetOptions,
+    rustOptions,
+    rubyOptions,
+    rOptions,
+    objcOptions,
+    sqlOptions,
+    elixirOptions,
+    erlangOptions,
+    scalaOptions,
+  ]);
 
   const handleToggleDartOption = (option: DartOptionKey) => {
     setDartOptions(prev => {
@@ -754,10 +781,6 @@ export default function ModelForgeClient() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={generateCode} disabled={isGenerating || !!jsonError}>
-          {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-          Generate
-        </Button>
       </section>
 
       <AdPlaceholder 
@@ -1216,7 +1239,7 @@ export default function ModelForgeClient() {
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center text-center text-muted-foreground">
-                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Click "Generate" to see your model.'}</p>
+                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your model will be generated live here.'}</p>
                 </div>
               )}
             </div>
@@ -1305,3 +1328,6 @@ export default function ModelForgeClient() {
 
     
 
+
+
+    
