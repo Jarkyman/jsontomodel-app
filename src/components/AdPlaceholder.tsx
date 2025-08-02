@@ -45,7 +45,7 @@ export default function AdPlaceholder({
   }, [adClient, adSlot]);
 
   return (
-    <div ref={adRef} className={cn('h-24', className)}>
+    <div ref={adRef} className={cn('h-auto', className)}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}

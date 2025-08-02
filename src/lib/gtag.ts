@@ -1,5 +1,5 @@
 
-export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-XXXXXXXXXX';
+export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-XS6SNSR6KR';
 
 // https://developers.google.com/analytics/devguides/collection/gtagjs/pages
 export const pageview = (url: URL) => {
