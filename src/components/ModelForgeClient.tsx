@@ -414,32 +414,19 @@ export default function ModelForgeClient() {
       setUserHasInteracted(true);
     }
   };
-
-  useEffect(() => {
-    const storedJson = localStorage.getItem("jsonInput");
-    const initialJson = storedJson || defaultJson;
-    setJsonInput(initialJson);
-    validateJson(initialJson);
-  }, []);
   
-  useEffect(() => {
-    localStorage.setItem("selectedLanguage", selectedLanguage);
-  }, [selectedLanguage]);
-
-  useEffect(() => {
-    if (userHasInteracted) {
-      localStorage.setItem("jsonInput", jsonInput);
-    }
-  }, [jsonInput, userHasInteracted]);
-
-  useEffect(() => {
-    setRenameInputValue(rootClassName);
-  }, [rootClassName]);
-
   const generateCode = () => {
-    if (!jsonInput) return;
+    if (!jsonInput.trim()) {
+      setOutputCode("");
+      return;
+    }
+    if (jsonError) {
+      setOutputCode("");
+      return;
+    }
     const isValid = validateJson(jsonInput);
     if (!isValid) {
+      setOutputCode("");
       return;
     }
 
@@ -447,12 +434,13 @@ export default function ModelForgeClient() {
     try {
       parsedJson = JSON.parse(jsonInput);
     } catch (error) {
-       // This should ideally not be reached due to live validation, but as a fallback
+      // This should ideally not be reached due to live validation, but as a fallback
       toast({
         variant: "destructive",
         title: "Invalid JSON",
         description: "Please check your JSON input for errors.",
       });
+      setOutputCode("");
       return;
     }
     
@@ -544,11 +532,33 @@ export default function ModelForgeClient() {
         } finally {
           setIsGenerating(false);
         }
-    }, 50); // A small delay
+    }, 50); // A small delay for UI to update
   };
-  
+
+  useEffect(() => {
+    const storedJson = localStorage.getItem("jsonInput");
+    const initialJson = storedJson || defaultJson;
+    setJsonInput(initialJson);
+    validateJson(initialJson);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("selectedLanguage", selectedLanguage);
+  }, [selectedLanguage]);
+
+  useEffect(() => {
+    if (userHasInteracted) {
+      localStorage.setItem("jsonInput", jsonInput);
+    }
+  }, [jsonInput, userHasInteracted]);
+
+  useEffect(() => {
+    setRenameInputValue(rootClassName);
+  }, [rootClassName]);
+
   useEffect(() => {
     generateCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     jsonInput,
     selectedLanguage,
@@ -873,7 +883,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
-                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} disabled={javaOptions.finalFields} label="Setters" />
+                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} label="Setters" disabled={javaOptions.finalFields} />
                   <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
                   <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
                   <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />

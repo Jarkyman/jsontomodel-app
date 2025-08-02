@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Separator } from "./ui/separator";
 
 declare global {
   interface Window {
@@ -25,25 +26,29 @@ export default function AdPlaceholder({
   fullWidthResponsive = true,
 }: AdPlaceholderProps) {
   const adRef = useRef<HTMLDivElement>(null);
-  const adInitialized = useRef(false);
   const [isAdLoaded, setIsAdLoaded] = useState(false);
+  const [shouldShowFallback, setShouldShowFallback] = useState(false);
 
   useEffect(() => {
-    if (adInitialized.current) return;
+    // This timer will trigger the fallback if the ad doesn't load within a reasonable time.
+    const fallbackTimer = setTimeout(() => {
+        if (!isAdLoaded) {
+            setShouldShowFallback(true);
+        }
+    }, 2000); // 2 seconds delay
 
-    const insElement = adRef.current?.querySelector("ins.adsbygoogle") as HTMLElement | null;
+    return () => clearTimeout(fallbackTimer);
+  }, [isAdLoaded]);
 
-    if (insElement && !insElement.getAttribute("data-ad-status")) {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        adInitialized.current = true;
-      } catch (err) {
-        console.error("AdSense error:", err);
-      }
+
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error("AdSense error:", err);
+      setIsAdLoaded(false); // Ensure we know it failed
     }
-  }, [adClient, adSlot]);
 
-  useEffect(() => {
     const insElement = adRef.current?.querySelector("ins.adsbygoogle");
     if (!insElement) return;
 
@@ -55,6 +60,7 @@ export default function AdPlaceholder({
         ) {
           if (insElement.getAttribute("data-ad-status") === "filled") {
             setIsAdLoaded(true);
+            setShouldShowFallback(false); // Ad loaded, don't show fallback
             observer.disconnect();
           }
         }
@@ -68,12 +74,17 @@ export default function AdPlaceholder({
     };
   }, []);
 
+  if (shouldShowFallback) {
+    return <Separator className={cn("my-6", className)} />;
+  }
+
   return (
     <div 
       ref={adRef} 
       className={cn(
-        "h-auto transition-all duration-300", 
-        !isAdLoaded && "h-0 opacity-0", // Hide until loaded
+        "h-auto transition-all duration-300",
+        // Hide container until ad is loaded to prevent layout shifts
+        !isAdLoaded && "h-0 opacity-0",
         className
       )}
     >
@@ -88,5 +99,3 @@ export default function AdPlaceholder({
     </div>
   );
 }
-
-    
