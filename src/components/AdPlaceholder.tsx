@@ -24,25 +24,26 @@ export default function AdPlaceholder({
   adFormat = "auto",
   fullWidthResponsive = true
 }: AdPlaceholderProps) {
-  const hasPushedAd = useRef(false);
+  const adRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (hasPushedAd.current) {
-      return;
+    if (adRef.current && adRef.current.firstChild) {
+      const insElement = adRef.current.firstChild as HTMLElement;
+      if (insElement.getAttribute('data-ad-status')) {
+        // Ad has already been loaded, don't push again.
+        return;
+      }
     }
 
     try {
-      setTimeout(() => {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        hasPushedAd.current = true;
-      }, 50); // Small delay to ensure container has dimensions
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       console.error("AdSense error:", err);
     }
   }, [adClient, adSlot]);
 
   return (
-    <div className={cn('h-24', className)}>
+    <div ref={adRef} className={cn('h-24', className)}>
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
