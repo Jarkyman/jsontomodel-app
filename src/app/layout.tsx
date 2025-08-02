@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
+import Analytics from '@/components/Analytics';
 
 export const metadata: Metadata = {
   title: 'JSON to Model Converter | Generate Code in 20+ Languages',
@@ -83,6 +84,7 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
