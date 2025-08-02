@@ -862,7 +862,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
-                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} disabled={javaOptions.finalFields} />
+                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} disabled={javaOptions.finalFields} label="Setters" />
                   <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
                   <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
                   <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />
