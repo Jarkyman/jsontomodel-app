@@ -493,7 +493,7 @@ export default function ModelForgeClient() {
           } else if (selectedLanguage === "sql") {
             const finalSqlOptions: SQLGeneratorOptions = {
                 ...sqlOptions,
-                tablePrefix: sqlOptions.tablePrefix ? `${sqlOptions.tablePrefix}_` : '',
+                tablePrefix: sqlOptions.tablePrefix ? `\${sqlOptions.tablePrefix}_` : '',
             };
             result = generateSQLSchema(parsedJson, rootClassName, finalSqlOptions);
           } else if (selectedLanguage === "elixir") {
@@ -505,7 +505,7 @@ export default function ModelForgeClient() {
           } else {
             toast({
               title: "Not Implemented",
-              description: `Code generation for ${
+              description: `Code generation for \${
                 languages.find((l) => l.value === selectedLanguage)?.label
               } is not yet supported.`,
             });
@@ -519,7 +519,7 @@ export default function ModelForgeClient() {
           if (result && !hasGenerated && userHasInteracted) {
               toast({
                   title: "Model Generated",
-                  description: `Your root model is named "${rootClassName}". You can rename it.`,
+                  description: `Your root model is named "\${rootClassName}". You can rename it.`,
                   action: (
                       <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
                           Rename
@@ -862,7 +862,7 @@ export default function ModelForgeClient() {
             <CardContent className="p-6">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
-                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} label="Setters" disabled={javaOptions.finalFields} />
+                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} disabled={javaOptions.finalFields} />
                   <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
                   <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
                   <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />
@@ -1270,3 +1270,5 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
