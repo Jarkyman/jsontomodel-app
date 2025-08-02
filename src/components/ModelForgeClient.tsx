@@ -783,12 +783,6 @@ export default function ModelForgeClient() {
         </div>
       </section>
 
-      <AdPlaceholder 
-        className="max-w-2xl w-full mx-auto" 
-        adClient="ca-pub-9894760850635221" 
-        adSlot="3849241862" 
-      />
-
       {selectedLanguage === 'dart' && (
       <Card className="max-w-2xl mx-auto shadow-sm">
         <CardContent className="p-6">
@@ -1153,6 +1147,11 @@ export default function ModelForgeClient() {
         </Card>
       )}
 
+      <AdPlaceholder 
+        className="max-w-2xl w-full mx-auto" 
+        adClient="ca-pub-9894760850635221" 
+        adSlot="3849241862" 
+      />
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2" aria-labelledby="io-panels-title">
         <h2 id="io-panels-title" className="sr-only">JSON Input and Generated Model Output</h2>
