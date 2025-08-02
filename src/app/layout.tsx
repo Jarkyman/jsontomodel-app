@@ -6,9 +6,9 @@ import Script from 'next/script';
 import Analytics from '@/components/Analytics';
 
 export const metadata: Metadata = {
-  title: 'JSON to Model Converter | Generate Code in 20+ Languages',
+  title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
   description:
-    'Instantly generate clean, type-safe data models and classes from any JSON structure. Supports over 20 programming languages including Swift, Kotlin, TypeScript, Python, Dart, and Rust. Free and easy to use.',
+    'Easily convert JSON to type-safe models in Swift, Kotlin, Dart, TypeScript, Python, and more. Free, fast, and developer-friendly.',
   keywords: [
     'json to model',
     'json converter',
@@ -28,11 +28,12 @@ export const metadata: Metadata = {
     'json classes',
   ],
   openGraph: {
-    title: 'JSON to Model Converter | Generate Code in 20+ Languages',
+    title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
     description:
-      'Instantly generate clean, type-safe data models from any JSON structure.',
+      'Easily convert JSON to type-safe models in Swift, Kotlin, Dart, TypeScript, Python, and more. Free, fast, and developer-friendly.',
     type: 'website',
   },
+  robots: 'index, follow',
 };
 
 export default function RootLayout({
@@ -43,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />

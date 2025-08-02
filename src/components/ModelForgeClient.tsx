@@ -737,7 +737,7 @@ export default function ModelForgeClient() {
           Json To Model
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Instantly generate data models for over 20 languages from any JSON structure. Select your language and forge your code.
+          Use our free <strong>JSON to Model</strong> converter to instantly generate type-safe <strong>data models</strong> in popular languages like <strong>Swift</strong>, <strong>Kotlin</strong>, <strong>Dart</strong>, <strong>TypeScript</strong>, <strong>Python</strong>, <strong>Rust</strong>, and more. Whether you’re building mobile or backend apps, this <strong>code generator</strong> will save you time and ensure consistency.
         </p>
       </header>
 
