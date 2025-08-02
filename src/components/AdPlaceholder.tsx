@@ -32,8 +32,10 @@ export default function AdPlaceholder({
     }
 
     try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-      hasPushedAd.current = true;
+      setTimeout(() => {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+        hasPushedAd.current = true;
+      }, 50); // Small delay to ensure container has dimensions
     } catch (err) {
       console.error("AdSense error:", err);
     }
