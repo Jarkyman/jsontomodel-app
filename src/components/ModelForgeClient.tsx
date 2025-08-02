@@ -409,6 +409,7 @@ export default function ModelForgeClient() {
   const handleJsonInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setJsonInput(newValue);
+    validateJson(newValue);
     if (!userHasInteracted) {
       setUserHasInteracted(true);
     }
@@ -416,7 +417,9 @@ export default function ModelForgeClient() {
 
   useEffect(() => {
     const storedJson = localStorage.getItem("jsonInput");
-    setJsonInput(storedJson || defaultJson);
+    const initialJson = storedJson || defaultJson;
+    setJsonInput(initialJson);
+    validateJson(initialJson);
   }, []);
   
   useEffect(() => {
@@ -544,19 +547,6 @@ export default function ModelForgeClient() {
     }, 50); // A small delay
   };
   
-  // Main useEffect for live generation
-  useEffect(() => {
-      if (!jsonInput) return;
-      const handler = setTimeout(() => {
-          generateCode();
-      }, 500); // Debounce generation
-
-      return () => {
-          clearTimeout(handler);
-      };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jsonInput, dartOptions, kotlinOptions, swiftOptions, pythonOptions, javaOptions, csharpOptions, typescriptOptions, goOptions, phpOptions, javascriptOptions, cppOptions, vbnetOptions, rustOptions, rubyOptions, rOptions, objcOptions, sqlOptions, elixirOptions, erlangOptions, scalaOptions, rootClassName, selectedLanguage]);
-
 
   const handleToggleDartOption = (option: DartOptionKey) => {
     setDartOptions(prev => {
@@ -764,6 +754,10 @@ export default function ModelForgeClient() {
             </SelectContent>
           </Select>
         </div>
+        <Button onClick={generateCode} disabled={isGenerating || !!jsonError}>
+          {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+          Generate
+        </Button>
       </section>
 
       <AdPlaceholder 
@@ -1306,5 +1300,7 @@ export default function ModelForgeClient() {
     </div>
   );
 }
+
+    
 
     
