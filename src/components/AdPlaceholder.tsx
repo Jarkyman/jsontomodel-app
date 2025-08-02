@@ -29,8 +29,10 @@ export default function AdPlaceholder({
   useEffect(() => {
     if (adRef.current && adRef.current.firstChild) {
       const insElement = adRef.current.firstChild as HTMLElement;
+      // If the 'ins' element already has a 'data-ad-status' attribute,
+      // it means AdSense has already processed this slot.
+      // This is the most reliable way to prevent the "already have ads" error in Strict Mode.
       if (insElement.getAttribute('data-ad-status')) {
-        // Ad has already been loaded, don't push again.
         return;
       }
     }
