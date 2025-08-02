@@ -1230,6 +1230,12 @@ export default function ModelForgeClient() {
         </Card>
       </section>
 
+      <AdPlaceholder 
+        className="w-full"
+        adClient="ca-pub-9894760850635221" 
+        adSlot="3992378950" 
+      />
+
        <section className="mx-auto max-w-4xl py-8">
         <h2 className="font-headline text-3xl font-bold text-center mb-6">
           Frequently Asked Questions
@@ -1297,12 +1303,6 @@ export default function ModelForgeClient() {
           </AccordionItem>
         </Accordion>
       </section>
-
-      <AdPlaceholder 
-        className="w-full"
-        adClient="ca-pub-9894760850635221" 
-        adSlot="3992378950" 
-      />
     </div>
   );
 }
