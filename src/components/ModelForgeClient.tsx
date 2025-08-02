@@ -342,7 +342,7 @@ export default function ModelForgeClient() {
   const [phpOptions, setPhpOptions] = useState<PhpGeneratorOptions>(initialPhpOptions);
   const [javascriptOptions, setJavascriptOptions] = useState<JavaScriptGeneratorOptions>(initialJavascriptOptions);
   const [cppOptions, setCppOptions] = useState<CppGeneratorOptions>(initialCppOptions);
-  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbnetOptions);
+  const [vbnetOptions, setVbnetOptions] = useState<VbNetGeneratorOptions>(initialVbNetOptions);
   const [rustOptions, setRustOptions] = useState<RustGeneratorOptions>(initialRustOptions);
   const [rubyOptions, setRubyOptions] = useState<RubyGeneratorOptions>(initialRubyOptions);
   const [rOptions, setROptions] = useState<RGeneratorOptions>(initialROptions);
@@ -1304,3 +1304,4 @@ export default function ModelForgeClient() {
     
 
     
+
