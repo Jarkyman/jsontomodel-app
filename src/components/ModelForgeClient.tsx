@@ -1244,7 +1244,7 @@ export default function ModelForgeClient() {
           <AccordionItem value="item-2">
             <AccordionTrigger>Which languages does this code generator support?</AccordionTrigger>
             <AccordionContent>
-              Our <strong>JSON converter</strong> supports a wide range of popular languages essential for modern development. You can generate models for <strong>TypeScript</strong>, <strong>Swift</strong> (for iOS), <strong>Kotlin</strong> (for Android), <strong>Dart</strong> (for Flutter), <strong>Python</strong>, <strong>Java</strong>, <strong>C#</strong>, <strong>Rust</strong>, <strong>Go</strong>, and <strong>PHP</strong>. We are always working to expand our language support.
+              Our <strong>JSON converter</strong> supports a wide range of popular languages essential for modern development. You can generate models for <strong>TypeScript</strong>, <strong>Flutter (Dart)</strong>, <strong>Kotlin</strong>, <strong>Swift</strong>, <strong>Python</strong>, <strong>Java</strong>, <strong>C#</strong>, <strong>Go</strong>, <strong>PHP</strong>, <strong>JavaScript</strong>, <strong>C++</strong>, <strong>Visual Basic</strong>, <strong>Rust</strong>, <strong>Ruby</strong>, <strong>R</strong>, <strong>Objective-C</strong>, <strong>SQL</strong>, <strong>Elixir</strong>, <strong>Erlang</strong>, and <strong>Scala</strong>. We are always working to expand our language support.
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-3">
