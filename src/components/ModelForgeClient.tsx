@@ -57,6 +57,7 @@ import { Textarea } from "./ui/textarea";
 import AdPlaceholder from "./AdPlaceholder";
 import { Separator } from "./ui/separator";
 import { event as trackEvent } from "@/lib/gtag";
+import { useRouter } from "next/navigation";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -316,18 +317,16 @@ const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => vo
   </button>
 );
 
+interface ModelForgeClientProps {
+  selectedLanguage: string;
+}
 
-export default function ModelForgeClient() {
+export default function ModelForgeClient({ selectedLanguage: lang }: ModelForgeClientProps) {
+  const router = useRouter();
   const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [outputCode, setOutputCode] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const storedLang = localStorage.getItem("selectedLanguage");
-      return storedLang || "typescript";
-    }
-    return "typescript";
-  });
+  const [selectedLanguage, setSelectedLanguage] = useState(lang || 'typescript');
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [rootClassName, setRootClassName] = useState("DataModel");
@@ -356,6 +355,11 @@ export default function ModelForgeClient() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const { toast } = useToast();
+
+  const handleLanguageChange = (newLang: string) => {
+      setSelectedLanguage(newLang);
+      router.push(`/${newLang}`, { scroll: false });
+  };
 
   const hasEmptyKeys = (obj: any): boolean => {
     if (obj === null || typeof obj !== 'object') {
@@ -786,7 +790,7 @@ export default function ModelForgeClient() {
         <h2 id="language-selection" className="sr-only">Language Selection</h2>
         <div className="relative w-full">
            <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-           <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+           <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
             <SelectTrigger className="w-full pl-10">
               <SelectValue placeholder="Select language..." />
             </SelectTrigger>

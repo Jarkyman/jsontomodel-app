@@ -26,7 +26,11 @@ const LoadingSkeleton = () => (
   </div>
 );
 
-export default function ModelForgeLoader() {
+interface ModelForgeLoaderProps {
+  selectedLanguage: string;
+}
+
+export default function ModelForgeLoader({ selectedLanguage }: ModelForgeLoaderProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -37,5 +41,5 @@ export default function ModelForgeLoader() {
     return <LoadingSkeleton />;
   }
 
-  return <ModelForgeClient />;
+  return <ModelForgeClient selectedLanguage={selectedLanguage} />;
 }
