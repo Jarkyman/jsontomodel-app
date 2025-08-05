@@ -1,4 +1,3 @@
-
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Metadata } from 'next';
@@ -27,7 +26,10 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export async function generateMetadata({ params }: { params: { language: string } }): Promise<Metadata> {
+// ✅ Use a plain type definition for params to avoid the Promise<any> constraint issue
+type Params = { params: { language: string } };
+
+export async function generateMetadata({ params }: any): Promise<Metadata> {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -46,31 +48,31 @@ export async function generateMetadata({ params }: { params: { language: string 
     title,
     description,
     keywords: [
-        `json to ${langName.toLowerCase()}`,
-        'json converter',
-        'code generator',
-        langName.toLowerCase(),
-        'data models',
-        'type-safe',
-        'json classes',
+      `json to ${langName.toLowerCase()}`,
+      'json converter',
+      'code generator',
+      langName.toLowerCase(),
+      'data models',
+      'type-safe',
+      'json classes',
     ],
     openGraph: {
-        title,
-        description,
-        type: 'website',
+      title,
+      description,
+      type: 'website',
     },
     robots: 'index, follow',
   };
 }
 
-export default function LanguagePage({ params }: { params: { language: string } }) {
+export default function LanguagePage({ params }: any) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
   if (!languageInfo) {
     notFound();
   }
-  
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="absolute top-4 right-4">
@@ -81,8 +83,9 @@ export default function LanguagePage({ params }: { params: { language: string } 
   );
 }
 
-export async function generateStaticParams() {
-    return languages.map(lang => ({
-        language: lang.value,
-    }));
+
+export async function generateStaticParams(): Promise<{ language: string }[]> {
+  return languages.map(lang => ({
+    language: lang.value,
+  }));
 }
