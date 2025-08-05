@@ -26,11 +26,11 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-type Props = {
+type LanguagePageProps = {
   params: { language: string };
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: LanguagePageProps): Promise<Metadata> {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function LanguagePage({ params }: Props) {
+export default function LanguagePage({ params }: LanguagePageProps) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
