@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
 import AdPlaceholder from "./AdPlaceholder";
 import { Separator } from "./ui/separator";
+import { event as trackEvent } from "@/lib/gtag";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -414,6 +415,12 @@ export default function ModelForgeClient() {
     if (!userHasInteracted) {
       setUserHasInteracted(true);
     }
+    trackEvent({
+      action: "generate_model",
+      category: "Language",
+      label: selectedLanguage,
+      value: 1,
+    });
   };
   
   const generateCode = () => {
@@ -1080,7 +1087,7 @@ export default function ModelForgeClient() {
                 <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties')} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers')} label="Initializer" />
                 <FilterButton checked={objcOptions.nullability} onClick={() => handleToggleObjcOption('nullability')} label="Nullability" />
-                <FilterButton checked={objcOptions.toCamelCase} onClick={() => handleToggleCamelCaseObjcOption()} label="camelCase" />
+                <FilterButton checked={objcOptions.toCamelCase} onClick={handleToggleCamelCaseObjcOption} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
                     <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
@@ -1340,6 +1347,8 @@ export default function ModelForgeClient() {
   );
 }
 
+
+    
 
     
 
