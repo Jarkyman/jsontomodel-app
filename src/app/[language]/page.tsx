@@ -1,3 +1,4 @@
+
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Metadata } from 'next';
@@ -26,11 +27,7 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-type LanguagePageProps = {
-  params: { language: string };
-};
-
-export async function generateMetadata({ params }: LanguagePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { language: string } }): Promise<Metadata> {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -66,7 +63,7 @@ export async function generateMetadata({ params }: LanguagePageProps): Promise<M
   };
 }
 
-export default function LanguagePage({ params }: LanguagePageProps) {
+export default function LanguagePage({ params }: { params: { language: string } }) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
