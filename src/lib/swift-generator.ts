@@ -1,4 +1,5 @@
 
+
 export interface SwiftGeneratorOptions {
     isCodable: boolean;
     useStruct: boolean;
@@ -45,7 +46,7 @@ function isIsoDateString(value: any): boolean {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value);
 }
 
-function getSwiftType(value: any, key: string, classes: Map<string, string>, options: SwiftGeneratorOptions): string {
+function getSwiftType(value: any, key: string, classes: Set<string>, options: SwiftGeneratorOptions): string {
     if (options.dateStrategy !== 'none' && isIsoDateString(value)) return 'Date';
 
     if (value === null) return options.isCodable ? 'AnyCodable' : 'Any';
@@ -62,9 +63,7 @@ function getSwiftType(value: any, key: string, classes: Map<string, string>, opt
     }
     if (type === 'object') {
         const className = toPascalCase(key);
-        if (!classes.has(className)) {
-            generateClass(className, value, classes, options);
-        }
+        classes.add(className);
         return className;
     }
     return options.isCodable ? 'AnyCodable' : 'Any';
@@ -90,9 +89,8 @@ function generateSampleValue(type: string, value: any, options: SwiftGeneratorOp
 }
 
 
-function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: SwiftGeneratorOptions): void {
-    if (classes.has(className)) return;
-
+function generateClass(className: string, jsonObject: Record<string, any>, options: SwiftGeneratorOptions): { classDef: string, dependentClasses: Set<string> } {
+    const dependentClasses = new Set<string>();
     let classDefinition = ``;
     if (options.isMainActor) {
         classDefinition += `@MainActor\n`;
@@ -114,11 +112,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
-        const swiftType = getSwiftType(jsonObject[key], key, classes, options);
+        const swiftType = getSwiftType(jsonObject[key], key, dependentClasses, options);
         fields.push({ name: fieldName, type: swiftType, originalKey: key, value: jsonObject[key] });
     }
 
-    // Sort fields alphabetically
     fields.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const field of fields) {
@@ -186,40 +183,23 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     
     const equatableFields = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' && ');
 
-    if (options.isEquatable) {
-         if (options.useStruct) {
-            classDefinition += `\n    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
-            classDefinition += `        return ${equatableFields || 'true'}\n`;
-            classDefinition += `    }\n`;
-         }
+    if (options.isEquatable && options.useStruct) {
+         classDefinition += `\n    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+         classDefinition += `        return ${equatableFields || 'true'}\n`;
+         classDefinition += `    }\n`;
     }
 
     classDefinition += '}\n';
 
-    // Add Equatable conformance for classes outside the main definition
     if (options.isEquatable && !options.useStruct) {
         classDefinition += `\nfunc == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
         classDefinition += `    return ${equatableFields || 'true'}\n`;
         classDefinition += `}\n`;
     }
 
-    classes.set(className, classDefinition);
-
-    for (const key of sortedKeys) {
-        const value = jsonObject[key];
-        const type = typeof value;
-        if (type === 'object' && value !== null && !isIsoDateString(value)) {
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                generateClass(singularKey, value[0], classes, options);
-            } else if (!Array.isArray(value)) {
-                generateClass(toPascalCase(key), value, classes, options);
-            }
-        }
-    }
+    return { classDef: classDefinition, dependentClasses };
 }
 
-// AnyCodable helper struct needed for handling mixed types and nulls in Swift
 const anyCodableStruct = `
 struct AnyCodable: Codable, Equatable, Hashable {
     let value: Any
@@ -307,10 +287,34 @@ function generateDateHandlingComment(options: SwiftGeneratorOptions): string {
 // decoder.dateDecodingStrategy = .iso8601
 `;
     }
-    // Could add more comments for other strategies later
     return '';
 }
 
+function findJsonForClass(className: string, currentJson: any, rootName: string): any {
+    if (toPascalCase(rootName) === className) {
+        return currentJson;
+    }
+
+    for (const key in currentJson) {
+        const value = currentJson[key];
+        const pascalKey = toPascalCase(key);
+
+        if (pascalKey === className && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return value;
+        }
+
+        const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        if (singularPascalKey === className && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            return value[0];
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            const result = findJsonForClass(className, value, key);
+            if (result) return result;
+        }
+    }
+    return null;
+}
 
 export function generateSwiftCode(
     json: any,
@@ -322,14 +326,28 @@ export function generateSwiftCode(
     }
     
     const classes = new Map<string, string>();
-    const rootJson = {...json};
-    const finalRootClassName = toPascalCase(rootClassName);
+    const toProcess: { name: string, json: any }[] = [{ name: toPascalCase(rootClassName), json }];
+    const processed = new Set<string>();
 
-    generateClass(finalRootClassName, rootJson, classes, options);
+    while (toProcess.length > 0) {
+        const { name, json: currentJson } = toProcess.shift()!;
+        if (processed.has(name)) continue;
 
+        const { classDef, dependentClasses } = generateClass(name, currentJson, options);
+        classes.set(name, classDef);
+        processed.add(name);
+
+        dependentClasses.forEach(depName => {
+            const depJson = findJsonForClass(depName, json, toPascalCase(rootClassName));
+            if (depJson) {
+                toProcess.push({ name: depName, json: depJson });
+            }
+        });
+    }
+    
     const orderedClasses = Array.from(classes.keys()).reverse();
     
-    const rootClassIndex = orderedClasses.indexOf(finalRootClassName);
+    const rootClassIndex = orderedClasses.indexOf(toPascalCase(rootClassName));
     if (rootClassIndex > -1) {
         const [rootClass] = orderedClasses.splice(rootClassIndex, 1);
         orderedClasses.push(rootClass);

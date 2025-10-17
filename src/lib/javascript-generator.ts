@@ -1,4 +1,5 @@
 
+
 export interface JavaScriptGeneratorOptions {
     includeJSDoc: boolean;
     includeFromToJSON: boolean;
@@ -55,9 +56,7 @@ function getJSDocType(value: any, key: string, classes: Set<string>, options: Ja
 }
 
 
-function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: JavaScriptGeneratorOptions): void {
-    if (classes.has(className)) return;
-
+function generateClass(className: string, jsonObject: Record<string, any>, options: JavaScriptGeneratorOptions): { classDef: string, dependentClasses: Set<string> } {
     const dependentClasses = new Set<string>();
     let classString = `class ${className} {\n`;
     
@@ -101,6 +100,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         toJSONFields.push({ key, serialization });
     }
 
+    fields.sort((a,b) => a.name.localeCompare(b.name));
+    constructorAssignments.sort((a,b) => a.name.localeCompare(b.name));
+    toJSONFields.sort((a,b) => a.key.localeCompare(b.key));
+
     // JSDoc properties first
     if (options.includeJSDoc && fields.length > 0) {
         classString += fields.map(f => `    ${f.jsdoc}\n`).join('\n');
@@ -131,23 +134,35 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     classString += '}\n';
 
-    classes.set(className, classString);
-    
-    // Recursively generate for sub-objects
-    for (const key of sortedKeys) {
-        const value = jsonObject[key];
-        const type = typeof value;
-        if (type === 'object' && value !== null && !isIsoDateString(value, options)) {
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                 generateClass(singularKey, value[0], classes, options);
-            } else if (!Array.isArray(value)) {
-                generateClass(toPascalCase(key), value, classes, options);
-            }
-        }
-    }
+    return { classDef: classString, dependentClasses };
 }
 
+
+function findJsonForClass(className: string, currentJson: any, rootName: string): any {
+    if (toPascalCase(rootName) === className) {
+        return currentJson;
+    }
+
+    for (const key in currentJson) {
+        const value = currentJson[key];
+        const pascalKey = toPascalCase(key);
+
+        if (pascalKey === className && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return value;
+        }
+
+        const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        if (singularPascalKey === className && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            return value[0];
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            const result = findJsonForClass(className, value, key);
+            if (result) return result;
+        }
+    }
+    return null;
+}
 
 export function generateJavaScriptCode(
     json: any,
@@ -164,9 +179,24 @@ export function generateJavaScriptCode(
     }
     
     const classes = new Map<string, string>();
-    const finalRootClassName = toPascalCase(rootClassName);
+    const toProcess: { name: string, json: any }[] = [{ name: toPascalCase(rootClassName), json }];
+    const processed = new Set<string>();
 
-    generateClass(finalRootClassName, { ...json }, classes, options);
+    while (toProcess.length > 0) {
+        const { name, json: currentJson } = toProcess.shift()!;
+        if (processed.has(name)) continue;
+
+        const { classDef, dependentClasses } = generateClass(name, currentJson, options);
+        classes.set(name, classDef);
+        processed.add(name);
+
+        dependentClasses.forEach(depName => {
+            const depJson = findJsonForClass(depName, json, toPascalCase(rootClassName));
+            if (depJson) {
+                toProcess.push({ name: depName, json: depJson });
+            }
+        });
+    }
     
     const orderedClasses = Array.from(classes.keys()).reverse();
 

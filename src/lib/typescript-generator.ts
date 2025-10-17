@@ -1,4 +1,5 @@
 
+
 export interface TypeScriptGeneratorOptions {
     useType: boolean;
     optionalFields: boolean;
@@ -31,7 +32,7 @@ function isIsoDateString(value: any): boolean {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value);
 }
 
-function getTypescriptType(value: any, key: string, types: Map<string, string>, options: TypeScriptGeneratorOptions): string {
+function getTypescriptType(value: any, key: string, types: Set<string>, options: TypeScriptGeneratorOptions): string {
     let baseType: string;
 
     if (value === null) {
@@ -53,17 +54,18 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                 let listType = getTypescriptType(value[0], singularKey, types, options);
                 
-                if (options.allowNulls && !listType.includes('| null')) {
+                if (options.allowNulls && !listType.includes(' | null')) {
                      baseType = `(${listType} | null)[]`;
-                } else {
+                } else if (listType.includes(' | null')) {
+                     baseType = `(${listType})[]`;
+                }
+                else {
                      baseType = `${listType}[]`;
                 }
             }
         } else if (type === 'object') {
             const typeName = toPascalCase(key);
-            if (!types.has(typeName)) {
-                generateType(typeName, value, types, options);
-            }
+            types.add(typeName);
             baseType = typeName;
         } else {
             baseType = 'any';
@@ -82,8 +84,8 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
 }
 
 
-function generateType(typeName: string, jsonObject: Record<string, any>, types: Map<string, string>, options: TypeScriptGeneratorOptions): void {
-    if (types.has(typeName)) return;
+function generateType(typeName: string, jsonObject: Record<string, any>, options: TypeScriptGeneratorOptions): { typeDef: string, dependentTypes: Set<string> } {
+    const dependentTypes = new Set<string>();
 
     const keyword = options.useType ? 'type' : 'interface';
     let typeString = `export ${keyword} ${typeName} = {\n`;
@@ -91,18 +93,16 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
         typeString = `export ${keyword} ${typeName} {\n`;
     }
 
-
     const fields: { name: string, type: string }[] = [];
     const sortedKeys = Object.keys(jsonObject).sort();
 
     for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
-        const tsType = getTypescriptType(jsonObject[key], key, types, options);
+        const tsType = getTypescriptType(jsonObject[key], key, dependentTypes, options);
         fields.push({ name: fieldName, type: tsType });
     }
 
-    // Sort fields alphabetically by name
     fields.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const field of fields) {
@@ -119,24 +119,34 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
       typeString += '\n'
     }
 
-
-    types.set(typeName, typeString);
-
-    // Recursively generate for sub-objects
-    sortedKeys.forEach(key => {
-        const value = jsonObject[key];
-        const type = typeof value;
-        if (type === 'object' && value !== null && !isIsoDateString(value)) {
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                generateType(singularKey, value[0], types, options);
-            } else if (!Array.isArray(value)) {
-                generateType(toPascalCase(key), value, types, options);
-            }
-        }
-    });
+    return { typeDef: typeString, dependentTypes };
 }
 
+function findJsonForClass(className: string, currentJson: any, rootName: string): any {
+    if (toPascalCase(rootName) === className) {
+        return currentJson;
+    }
+
+    for (const key in currentJson) {
+        const value = currentJson[key];
+        const pascalKey = toPascalCase(key);
+
+        if (pascalKey === className && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return value;
+        }
+
+        const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        if (singularPascalKey === className && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            return value[0];
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            const result = findJsonForClass(className, value, key);
+            if (result) return result;
+        }
+    }
+    return null;
+}
 
 export function generateTypescriptCode(
     json: any,
@@ -150,9 +160,24 @@ export function generateTypescriptCode(
     }
     
     const types = new Map<string, string>();
-    const finalRootTypeName = toPascalCase(rootTypeName);
+    const toProcess: { name: string, json: any }[] = [{ name: toPascalCase(rootTypeName), json }];
+    const processed = new Set<string>();
 
-    generateType(finalRootTypeName, { ...json }, types, options);
+    while (toProcess.length > 0) {
+        const { name, json: currentJson } = toProcess.shift()!;
+        if (processed.has(name)) continue;
+
+        const { typeDef, dependentTypes } = generateType(name, currentJson, options);
+        types.set(name, typeDef);
+        processed.add(name);
+
+        dependentTypes.forEach(depName => {
+            const depJson = findJsonForClass(depName, json, toPascalCase(rootTypeName));
+            if (depJson) {
+                toProcess.push({ name: depName, json: depJson });
+            }
+        });
+    }
     
     const orderedTypes = Array.from(types.keys()).reverse();
 

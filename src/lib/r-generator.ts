@@ -34,7 +34,7 @@ export interface RGeneratorOptions {
   function generateConstructor(name: string, json: Record<string, any>, options: RGeneratorOptions): string {
     const params: string[] = [];
     const assignments: string[] = [];
-    const functionName = toSnakeCase(toPascalCase(name));
+    const functionName = toSnakeCase(name);
   
     const sortedKeys = Object.keys(json).sort();
 
@@ -61,40 +61,36 @@ export interface RGeneratorOptions {
     }
   
     const generated = new Map<string, string>();
-    const queue: [string, Record<string, any>][] = [[toPascalCase(rootName), json]];
+    const queue: [string, Record<string, any>][] = [[rootName, json]];
     const seen = new Set<string>();
   
-    function traverse(obj: any) {
-        if (typeof obj !== 'object' || obj === null) return;
+    function traverse(obj: any, name: string) {
+        if (typeof obj !== 'object' || obj === null || seen.has(name)) return;
+        
+        seen.add(name);
+        queue.push([name, obj]);
 
         for (const key of Object.keys(obj)) {
             const value = obj[key];
             if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
                 const childName = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                if (!seen.has(childName)) {
-                   queue.push([childName, value[0]]);
-                   traverse(value[0]);
-                }
+                traverse(value[0], childName);
             } else if (value && typeof value === 'object' && !Array.isArray(value)) {
                 const childName = toPascalCase(key);
-                 if (!seen.has(childName)) {
-                    queue.push([childName, value]);
-                    traverse(value);
-                 }
+                traverse(value, childName);
             }
         }
     }
     
-    traverse(json);
+    traverse(json, rootName);
 
-    while (queue.length > 0) {
-      const [name, obj] = queue.shift()!;
-      if (seen.has(name)) continue;
-      seen.add(name);
-      generated.set(name, generateConstructor(name, obj, options));
+    // Process the queue after traversal
+    const finalConstructors = new Map<string, string>();
+    for(const [name, obj] of queue) {
+      finalConstructors.set(name, generateConstructor(name, obj, options));
     }
   
-    return Array.from(generated.values()).reverse().join('\n\n');
+    return Array.from(finalConstructors.values()).reverse().join('\n\n');
   }
   
   export { defaultOptions };

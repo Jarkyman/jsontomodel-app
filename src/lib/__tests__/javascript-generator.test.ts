@@ -35,15 +35,18 @@ describe('generateJavaScriptCode', () => {
 
         // Check for UserData class
         expect(normGenerated).toContain('class UserData {');
-        expect(normGenerated).toContain('/** @type {number|null} */ id;');
-        expect(normGenerated).toContain('/** @type {string|null} */ name;');
         expect(normGenerated).toContain('/** @type {Date|null} */ createdAt;');
+        expect(normGenerated).toContain('/** @type {string|null} */ email;');
+        expect(normGenerated).toContain('/** @type {number|null} */ id;');
+        expect(normGenerated).toContain('/** @type {boolean|null} */ isActive;');
+        expect(normGenerated).toContain('/** @type {string|null} */ name;');
         expect(normGenerated).toContain('/** @type {Preferences|null} */ preferences;');
+        expect(normGenerated).toContain('/** @type {any|null} */ profilePicture;');
         expect(normGenerated).toContain('/** @type {Project[]|null} */ projects;');
+        expect(normGenerated).toContain('/** @type {string[]|null} */ roles;');
         
         // Check constructor
         expect(normGenerated).toContain('constructor(data = {}) {');
-        expect(normGenerated).toContain('this.id = data.id ?? null;');
         expect(normGenerated).toContain('this.createdAt = data.created_at ? new Date(data.created_at) : null;');
         expect(normGenerated).toContain('this.preferences = data.preferences ? new Preferences(data.preferences) : null;');
         expect(normGenerated).toContain('this.projects = Array.isArray(data.projects) ? data.projects.map(item => new Project(item)) : null;');

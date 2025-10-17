@@ -84,7 +84,63 @@ describe('generateDartCode', () => {
         useValuesAsDefaults: false,
     };
 
-    const expectedOutput = `class DataModel {
+    const expectedOutput = `class Address {
+  final String? city;
+  final Coordinates? coordinates;
+  final String? street;
+  final String? zipcode;
+
+  Address({
+    this.city,
+    this.coordinates,
+    this.street,
+    this.zipcode,
+  });
+
+  factory Address.fromJson(Map<String, dynamic> json) {
+    return Address(
+      city: json['city'],
+      coordinates: json['coordinates'] != null ? Coordinates.fromJson(json['coordinates']) : null,
+      street: json['street'],
+      zipcode: json['zipcode'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'city': city,
+      'coordinates': coordinates?.toJson(),
+      'street': street,
+      'zipcode': zipcode,
+    };
+  }
+}
+
+class Coordinates {
+  final double? lat;
+  final double? lng;
+
+  Coordinates({
+    this.lat,
+    this.lng,
+  });
+
+  factory Coordinates.fromJson(Map<String, dynamic> json) {
+    return Coordinates(
+      lat: json['lat']?.toDouble(),
+      lng: json['lng']?.toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'lat': lat,
+      'lng': lng,
+    };
+  }
+}
+
+class DataModel {
   final Address? address;
   final DateTime? createdAt;
   final String? email;
@@ -144,62 +200,6 @@ describe('generateDartCode', () => {
       'roles': roles,
       'score': score,
       'tags': tags,
-    };
-  }
-}
-
-class Address {
-  final String? city;
-  final Coordinates? coordinates;
-  final String? street;
-  final String? zipcode;
-
-  Address({
-    this.city,
-    this.coordinates,
-    this.street,
-    this.zipcode,
-  });
-
-  factory Address.fromJson(Map<String, dynamic> json) {
-    return Address(
-      city: json['city'],
-      coordinates: json['coordinates'] != null ? Coordinates.fromJson(json['coordinates']) : null,
-      street: json['street'],
-      zipcode: json['zipcode'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'city': city,
-      'coordinates': coordinates?.toJson(),
-      'street': street,
-      'zipcode': zipcode,
-    };
-  }
-}
-
-class Coordinates {
-  final double? lat;
-  final double? lng;
-
-  Coordinates({
-    this.lat,
-    this.lng,
-  });
-
-  factory Coordinates.fromJson(Map<String, dynamic> json) {
-    return Coordinates(
-      lat: json['lat']?.toDouble(),
-      lng: json['lng']?.toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'lat': lat,
-      'lng': lng,
     };
   }
 }

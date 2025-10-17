@@ -31,7 +31,7 @@ function toCamelCase(str: string): string {
     return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
-function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string {
+function getKotlinType(value: any, key: string, classes: Set<string>, options: KotlinGeneratorOptions): string {
     if (value === null) {
         if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
         return 'Any';
@@ -53,9 +53,7 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     }
     if (type === 'object') {
         const className = toPascalCase(key);
-        if (!classes.has(className)) {
-            generateClass(className, value, classes, options);
-        }
+        classes.add(className);
         return className;
     }
     
@@ -105,9 +103,8 @@ function generateImports(options: KotlinGeneratorOptions, allCode: string): stri
 }
 
 
-function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: KotlinGeneratorOptions): void {
-    if (classes.has(className)) return;
-
+function generateClass(className: string, jsonObject: Record<string, any>, options: KotlinGeneratorOptions): { classDef: string, dependentClasses: Set<string> } {
+    const dependentClasses = new Set<string>();
     let classString = '';
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     
@@ -116,7 +113,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
-        const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
+        const kotlinType = getKotlinType(jsonObject[key], key, dependentClasses, options);
         fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
     }
 
@@ -179,7 +176,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                 } else {
                      parsingLogic = `(json["${jsonKey}"] as? List<*>)?.mapNotNull { ${listType}.fromJson(it as Map<String, Any>) }`;
                 }
-            } else if (classes.has(kotlinType)) {
+            } else if (dependentClasses.has(kotlinType)) {
                 parsingLogic = `json["${jsonKey}"]?.let { ${kotlinType}.fromJson(it as Map<String, Any>) }`;
             } else {
                 parsingLogic = `json["${jsonKey}"] as? ${kotlinType}${nullableMarker}`;
@@ -205,10 +202,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             let serializingLogic = field.name;
             if (field.type.startsWith('List<') && !field.type.includes('<Any>')) {
                 const listType = field.type.substring(5, field.type.length - 1);
-                if (classes.has(listType)) {
+                if (dependentClasses.has(listType)) {
                     serializingLogic = `${field.name}?.map { it.toJson() }`;
                 }
-            } else if (classes.has(field.type)) {
+            } else if (dependentClasses.has(field.type)) {
                 serializingLogic = `${field.name}?.toJson()`;
             }
             classString += `        map["${field.originalKey}"] = ${serializingLogic}\n`;
@@ -217,20 +214,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classString += `}`;
     }
 
-    classes.set(className, classString);
-
-    for (const key of sortedKeys) {
-        const value = jsonObject[key];
-        const type = typeof value;
-        if (type === 'object' && value !== null) {
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                generateClass(singularKey, value[0], classes, options);
-            } else if (!Array.isArray(value)) {
-                generateClass(toPascalCase(key), value, classes, options);
-            }
-        }
-    }
+    return { classDef: classString, dependentClasses };
 }
 
 
@@ -244,22 +228,63 @@ export function generateKotlinCode(
     }
     
     const classes = new Map<string, string>();
-    const rootJson = {...json};
-    const finalRootClassName = toPascalCase(rootClassName);
+    const toProcess: { name: string, json: any }[] = [{ name: toPascalCase(rootClassName), json }];
+    const processed = new Set<string>();
 
-    generateClass(finalRootClassName, rootJson, classes, options);
-    
-    // Sort classes by dependency
+    while (toProcess.length > 0) {
+        const { name, json: currentJson } = toProcess.shift()!;
+        if (processed.has(name)) continue;
+
+        const { classDef, dependentClasses } = generateClass(name, currentJson, options);
+        classes.set(name, classDef);
+        processed.add(name);
+
+        dependentClasses.forEach(depName => {
+            const depJson = findJsonForClass(depName, json, toPascalCase(rootClassName));
+            if (depJson) {
+                toProcess.push({ name: depName, json: depJson });
+            }
+        });
+    }
+
     const sortedClassNames = Array.from(classes.keys()).sort((a, b) => {
         const aDeps = classes.get(a) || '';
         const bDeps = classes.get(b) || '';
-        if (aDeps.includes(` ${b}(`)) return 1; // a depends on b
-        if (bDeps.includes(` ${a}(`)) return -1; // b depends on a
-        return a.localeCompare(b); // fallback to alphabetical
+        if (aDeps.includes(` ${b}(`) || aDeps.includes(` ${b}?`)) return 1;
+        if (bDeps.includes(` ${a}(`) || bDeps.includes(` ${a}?`)) return -1;
+        return a.localeCompare(b);
     });
+
     
-    const allCode = sortedClassNames.map(name => classes.get(name)).join('\n\n');
+    const allCode = sortedClassNames.reverse().map(name => classes.get(name)).join('\n\n');
     const imports = generateImports(options, allCode);
 
     return imports + allCode;
+}
+
+
+function findJsonForClass(className: string, currentJson: any, rootName: string): any {
+    if (toPascalCase(rootName) === className) {
+        return currentJson;
+    }
+
+    for (const key in currentJson) {
+        const value = currentJson[key];
+        const pascalKey = toPascalCase(key);
+
+        if (pascalKey === className && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return value;
+        }
+
+        const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        if (singularPascalKey === className && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            return value[0];
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            const result = findJsonForClass(className, value, key);
+            if (result) return result;
+        }
+    }
+    return null;
 }

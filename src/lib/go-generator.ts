@@ -15,7 +15,7 @@ const defaultOptions: GoGeneratorOptions = {
 function toPascalCase(str: string): string {
     const pascal = str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
     // Handle specific acronyms common in Go
-    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/gi, (match) => match.toUpperCase());
+    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/g, (match) => match.toUpperCase());
 }
 
 function isIsoDateString(value: any): boolean {
@@ -42,7 +42,7 @@ function arrayContainsNull(arr: any[]): boolean {
     return arr.some(item => item === null);
 }
 
-function getGoType(value: any, key: string, structs: Map<string, string>, options: GoGeneratorOptions): string {
+function getGoType(value: any, key: string, structs: Set<string>, options: GoGeneratorOptions): string {
     let goType: string;
     
     if (isIsoDateString(value)) {
@@ -68,7 +68,8 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
                     sliceType = 'float64';
                 } else {
                     // Temporarily disable usePointers for the slice type to get the base type.
-                    sliceType = getGoType(value[0], singularKey, structs, { ...options, usePointers: false });
+                    const tempOptions = { ...options, usePointers: false };
+                    sliceType = getGoType(value[0], singularKey, structs, tempOptions);
                 }
 
                 if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}' && !sliceType.startsWith('[]')) {
@@ -79,9 +80,7 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
             }
         } else if (type === 'object') {
             const structName = toPascalCase(key);
-            if (!structs.has(structName)) {
-                generateStruct(structName, value, structs, options);
-            }
+            structs.add(structName);
             goType = structName;
         } else {
             goType = 'interface{}';
@@ -97,9 +96,8 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
     return goType;
 }
 
-function generateStruct(structName: string, jsonObject: Record<string, any>, structs: Map<string, string>, options: GoGeneratorOptions): void {
-    if (structs.has(structName)) return;
-
+function generateStruct(structName: string, jsonObject: Record<string, any>, options: GoGeneratorOptions): { structDef: string, dependentClasses: Set<string> } {
+    const dependentClasses = new Set<string>();
     let structString = `type ${structName} struct {\n`;
     const fields: { name: string, type: string, originalKey: string }[] = [];
 
@@ -108,7 +106,7 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toPascalCase(key);
-        const goType = getGoType(jsonObject[key], key, structs, options);
+        const goType = getGoType(jsonObject[key], key, dependentClasses, options);
         fields.push({ name: fieldName, type: goType, originalKey: key });
     }
 
@@ -117,20 +115,33 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     }
     structString += '}\n';
 
-    structs.set(structName, structString);
+    return { structDef: structString, dependentClasses };
+}
 
-    for (const key of sortedKeys) {
-        const value = jsonObject[key];
-        const type = typeof value;
-        if (type === 'object' && value !== null && !isIsoDateString(value)) {
-            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-                const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                generateStruct(singularKey, value[0], structs, options);
-            } else if (!Array.isArray(value)) {
-                generateStruct(toPascalCase(key), value, structs, options);
-            }
+function findJsonForClass(className: string, currentJson: any, rootName: string): any {
+    if (toPascalCase(rootName) === className) {
+        return currentJson;
+    }
+
+    for (const key in currentJson) {
+        const value = currentJson[key];
+        const pascalKey = toPascalCase(key);
+
+        if (pascalKey === className && typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            return value;
+        }
+
+        const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+        if (singularPascalKey === className && Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+            return value[0];
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            const result = findJsonForClass(className, value, key);
+            if (result) return result;
         }
     }
+    return null;
 }
 
 export function generateGoCode(
@@ -142,16 +153,30 @@ export function generateGoCode(
         throw new Error("Invalid or empty JSON object provided.");
     }
     
-    const structs = new Map<string, string>();
-    const finalRootStructName = toPascalCase(rootStructName);
+    const classes = new Map<string, string>();
+    const toProcess: { name: string, json: any }[] = [{ name: toPascalCase(rootStructName), json }];
+    const processed = new Set<string>();
 
-    generateStruct(finalRootStructName, { ...json }, structs, options);
+    while (toProcess.length > 0) {
+        const { name, json: currentJson } = toProcess.shift()!;
+        if (processed.has(name)) continue;
+
+        const { structDef, dependentClasses } = generateStruct(name, currentJson, options);
+        classes.set(name, structDef);
+        processed.add(name);
+
+        dependentClasses.forEach(depName => {
+            const depJson = findJsonForClass(depName, json, toPascalCase(rootStructName));
+            if (depJson) {
+                toProcess.push({ name: depName, json: depJson });
+            }
+        });
+    }
     
-    const orderedStructs = Array.from(structs.keys()).reverse();
+    const orderedStructs = Array.from(classes.keys()).reverse();
+    let allCode = orderedStructs.map(name => classes.get(name)).join('\n');
 
     let finalCode = `package ${options.packageName}\n\n`;
-    let allCode = orderedStructs.map(name => structs.get(name)).join('\n');
-
     if (allCode.includes('time.Time')) {
         finalCode += 'import "time"\n\n';
     }
