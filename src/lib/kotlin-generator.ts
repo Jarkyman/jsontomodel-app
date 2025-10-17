@@ -117,6 +117,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
     }
 
+    fields.sort((a,b) => a.name.localeCompare(b.name));
+
     if (options.serializationLibrary === 'kotlinx') {
         classString += '@Serializable\n';
     }
@@ -250,13 +252,13 @@ export function generateKotlinCode(
     const sortedClassNames = Array.from(classes.keys()).sort((a, b) => {
         const aDeps = classes.get(a) || '';
         const bDeps = classes.get(b) || '';
-        if (aDeps.includes(` ${b}(`) || aDeps.includes(` ${b}?`)) return 1;
-        if (bDeps.includes(` ${a}(`) || bDeps.includes(` ${a}?`)) return -1;
+        if (aDeps.includes(` ${b}?`) || aDeps.includes(` ${b} `)) return 1;
+        if (bDeps.includes(` ${a}?`) || bDeps.includes(` ${a} `)) return -1;
         return a.localeCompare(b);
     });
 
     
-    const allCode = sortedClassNames.reverse().map(name => classes.get(name)).join('\n\n');
+    const allCode = sortedClassNames.map(name => classes.get(name)).join('\n\n');
     const imports = generateImports(options, allCode);
 
     return imports + allCode;

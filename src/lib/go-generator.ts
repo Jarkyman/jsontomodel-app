@@ -15,7 +15,7 @@ const defaultOptions: GoGeneratorOptions = {
 function toPascalCase(str: string): string {
     const pascal = str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
     // Handle specific acronyms common in Go
-    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/g, (match) => match.toUpperCase());
+    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/gi, (match) => match.toUpperCase());
 }
 
 function isIsoDateString(value: any): boolean {
@@ -42,7 +42,7 @@ function arrayContainsNull(arr: any[]): boolean {
     return arr.some(item => item === null);
 }
 
-function getGoType(value: any, key: string, structs: Set<string>, options: GoGeneratorOptions): string {
+function getGoType(value: any, key: string, structs: Set<string>, options: GoGeneratorOptions, isRecursiveCall: boolean = false): string {
     let goType: string;
     
     if (isIsoDateString(value)) {
@@ -67,9 +67,7 @@ function getGoType(value: any, key: string, structs: Set<string>, options: GoGen
                 if (hasMixedNumberTypes(value)) {
                     sliceType = 'float64';
                 } else {
-                    // Temporarily disable usePointers for the slice type to get the base type.
-                    const tempOptions = { ...options, usePointers: false };
-                    sliceType = getGoType(value[0], singularKey, structs, tempOptions);
+                    sliceType = getGoType(value[0], singularKey, structs, options, true);
                 }
 
                 if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}' && !sliceType.startsWith('[]')) {
@@ -87,7 +85,7 @@ function getGoType(value: any, key: string, structs: Set<string>, options: GoGen
         }
     }
     
-    if (options.usePointers && !goType.startsWith('[]') && !goType.startsWith('map[') && goType !== 'interface{}') {
+    if (options.usePointers && !goType.startsWith('[]') && !goType.startsWith('map[') && goType !== 'interface{}' && !isRecursiveCall) {
         if (!goType.startsWith('*')) {
             return `*${goType}`;
         }
@@ -109,6 +107,8 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, opt
         const goType = getGoType(jsonObject[key], key, dependentClasses, options);
         fields.push({ name: fieldName, type: goType, originalKey: key });
     }
+
+    fields.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const field of fields) {
         structString += `\t${field.name} ${field.type} \`json:"${field.originalKey},omitempty"\`\n`;
@@ -173,7 +173,12 @@ export function generateGoCode(
         });
     }
     
-    const orderedStructs = Array.from(classes.keys()).reverse();
+    const orderedStructs = Array.from(classes.keys()).sort((a,b) => {
+        if(a === toPascalCase(rootStructName)) return 1;
+        if(b === toPascalCase(rootStructName)) return -1;
+        return a.localeCompare(b);
+    }).reverse();
+    
     let allCode = orderedStructs.map(name => classes.get(name)).join('\n');
 
     let finalCode = `package ${options.packageName}\n\n`;
