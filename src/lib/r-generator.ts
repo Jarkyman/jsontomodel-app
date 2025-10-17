@@ -60,8 +60,7 @@ export interface RGeneratorOptions {
       throw new Error('Invalid JSON object');
     }
   
-    const generated = new Map<string, string>();
-    const queue: [string, Record<string, any>][] = [[rootName, json]];
+    const queue: [string, Record<string, any>][] = [];
     const seen = new Set<string>();
   
     function traverse(obj: any, name: string) {
@@ -84,7 +83,6 @@ export interface RGeneratorOptions {
     
     traverse(json, rootName);
 
-    // Process the queue after traversal
     const finalConstructors = new Map<string, string>();
     for(const [name, obj] of queue) {
       finalConstructors.set(name, generateConstructor(name, obj, options));
