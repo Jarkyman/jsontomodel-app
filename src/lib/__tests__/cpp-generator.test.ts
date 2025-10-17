@@ -23,7 +23,8 @@ const fullJsonInput = {
 const defaultOptions: CppGeneratorOptions = {
     namespace: "ApiModels",
     usePointersForNull: false,
-    cppVersion: "17"
+    cppVersion: "17",
+    useNlohmann: true,
 };
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
