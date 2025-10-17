@@ -1,7 +1,11 @@
+
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Home } from 'lucide-react';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -26,10 +30,9 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-// ✅ Use a plain type definition for params to avoid the Promise<any> constraint issue
 type Params = { params: { language: string } };
 
-export async function generateMetadata({ params }: any): Promise<Metadata> {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -65,7 +68,7 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
   };
 }
 
-export default function LanguagePage({ params }: any) {
+export default function LanguagePage({ params }: Params) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -78,11 +81,18 @@ export default function LanguagePage({ params }: any) {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
+       <div className="absolute top-4 left-4">
+        <Button asChild variant="outline">
+          <Link href="/">
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Link>
+        </Button>
+      </div>
       <ModelForgeLoader selectedLanguage={langParam} />
     </main>
   );
 }
-
 
 export async function generateStaticParams(): Promise<{ language: string }[]> {
   return languages.map(lang => ({
