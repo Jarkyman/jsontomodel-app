@@ -26,7 +26,8 @@ function toPascalCase(str: string): string {
 }
 
 function toCamelCase(str: string): string {
-  return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+  const pascal = toPascalCase(str);
+  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
 }
 
 function inferElixirType(value: any): string {
@@ -55,9 +56,8 @@ function generateElixirModule(
 
   if (modules.has(moduleName)) return;
 
-  const fields: string[] = [];
-  const types: string[] = [];
-
+  const fields: {name: string, type: string, default: string}[] = [];
+  
   const sortedKeys = Object.keys(json).sort();
 
   for (const rawKey of sortedKeys) {
@@ -68,13 +68,7 @@ function generateElixirModule(
     const type = options.includeTypes ? `:: ${inferElixirType(value)}` : '';
     const defaultValue = options.defaultValues ? ` # default: ${formatDefaultValue(value)}` : '';
 
-    if (options.includeStruct) {
-      fields.push(`    ${fieldName}: nil${defaultValue}`);
-    }
-
-    if (options.includeTypes) {
-      types.push(`  @type ${typeName} ${type}`);
-    }
+    fields.push({name: fieldName, type: `@type ${typeName} ${type}`, default: `${fieldName}: nil${defaultValue}`})
 
     // Handle nested object
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -91,14 +85,14 @@ function generateElixirModule(
 
   let code = `defmodule ${moduleName} do\n`;
 
-  if (types.length > 0) {
-    code += types.join('\n') + '\n\n';
+  if (options.includeTypes && fields.length > 0) {
+    code += fields.map(f => `  ${f.type}`).join('\n') + '\n\n';
   }
 
-  if (fields.length > 0) {
-    code += `  defstruct [\n${fields.join(',\n')}\n  ]\n`;
-  } else if (!options.includeStruct && types.length === 0) {
-    code += `  # Module generated for ${moduleName}\n`;
+  if (options.includeStruct && fields.length > 0) {
+    code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
+  } else if (!options.includeStruct && !options.includeTypes) {
+    code += `\n  # Module generated for ${moduleName}\n`;
   }
 
   code += `end`;

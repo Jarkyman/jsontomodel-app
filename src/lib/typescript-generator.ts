@@ -102,6 +102,9 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
         fields.push({ name: fieldName, type: tsType });
     }
 
+    // Sort fields alphabetically by name
+    fields.sort((a, b) => a.name.localeCompare(b.name));
+
     for (const field of fields) {
         const readonly = options.readonlyFields ? 'readonly ' : '';
         const optional = options.optionalFields ? '?' : '';

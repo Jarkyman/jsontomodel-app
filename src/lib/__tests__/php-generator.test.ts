@@ -42,7 +42,7 @@ describe('generatePhpCode', () => {
         
         // Check for constructor property promotion syntax and @param docblock
         expect(normGenerated).toContain('/** * @param Project[]|null $projects */');
-        expect(normGenerated).toContain('public function __construct( public readonly ?int $id, public readonly ?string $name, public readonly ?bool $isActive, public readonly ?\\DateTimeInterface $createdAt, public readonly ?Preferences $preferences, public readonly ?array $roles, public readonly mixed $profilePicture, public readonly ?array $projects, public readonly mixed $nullableProjects )');
+        expect(normGenerated).toContain('public function __construct( public readonly ?\\DateTimeInterface $createdAt, public readonly ?int $id, public readonly ?bool $isActive, public readonly ?string $name, public readonly mixed $nullableProjects, public readonly ?Preferences $preferences, public readonly ?array $projects, public readonly mixed $profilePicture, public readonly ?array $roles )');
 
         // Check for fromArray method
         expect(normGenerated).toContain('public static function fromArray(array $data): self');

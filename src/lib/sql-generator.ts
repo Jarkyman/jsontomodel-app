@@ -39,89 +39,10 @@ function inferSQLType(value: any): string {
     return /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? 'DATETIME' : 'VARCHAR(255)';
   }
   if (Array.isArray(value)) return 'JSON';
-  if (typeof value === 'object') return 'INTEGER'; // foreign key
+  if (typeof value === 'object' && value !== null) return 'INTEGER'; // foreign key
   return 'TEXT';
 }
 
-function generateSQLTable(
-  name: string,
-  json: Record<string, any>,
-  options: SQLGeneratorOptions,
-  tables: Map<string, string>,
-  parentTableName?: string,
-  parentIdKey?: string
-) {
-  const baseName = options.useSnakeCase ? toSnakeCase(name) : name;
-  const tableName = options.tablePrefix ? `${options.tablePrefix}${baseName}` : baseName;
-
-  if (tables.has(tableName)) return;
-
-  const lines: string[] = [];
-  const foreignKeys: string[] = [];
-
-  if (options.includePrimaryKey) {
-    lines.push('  id INTEGER PRIMARY KEY AUTOINCREMENT');
-  }
-
-  const sortedKeys = Object.keys(json).sort();
-
-  for (const key of sortedKeys) {
-    const value = json[key];
-    const fieldName = options.useSnakeCase ? toSnakeCase(key) : key;
-    let type = 'TEXT';
-    if (options.useTypeInference) type = inferSQLType(value);
-
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      const nestedName = `${name}_${key}`;
-      const nestedTableNameRaw = options.useSnakeCase ? toSnakeCase(nestedName) : nestedName;
-      const nestedTableName = options.tablePrefix ? `${options.tablePrefix}${nestedTableNameRaw}` : nestedTableNameRaw;
-      
-      generateSQLTable(nestedName, value, options, tables);
-      
-      const fkColumn = `${fieldName}_id`;
-      lines.push(`  ${fkColumn} INTEGER${options.useNotNull ? ' NOT NULL' : ''}`);
-
-      if (options.useForeignKeys) {
-        foreignKeys.push(`  FOREIGN KEY (${fkColumn}) REFERENCES ${nestedTableName}(id)`);
-      }
-    } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-        const childBaseName = `${name}_${key}`;
-        const childTableNameRaw = options.useSnakeCase ? toSnakeCase(childBaseName) : `${name}${toPascalCase(key)}`;
-
-      // This creates the many-to-many or one-to-many table
-      generateSQLTable(childBaseName, value[0], options, tables, tableName, 'id');
-    } else {
-      const nullStr = options.useNotNull ? ' NOT NULL' : '';
-      const defaultStr = options.defaultValues
-        ? typeof value === 'number'
-          ? ` DEFAULT ${value}`
-          : typeof value === 'boolean'
-          ? ` DEFAULT ${value ? 1 : 0}`
-          : typeof value === 'string'
-          ? ` DEFAULT '${value}'`
-          : ''
-        : '';
-
-      lines.push(`  ${fieldName} ${type}${nullStr}${defaultStr}`);
-    }
-  }
-  
-  if (parentTableName && options.useForeignKeys) {
-      const parentIdField = options.useSnakeCase ? toSnakeCase(`${parentTableName}_id`) : `${parentTableName}Id`;
-      lines.push(`  ${parentIdField} INTEGER`);
-      foreignKeys.push(`  FOREIGN KEY (${parentIdField}) REFERENCES ${parentTableName}(${parentIdKey || 'id'})`);
-  }
-
-  if (options.includeTimestamps) {
-    lines.push('  created_at DATETIME DEFAULT CURRENT_TIMESTAMP');
-    lines.push('  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
-  }
-
-  lines.push(...foreignKeys);
-
-  const sql = `CREATE TABLE ${tableName} (\n${lines.join(',\n')}\n);`;
-  tables.set(tableName, sql);
-}
 
 export function generateSQLSchema(
   json: any,
@@ -171,8 +92,7 @@ export function generateSQLSchema(
                   foreignKeys.push(`  FOREIGN KEY (${fkColumn}) REFERENCES ${nestedTableName}(id)`);
               }
           } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-              const childBaseName = name.endsWith('s') ? name.slice(0, -1) : name;
-              const childName = `${childBaseName}_${key}`;
+              const childName = `${name}_${key}`;
               subQueue.push([childName, value[0], tableName, 'id']);
           } else {
               const type = finalOptions.useTypeInference ? inferSQLType(value) : 'TEXT';
@@ -186,10 +106,12 @@ export function generateSQLSchema(
           }
       }
 
-      if (parentTable && finalOptions.useForeignKeys) {
+      if (parentTable) {
           const parentIdField = finalOptions.useSnakeCase ? toSnakeCase(`${parentTable}_id`) : `${parentTable}Id`;
           lines.push(`  ${parentIdField} INTEGER`);
-          foreignKeys.push(`  FOREIGN KEY (${parentIdField}) REFERENCES ${parentTable}(${parentIdKey || 'id'})`);
+          if (finalOptions.useForeignKeys) {
+            foreignKeys.push(`  FOREIGN KEY (${parentIdField}) REFERENCES ${parentTable}(${parentIdKey || 'id'})`);
+          }
       }
 
        if (finalOptions.includeTimestamps) {
@@ -197,8 +119,13 @@ export function generateSQLSchema(
             lines.push('  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
         }
 
-      lines.push(...foreignKeys);
-      tables.set(tableName, `CREATE TABLE ${tableName} (\n${lines.join(',\n')}\n);`);
+      const allLines = [...lines, ...foreignKeys].sort((a,b) => {
+          // Keep PK first
+          if (a.includes('PRIMARY KEY')) return -1;
+          if (b.includes('PRIMARY KEY')) return 1;
+          return a.localeCompare(b);
+      });
+      tables.set(tableName, `CREATE TABLE ${tableName} (\n${allLines.join(',\n')}\n);`);
       processed.add(tableName);
       queue.unshift(...subQueue);
   }

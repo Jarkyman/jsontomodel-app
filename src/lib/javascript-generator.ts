@@ -61,42 +61,55 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     const dependentClasses = new Set<string>();
     let classString = `class ${className} {\n`;
     
-    // JSDoc properties first
-    if (options.includeJSDoc) {
-        if (Object.keys(jsonObject).length > 0) {
-            for (const key in jsonObject) {
-                if (key === '') continue;
-                const fieldName = toCamelCase(key);
-                const jsDocType = getJSDocType(jsonObject[key], key, dependentClasses, options);
-                classString += `    /** @type {${jsDocType}|null} */\n`;
-                classString += `    ${fieldName};\n\n`;
-            }
-        }
-    }
+    const fields: {name: string, jsdoc: string}[] = [];
+    const constructorAssignments: {name: string, assignment: string}[] = [];
+    const toJSONFields: {key: string, serialization: string}[] = [];
 
+    const sortedKeys = Object.keys(jsonObject).sort();
 
-    // Constructor
-    classString += `    constructor(data = {}) {\n`;
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const value = jsonObject[key];
-        const jsDocType = getJSDocType(value, key, new Set(), options); // Use a temp set to avoid recursion issues here
-        
+        const jsDocType = getJSDocType(value, key, dependentClasses, options);
+
+        fields.push({
+            name: fieldName,
+            jsdoc: `/** @type {${jsDocType}|null} */\n    ${fieldName};`
+        });
+
         const isDate = isIsoDateString(value, options);
         const isObject = typeof value === 'object' && !Array.isArray(value) && value !== null;
         const isObjectArray = Array.isArray(value) && value.length > 0 && typeof value[0] === 'object';
         
         let assignment = `data.${key} ?? null`;
+        let serialization = `this.${fieldName}`;
+
         if (isDate) {
             assignment = `data.${key} ? new Date(data.${key}) : null`;
+            serialization = `this.${fieldName}?.toISOString()`;
         } else if (isObjectArray) {
             const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
             assignment = `Array.isArray(data.${key}) ? data.${key}.map(item => new ${singularType}(item)) : null`;
+            serialization = `this.${fieldName}?.map(item => item.toJSON())`;
         } else if (isObject) {
              assignment = `data.${key} ? new ${jsDocType}(data.${key}) : null`;
+             serialization = `this.${fieldName}?.toJSON()`;
         }
-        classString += `        this.${fieldName} = ${assignment};\n`;
+
+        constructorAssignments.push({ name: fieldName, assignment });
+        toJSONFields.push({ key, serialization });
+    }
+
+    // JSDoc properties first
+    if (options.includeJSDoc && fields.length > 0) {
+        classString += fields.map(f => `    ${f.jsdoc}\n`).join('\n');
+    }
+
+    // Constructor
+    classString += `\n    constructor(data = {}) {\n`;
+    for (const item of constructorAssignments) {
+        classString += `        this.${item.name} = ${item.assignment};\n`;
     }
     classString += `    }\n`;
     
@@ -109,24 +122,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // toJSON method
         classString += `\n    toJSON() {\n`;
         classString += `        return {\n`;
-        const toJSONFields = Object.keys(jsonObject).map(key => {
-            const fieldName = toCamelCase(key);
-            const value = jsonObject[key];
-            const isDate = isIsoDateString(value, options);
-            const isObject = typeof value === 'object' && !Array.isArray(value) && value !== null;
-            const isObjectArray = Array.isArray(value) && value.length > 0 && typeof value[0] === 'object';
-
-            let serialization = `this.${fieldName}`;
-            if (isDate) {
-                serialization = `this.${fieldName}?.toISOString()`;
-            } else if (isObjectArray) {
-                serialization = `this.${fieldName}?.map(item => item.toJSON())`;
-            } else if (isObject) {
-                serialization = `this.${fieldName}?.toJSON()`;
-            }
-            return `            "${key}": ${serialization}`;
-        });
-        classString += toJSONFields.join(',\n');
+        const toJSONLines = toJSONFields.map(f => `            "${f.key}": ${f.serialization}`);
+        classString += toJSONLines.join(',\n');
         classString += `\n        };\n`;
         classString += `    }\n`;
     }
@@ -137,7 +134,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classes.set(className, classString);
     
     // Recursively generate for sub-objects
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null && !isIsoDateString(value, options)) {

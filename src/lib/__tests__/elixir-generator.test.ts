@@ -34,7 +34,7 @@ describe('generateElixirCode', () => {
         expect(normGenerated).toContain('@type user_id :: integer');
         expect(normGenerated).toContain('@type user_name :: String.t()');
         expect(normGenerated).toContain('@type is_active :: boolean');
-        expect(normGenerated).toContain('defstruct [ user_id: nil, user_name: nil, is_active: nil, profile: nil ]');
+        expect(normGenerated).toContain('defstruct [ is_active: nil, profile: nil, user_id: nil, user_name: nil ]');
     });
 
     it('should generate without types and structs when disabled', () => {
@@ -60,7 +60,7 @@ describe('generateElixirCode', () => {
         const generated = generateElixirCode({ "userName": "test", "isActive": true }, 'User', options);
         const normGenerated = normalize(generated);
         
-        expect(normGenerated).toContain('defstruct [ userName: nil, isActive: nil ]');
+        expect(normGenerated).toContain('defstruct [ isActive: nil, userName: nil ]');
         expect(normGenerated).toContain('@type userName :: String.t()');
         expect(normGenerated).toContain('@type isActive :: boolean');
     });

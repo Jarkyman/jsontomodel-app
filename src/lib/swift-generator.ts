@@ -1,5 +1,4 @@
 
-
 export interface SwiftGeneratorOptions {
     isCodable: boolean;
     useStruct: boolean;
@@ -116,7 +115,13 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const swiftType = getSwiftType(jsonObject[key], key, classes, options);
-        
+        fields.push({ name: fieldName, type: swiftType, originalKey: key, value: jsonObject[key] });
+    }
+
+    // Sort fields alphabetically
+    fields.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const field of fields) {
         const isOptional = '?';
         const keyword = options.useStruct ? 'let' : 'var';
         let propertyWrapper = '';
@@ -124,8 +129,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             propertyWrapper = `@Published `;
         }
         
-        classDefinition += `    ${propertyWrapper}${keyword} ${fieldName}: ${swiftType}${isOptional}\n`;
-        fields.push({ name: fieldName, type: swiftType, originalKey: key, value: jsonObject[key] });
+        classDefinition += `    ${propertyWrapper}${keyword} ${field.name}: ${field.type}${isOptional}\n`;
     }
 
     if (options.isCodable && options.generateCodingKeys) {
@@ -182,10 +186,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     
     const equatableFields = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' && ');
 
-    if (options.isEquatable && options.useStruct) {
-         classDefinition += `\n    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
-         classDefinition += `        return ${equatableFields || 'true'}\n`;
-         classDefinition += `    }\n`;
+    if (options.isEquatable) {
+         if (options.useStruct) {
+            classDefinition += `\n    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+            classDefinition += `        return ${equatableFields || 'true'}\n`;
+            classDefinition += `    }\n`;
+         }
     }
 
     classDefinition += '}\n';

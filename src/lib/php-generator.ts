@@ -80,7 +80,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classString += `${final}class ${className}${implementsClause}\n{\n`;
 
     const fields: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }[] = [];
-    for (const key in jsonObject) {
+    const sortedKeys = Object.keys(jsonObject).sort();
+    for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const { type: phpType, isObject, isObjectArray } = getPhpType(jsonObject[key], key, classes, options);
@@ -145,14 +146,18 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     // fromArray method
     if (options.fromArray) {
         classString += `\n    public static function fromArray(array $data): self\n    {\n`;
-        classString += `        return new self(\n`;
-        const fromArrayParams = fields.map(field => {
-             const key = field.originalKey;
-             const { parsingLogic } = getParsingLogic(field, key, options, 'data');
-             return `            ${parsingLogic}`;
-        });
-        classString += fromArrayParams.join(',\n');
-        classString += `\n        );\n    }\n`;
+        if (options.constructorPropertyPromotion) {
+            classString += `        return new self(\n`;
+            const fromArrayParams = fields.map(field => {
+                const key = field.originalKey;
+                const { parsingLogic } = getParsingLogic(field, key, options, 'data');
+                return `            ${parsingLogic}`;
+            });
+            classString += fromArrayParams.join(',\n');
+            classString += `\n        );\n    }\n`;
+        } else {
+             classString += `        return new self($data);\n    }\n`;
+        }
     }
 
     // toArray method
@@ -173,7 +178,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classes.set(className, classString);
 
     // Generate dependent classes
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null && !isIsoDateString(value)) {
@@ -194,8 +199,8 @@ function getParsingLogic(field: { name: string, type: string, originalKey: strin
         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
     } else if (field.isObjectArray) {
         const singularType = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-        const mapLogic = options.fromArray ? `${singularType}::fromArray($item)` : `new ${singularType}($item)`;
-        parsingLogic = `is_array($${dataVar}['${key}'] ?? null) ? array_map(fn($item) => ${mapLogic}, $${dataVar}['${key}']) : null`;
+        const mapLogic = `fn($item) => ${singularType}::fromArray($item)`;
+        parsingLogic = `is_array($${dataVar}['${key}'] ?? null) ? array_map(${mapLogic}, $${dataVar}['${key}']) : null`;
     } else if (field.isObject) {
         const fromArrayLogic = `${field.type}::fromArray($${dataVar}['${key}'])`;
         const constructorLogic = `new ${field.type}($${dataVar}['${key}'])`;
