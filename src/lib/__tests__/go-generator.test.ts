@@ -1,4 +1,5 @@
 
+
 import { generateGoCode, GoGeneratorOptions } from '../go-generator';
 
 const fullJsonInput = {
@@ -91,7 +92,7 @@ describe('generateGoCode', () => {
                 ID *int \`json:"id,omitempty"\`
                 IsActive *bool \`json:"is_active,omitempty"\`
                 Name *string \`json:"name,omitempty"\`
-                NullableRoles []*string \`json:"nullable_roles,omitempty"\`
+                NullableRoles []interface{} \`json:"nullable_roles,omitempty"\`
                 Preferences *Preferences \`json:"preferences,omitempty"\`
                 ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\`
                 Roles []*string \`json:"roles,omitempty"\`
@@ -102,7 +103,7 @@ describe('generateGoCode', () => {
         expect(normGenerated).toContain(normalize(expectedUserDataStruct));
         expect(normGenerated).toContain('Roles []*string');
         expect(normGenerated).toContain('Scores []*float64');
-        expect(normGenerated).toContain('NullableRoles []*string');
+        expect(normGenerated).toContain('NullableRoles []interface{}');
     });
 
 

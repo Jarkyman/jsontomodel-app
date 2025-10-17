@@ -83,7 +83,7 @@ describe('generateTypescriptCode', () => {
         const normGenerated = normalize(generated);
         
         const expectedPreferences = `export type Preferences = { readonly newsletter?: boolean | null; };`;
-        const expectedUserData = `export type UserData = { readonly id?: number | null; readonly name?: string | null; readonly isActive?: boolean | null; readonly createdAt?: Date | string | null; readonly preferences?: Preferences | null; readonly roles?: (string | null)[] | null; readonly profilePicture?: any | null; };`;
+        const expectedUserData = `export type UserData = { readonly id?: number | null; readonly name?: string | null; readonly isActive?: boolean | null; readonly createdAt?: Date | string | null; readonly preferences?: Preferences | null; readonly roles?: (string | null)[] | null; readonly profilePicture?: any; };`;
 
         expect(normGenerated).toContain(expectedPreferences);
         expect(normGenerated).toContain(expectedUserData);

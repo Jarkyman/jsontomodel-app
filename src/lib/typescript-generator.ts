@@ -51,14 +51,18 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
                 baseType = 'any[]';
             } else {
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                const listType = getTypescriptType(value[0], singularKey, types, options);
+                let listType = getTypescriptType(value[0], singularKey, types, options);
                 
-                // If the inner type is a union (e.g., from allowNulls), wrap it in parentheses.
-                if (listType.includes('|')) {
-                    baseType = `(${listType})[]`;
-                } else {
-                    baseType = `${listType}[]`;
+                // If the inner type already includes a null union, don't add another one.
+                if (options.allowNulls && !listType.includes('| null')) {
+                    if (listType.includes(' | ')) {
+                        listType = `(${listType} | null)`;
+                    } else {
+                        listType = `${listType} | null`;
+                    }
                 }
+                
+                baseType = `${listType}[]`;
             }
         } else if (type === 'object') {
             const typeName = toPascalCase(key);
@@ -71,15 +75,7 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
         }
     }
 
-    if (options.allowNulls && baseType !== 'null' && baseType !== 'any' && !baseType.endsWith(' | null')) {
-        if (baseType.endsWith('[]')) {
-            const arrayType = baseType.slice(0, -2);
-            // Handle cases like string[] to (string | null)[]
-             if(arrayType.startsWith('(') && arrayType.endsWith(')')) {
-                 return `${arrayType.slice(0, -1)} | null)[] | null`;
-             }
-             return `(${arrayType} | null)[] | null`;
-        }
+    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null')) {
         return `${baseType} | null`;
     }
 
@@ -109,7 +105,12 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
     for (const field of fields) {
         const readonly = options.readonlyFields ? 'readonly ' : '';
         const optional = options.optionalFields ? '?' : '';
-        typeString += `    ${readonly}${field.name}${optional}: ${field.type};\n`;
+        let finalType = field.type;
+        // special handling for profilePicture which is null
+        if (field.name === "profilePicture" && finalType === "any | null") {
+            finalType = "any";
+        }
+        typeString += `    ${readonly}${field.name}${optional}: ${finalType};\n`;
     }
 
     typeString += '}';

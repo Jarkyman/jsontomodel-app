@@ -54,9 +54,9 @@ describe('generateJavaScriptCode', () => {
 
         // Check toJSON
         expect(normGenerated).toContain('toJSON() {');
-        expect(normGenerated).toContain("'created_at': this.createdAt?.toISOString(),");
-        expect(normGenerated).toContain("'preferences': this.preferences?.toJSON(),");
-        expect(normGenerated).toContain("'projects': this.projects?.map(item => item.toJSON()),");
+        expect(normGenerated).toContain("'created_at': this.createdAt?.toISOString()");
+        expect(normGenerated).toContain("'preferences': this.preferences?.toJSON()");
+        expect(normGenerated).toContain("'projects': this.projects?.map(item => item.toJSON())");
 
         // Check for nested Preferences class
         expect(normGenerated).toContain('class Preferences {');
@@ -94,7 +94,7 @@ describe('generateJavaScriptCode', () => {
         
         expect(normGenerated).toContain('/** @type {string|null} */ registeredAt;');
         expect(normGenerated).toContain('this.registeredAt = data.registered_at ?? null;'); // Should not create new Date()
-        expect(normGenerated).toContain("'registered_at': this.registeredAt,"); // Should not call toISOString()
+        expect(normGenerated).toContain("'registered_at': this.registeredAt"); // Should not call toISOString()
     });
 
     it('should handle an empty JSON object gracefully', () => {

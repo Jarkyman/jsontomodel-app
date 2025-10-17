@@ -1,3 +1,4 @@
+
 export interface ElixirGeneratorOptions {
   useSnakeCase?: boolean;
   includeTypes?: boolean;
@@ -93,13 +94,12 @@ function generateElixirModule(
 
   if (fields.length > 0) {
     code += `  defstruct [\n${fields.join(',\n')}\n  ]\n`;
-  } else if (types.length === 0) {
+  } else if (!options.includeStruct && types.length === 0) {
     code += `  # Module generated for ${moduleName}\n`;
   }
 
-  code += `end\n`; // ✅ Make sure this comes *before* modules.set()
-
-  modules.set(moduleName, code); // ✅ Now safe to store the module
+  code += `end`;
+  modules.set(moduleName, code);
 }
 
 
@@ -112,12 +112,20 @@ export function generateElixirCode(
     throw new Error('Invalid JSON object');
   }
 
+  const finalOptions = { ...defaultOptions, ...options };
+
   if (Object.keys(json).length === 0) {
-    return `defmodule ${toPascalCase(rootName)} do\nend\n`;
+    let emptyModule = `defmodule ${toPascalCase(rootName)} do`;
+    if (!finalOptions.includeStruct && !finalOptions.includeTypes) {
+        emptyModule += `\n  # Module generated for ${toPascalCase(rootName)}\nend`;
+    } else {
+        emptyModule += `\nend`;
+    }
+    return emptyModule;
   }
 
   const modules = new Map<string, string>();
-  generateElixirModule(rootName, json, { ...defaultOptions, ...options }, modules);
+  generateElixirModule(rootName, json, finalOptions, modules);
 
   return Array.from(modules.values()).reverse().join('\n\n');
 }

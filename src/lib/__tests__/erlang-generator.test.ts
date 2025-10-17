@@ -1,3 +1,4 @@
+
 import { generateErlangCode, ErlangGeneratorOptions } from '../erlang-generator';
 
 const fullJsonInput = {
@@ -53,7 +54,7 @@ describe('generateErlangCode', () => {
         const options: ErlangGeneratorOptions = { ...defaultOptions, useSnakeCase: false };
         const generated = generateErlangCode({ "userName": "test" }, 'UserData', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain('-record(UserData, { userName }).');
+        expect(normGenerated).toContain('-record(userData, { userName }).');
     });
 
 });

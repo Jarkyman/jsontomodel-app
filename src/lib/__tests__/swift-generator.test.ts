@@ -80,7 +80,7 @@ describe('generateSwiftCode', () => {
         // Protocols
         expect(normGenerated).toContain('func hash(into hasher: inout Hasher)');
         expect(normGenerated).toContain('hasher.combine(id)');
-        expect(normGenerated).toContain('func == (lhs: UserData, rhs: UserData) -> Bool');
+        expect(normGenerated).toContain('static func == (lhs: UserData, rhs: UserData) -> Bool');
         expect(normGenerated).toContain('return lhs.id == rhs.id && lhs.name == rhs.name');
         
         // CustomStringConvertible

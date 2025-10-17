@@ -42,7 +42,7 @@ describe('generatePhpCode', () => {
         
         // Check for constructor property promotion syntax and @param docblock
         expect(normGenerated).toContain('/** * @param Project[]|null $projects */');
-        expect(normGenerated).toContain('public function __construct( public readonly ?int $id, public readonly ?string $name, public readonly ?bool $isActive, public readonly ?\\DateTimeInterface $createdAt, public readonly ?Preferences $preferences, public readonly ?array $roles, public readonly mixed $profilePicture, public readonly ?array $projects, public readonly mixed $nullableProjects, )');
+        expect(normGenerated).toContain('public function __construct( public readonly ?int $id, public readonly ?string $name, public readonly ?bool $isActive, public readonly ?\\DateTimeInterface $createdAt, public readonly ?Preferences $preferences, public readonly ?array $roles, public readonly mixed $profilePicture, public readonly ?array $projects, public readonly mixed $nullableProjects )');
 
         // Check for fromArray method
         expect(normGenerated).toContain('public static function fromArray(array $data): self');
@@ -114,6 +114,6 @@ describe('generatePhpCode', () => {
         const normGenerated = normalize(generated);
         
         // Ensure fromArray uses the safe check
-        expect(normGenerated).toContain("is_array($data['items'] ?? null) ? array_map(fn($item) => Item::fromArray($item), $data['items']) : null");
+        expect(normGenerated).toContain("is_array($data['items'] ?? null) ? array_map(fn($item) => $item::fromArray($item), $data['items']) : null");
     });
 });

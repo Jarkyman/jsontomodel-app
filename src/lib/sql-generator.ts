@@ -44,10 +44,13 @@ function generateSQLTable(
   json: Record<string, any>,
   options: SQLGeneratorOptions,
   tables: Map<string, string>,
-  parent?: string
+  parentTableName?: string,
+  parentIdKey?: string
 ) {
   const baseName = options.useSnakeCase ? toSnakeCase(name) : name;
   const tableName = options.tablePrefix ? `${options.tablePrefix}${baseName}` : baseName;
+
+  if (tables.has(tableName)) return;
 
   const lines: string[] = [];
   const foreignKeys: string[] = [];
@@ -64,15 +67,16 @@ function generateSQLTable(
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       const nestedName = `${name}_${key}`;
       const nestedTableName = `${options.tablePrefix || ''}${options.useSnakeCase ? toSnakeCase(nestedName) : nestedName}`;
-      generateSQLTable(nestedName, value, options, tables, tableName);
+      generateSQLTable(nestedName, value, options, tables);
 
       if (options.useForeignKeys) {
         lines.push(`  ${fieldName}_id INTEGER${options.useNotNull ? ' NOT NULL' : ''}`);
         foreignKeys.push(`  FOREIGN KEY (${fieldName}_id) REFERENCES ${nestedTableName}(id)`);
       }
     } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-      const nestedName = `${name}_${key.endsWith('s') ? key.slice(0, -1) : key}`;
-      generateSQLTable(nestedName, value[0], options, tables, tableName);
+      const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
+      const nestedName = `${name}_${singularKey}`;
+      generateSQLTable(nestedName, value[0], options, tables, tableName, 'id');
     } else {
       const nullStr = options.useNotNull ? ' NOT NULL' : '';
       const defaultStr = options.defaultValues
@@ -88,6 +92,12 @@ function generateSQLTable(
       lines.push(`  ${fieldName} ${type}${nullStr}${defaultStr}`);
     }
   }
+  
+  if (parentTableName && options.useForeignKeys) {
+      const parentIdField = options.useSnakeCase ? toSnakeCase(`${parentTableName}_id`) : `${parentTableName}Id`;
+      lines.push(`  ${parentIdField} INTEGER`);
+      foreignKeys.push(`  FOREIGN KEY (${parentIdField}) REFERENCES ${parentTableName}(${parentIdKey || 'id'})`);
+  }
 
   if (options.includeTimestamps) {
     lines.push('  created_at DATETIME DEFAULT CURRENT_TIMESTAMP');
@@ -96,9 +106,7 @@ function generateSQLTable(
 
   lines.push(...foreignKeys);
 
-  const sql = `CREATE TABLE ${tableName} (
-${lines.join(',\n')}
-);`;
+  const sql = `CREATE TABLE ${tableName} (\n${lines.join(',\n')}\n);`;
   tables.set(tableName, sql);
 }
 
@@ -110,9 +118,11 @@ export function generateSQLSchema(
   if (typeof json !== 'object' || json === null) {
     throw new Error('Invalid JSON data');
   }
-
+  
+  const finalOptions = { ...defaultOptions, ...options };
   const tables = new Map<string, string>();
-  generateSQLTable(rootName, json, options, tables);
+  const rootTableName = finalOptions.useSnakeCase ? toSnakeCase(rootName) : rootName;
+  generateSQLTable(rootTableName, json, finalOptions, tables);
 
   return Array.from(tables.values()).join('\n\n');
 }

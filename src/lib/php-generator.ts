@@ -101,21 +101,26 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
         
         classString += `    public function __construct(\n`;
-        for (const field of fields) {
+        const constructorParams = fields.map(field => {
             const readonly = options.readonlyProperties ? 'public readonly ' : 'public ';
-            const type = options.typedProperties ? `?${field.type}` : '';
+            let typeHint = '';
+            if (options.typedProperties) {
+                // For 'mixed' or arrays of objects, 'array' is the best we can do for a type hint.
+                const type = (field.isObjectArray || field.type === 'mixed') ? (field.type === 'array' ? 'array' : 'mixed') : field.type;
+                typeHint = field.type !== 'mixed' ? `?${type}` : 'mixed';
+            }
             
             if (field.isObjectArray && !docBlockParams.some(p => p.includes(`$${field.name}`))) {
-                const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
-                classString += `        /** @var ${singularType}[]|null */\n`;
+                 const singularType = toPascalCase(field.originalKey.endsWith('s') ? field.originalKey.slice(0, -1) : field.originalKey);
+                 return `        /** @var ${singularType}[]|null */\n        ${readonly}${typeHint} $${field.name}`;
             }
 
-            classString += `        ${readonly}${type} $${field.name},\n`;
-        }
-        if (fields.length > 0) {
-            classString = classString.slice(0, -2);
-        }
+            return `        ${readonly}${typeHint} $${field.name}`;
+        });
+
+        classString += constructorParams.join(',\n');
         classString += `\n    ) {}\n`;
+
     } else {
         // Traditional properties and constructor
         for (const field of fields) {
@@ -141,15 +146,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (options.fromArray) {
         classString += `\n    public static function fromArray(array $data): self\n    {\n`;
         classString += `        return new self(\n`;
-        for (const field of fields) {
-            const key = field.originalKey;
-            const { parsingLogic } = getParsingLogic(field, key, options, 'data');
-            
-            classString += `            ${parsingLogic},\n`;
-        }
-        if (fields.length > 0) {
-            classString = classString.slice(0, -2);
-        }
+        const fromArrayParams = fields.map(field => {
+             const key = field.originalKey;
+             const { parsingLogic } = getParsingLogic(field, key, options, 'data');
+             return `            ${parsingLogic}`;
+        });
+        classString += fromArrayParams.join(',\n');
         classString += `\n        );\n    }\n`;
     }
 
@@ -187,8 +189,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
 function getParsingLogic(field: { name: string, type: string, originalKey: string, isObject: boolean, isObjectArray: boolean }, key: string, options: PhpGeneratorOptions, dataVar: string = 'data') {
     let parsingLogic: string;
-    const instantiationMethod = options.fromArray ? '::fromArray($item)' : '($item)';
-
+    
     if (field.type === '\\DateTimeInterface') {
         parsingLogic = `isset($${dataVar}['${key}']) ? new \\DateTimeImmutable($${dataVar}['${key}']) : null`;
     } else if (field.isObjectArray) {

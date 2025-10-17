@@ -1,3 +1,4 @@
+
 export interface ObjCGeneratorOptions {
   properties: boolean;        // Use @property declarations
   initializers: boolean;      // Generate -initWith... method
@@ -76,10 +77,21 @@ function generateClass(
 
   if (options.properties) {
     for (const field of fields) {
-      const nullability = options.nullability ? 'nullable ' : '';
-      code += `@property (nonatomic, strong, ${nullability}) ${field.type}${field.objcName};\n`;
+      const nullability = options.nullability ? 'nullable' : '';
+      const finalNullability = nullability ? ` ${nullability}` : '';
+      code += `@property (nonatomic, strong,${finalNullability}) ${field.type}${field.objcName};\n`;
     }
   }
+
+  if (options.initializers && fields.length > 0) {
+      code += `\n- (instancetype)initWith${toPascalCase(fields[0].objcName)}:(${fields[0].type})${fields[0].objcName}`;
+      for (let i = 1; i < fields.length; i++) {
+        const field = fields[i];
+        code += ` ${field.objcName}:(${field.type})${field.objcName}`;
+      }
+      code += `;\n`;
+  }
+
 
   code += `\n@end\n\n`;
 
@@ -114,7 +126,7 @@ export function generateObjCCode(
   const classes = new Map<string, string>();
   const className = sanitizeIdentifier(toPascalCase(rootClassName));
 
-  generateClass(className, json, classes, options);
+  generateClass(className, json, classes, { ...defaultOptions, ...options });
 
   return Array.from(classes.values()).reverse().join('\n');
 }

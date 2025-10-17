@@ -1,3 +1,4 @@
+
 export interface ScaleGeneratorOptions {
   useSnakeCase?: boolean;
   includeTypes?: boolean;
@@ -21,17 +22,28 @@ function toCamelCase(str: string): string {
 }
 
 function toPascalCase(str: string): string {
-  return str.replace(/(^\w|_\w)/g, m => m.replace('_', '').toUpperCase());
+    return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
 }
 
-function inferScaleType(value: any): string {
+function inferScaleType(value: any, key: string, options: ScaleGeneratorOptions, classes: Set<string>): string {
   if (typeof value === 'number') return Number.isInteger(value) ? 'Int' : 'Float';
   if (typeof value === 'boolean') return 'Boolean';
   if (typeof value === 'string') return 'String';
-  if (Array.isArray(value)) return 'List[Any]';
-  if (typeof value === 'object' && value !== null) return 'Map[String, Any]';
+  if (Array.isArray(value)) {
+    if (value.length > 0) {
+      const listType = inferScaleType(value[0], key.endsWith('s') ? key.slice(0, -1) : key, options, classes);
+      return `List[${listType}]`;
+    }
+    return 'List[Any]';
+  }
+  if (typeof value === 'object' && value !== null) {
+      const nestedClassName = toPascalCase(key);
+      classes.add(nestedClassName);
+      return nestedClassName;
+  }
   return 'Any';
 }
+
 
 function formatDefaultValue(value: any): string {
   if (typeof value === 'string') return `"${value}"`;
@@ -40,9 +52,6 @@ function formatDefaultValue(value: any): string {
   return value;
 }
 
-function normalizeClassName(name: string, useSnakeCase: boolean): string {
-  return useSnakeCase ? toSnakeCase(name) : toCamelCase(name);
-}
 
 function generateScaleClass(
   name: string,
@@ -50,36 +59,42 @@ function generateScaleClass(
   options: ScaleGeneratorOptions,
   modules: Map<string, string>
 ) {
-  const className = toPascalCase(options.useSnakeCase ? toSnakeCase(name) : toCamelCase(name));
+  const className = toPascalCase(name);
   if (modules.has(className)) return;
 
   const fields: string[] = [];
+  const nestedClasses = new Set<string>();
 
   for (const [key, value] of Object.entries(json)) {
     const fieldName = options.useSnakeCase ? toSnakeCase(key) : toCamelCase(key);
-    const type = options.includeTypes ? `: ${inferScaleType(value)}` : '';
-    const defaultVal = options.defaultValues ? ` = ${formatDefaultValue(value)}` : '';
-
-    fields.push(`val ${fieldName}${type}${defaultVal}`);
-
-    // Handle nested objects
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      generateScaleClass(`${name}_${key}`, value, options, modules);
+    let type = '';
+    if (options.includeTypes) {
+      type = `: ${inferScaleType(value, key, options, nestedClasses)}`;
     }
-
-    // Handle array of objects
-    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-      generateScaleClass(`${name}_${key}`, value[0], options, modules);
+    
+    const defaultVal = options.defaultValues ? ` = ${formatDefaultValue(value)}` : '';
+    
+    if (options.includeStruct) {
+        fields.push(`val ${fieldName}${type}${defaultVal}`);
     }
   }
 
   const classType = options.includeStruct ? 'case class' : 'class';
+  const params = fields.length > 0 ? `(\n  ${fields.join(',\n  ')}\n)` : '()';
 
-  const code = `${classType} ${className}(
-  ${fields.join(',\n  ')}
-)`;
-
+  const code = `${classType} ${className}${params}`;
   modules.set(className, code);
+
+  // After processing fields, recurse for nested classes that were identified
+  for (const [key, value] of Object.entries(json)) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const nestedClassName = toPascalCase(key);
+          generateScaleClass(nestedClassName, value, options, modules);
+      } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+          const nestedClassName = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+          generateScaleClass(nestedClassName, value[0], options, modules);
+      }
+  }
 }
 
 export function generateScaleCode(
@@ -91,8 +106,9 @@ export function generateScaleCode(
     throw new Error('Invalid JSON object');
   }
 
+  const finalOptions = { ...defaultOptions, ...options };
   const modules = new Map<string, string>();
-  generateScaleClass(rootName, json, { ...defaultOptions, ...options }, modules);
+  generateScaleClass(rootName, json, finalOptions, modules);
 
   return Array.from(modules.values()).reverse().join('\n\n');
 }

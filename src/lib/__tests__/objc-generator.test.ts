@@ -48,7 +48,7 @@ describe('generateObjCCode', () => {
         const generated = generateObjCCode({ name: "test" }, 'Simple', options);
         const normGenerated = normalize(generated);
         expect(normGenerated).not.toContain('nullable');
-        expect(normGenerated).toContain('@property (nonatomic, strong, ) NSString *name;');
+        expect(normGenerated).toContain('@property (nonatomic, strong) NSString *name;');
     });
     
     it('should preserve snake_case when toCamelCase option is false', () => {

@@ -1,3 +1,4 @@
+
 export interface RGeneratorOptions {
     useStruct: boolean; // ignored in R, kept for parity
     defaultValues: boolean;
@@ -18,13 +19,14 @@ export interface RGeneratorOptions {
     if (typeof value === 'number') return '0';
     if (typeof value === 'boolean') return 'FALSE';
     if (Array.isArray(value)) return 'list()';
-    if (typeof value === 'object') return 'list()';
+    if (typeof value === 'object' && value !== null) return 'list()';
     return 'NULL';
   }
   
   function generateConstructor(name: string, json: Record<string, any>, options: RGeneratorOptions): string {
     const params: string[] = [];
     const assignments: string[] = [];
+    const functionName = toSnakeCase(name);
   
     for (const key in json) {
       const value = json[key];
@@ -36,13 +38,13 @@ export interface RGeneratorOptions {
   
     const body = `  structure(list(${assignments.join(', ')}), class = "${name}")`;
   
-    return `new_${name.toLowerCase()} <- function(${params.join(', ')}) {
+    return `new_${functionName} <- function(${params.join(', ')}) {
   ${body}
   }
   `;
   }
   
-  function generateRCode(
+  export function generateRCode(
     json: any,
     rootName: string = "DataModel",
     options: RGeneratorOptions = defaultOptions
@@ -83,5 +85,5 @@ export interface RGeneratorOptions {
     return capitalize(str.endsWith('s') ? str.slice(0, -1) : str);
   }
   
-  export { generateRCode, defaultOptions };
+  export { defaultOptions };
   

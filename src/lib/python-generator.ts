@@ -126,10 +126,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                  
                  if (classes.has(innerType)) {
                     const comprehension = `(${innerType}.from_dict(item) for item in data.get("${key}", []) if item is not None)`;
-                    classString += `            ${fieldName}=${fromDictWrapper}${comprehension},\n`;
+                    classString += `            ${fieldName}=${fromDictWrapper}(${comprehension}) if data.get("${key}") else None,\n`;
                  } else {
                     const comprehension = `(item for item in data.get("${key}", []))`;
-                    classString += `            ${fieldName}=${fromDictWrapper}${comprehension},\n`;
+                    classString += `            ${fieldName}=${fromDictWrapper}(${comprehension}) if data.get("${key}") else None,\n`;
                  }
             } else if (classes.has(fieldType) && options.nestedClasses) {
                 classString += `            ${fieldName}=${fieldType}.from_dict(data["${key}"]) if data.get("${key}") is not None else None,\n`;

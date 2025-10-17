@@ -45,7 +45,7 @@ describe('generateElixirCode', () => {
         };
         const generated = generateElixirCode({ "name": "test" }, 'Simple', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toBe('defmodule Simple do end');
+        expect(normGenerated).toBe('defmodule Simple do\n  # Module generated for Simple\nend');
     });
 
     it('should show default values as comments', () => {

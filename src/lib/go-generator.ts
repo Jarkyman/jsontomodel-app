@@ -22,6 +22,25 @@ function isIsoDateString(value: any): boolean {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value);
 }
 
+function hasMixedNumberTypes(arr: any[]): boolean {
+    let hasInt = false;
+    let hasFloat = false;
+    for (const item of arr) {
+        if (typeof item === 'number') {
+            if (Number.isInteger(item)) {
+                hasInt = true;
+            } else {
+                hasFloat = true;
+            }
+        }
+    }
+    return hasInt && hasFloat;
+}
+
+function arrayContainsNull(arr: any[]): boolean {
+    return arr.some(item => item === null);
+}
+
 function getGoType(value: any, key: string, structs: Map<string, string>, options: GoGeneratorOptions): string {
     let goType: string;
     
@@ -40,13 +59,19 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
         } else if (Array.isArray(value)) {
             if (value.length === 0) {
                 goType = '[]interface{}';
+            } else if (arrayContainsNull(value)) {
+                goType = '[]interface{}';
             } else {
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                // Recursively get the type for the slice element. The pointer logic is handled outside this block.
-                let sliceType = getGoType(value[0], singularKey, structs, options);
+                let sliceType: string;
 
-                // If useArrayOfPointers is true, make the element type a pointer, unless it's already a pointer or interface
-                if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}') {
+                if (hasMixedNumberTypes(value)) {
+                    sliceType = 'float64';
+                } else {
+                    sliceType = getGoType(value[0], singularKey, structs, options);
+                }
+
+                if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}' && !sliceType.startsWith('[]')) {
                     sliceType = `*${sliceType}`;
                 }
 
@@ -65,7 +90,6 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
     
     // Use pointers for non-slice/map/interface types to handle nullability at the field level.
     if (options.usePointers && !goType.startsWith('[]') && !goType.startsWith('map[') && goType !== 'interface{}') {
-        // If the type is already a pointer (from array logic), don't double-pointer it.
         if (!goType.startsWith('*')) {
             return `*${goType}`;
         }

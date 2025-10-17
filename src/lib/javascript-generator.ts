@@ -61,20 +61,17 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     const dependentClasses = new Set<string>();
     let classString = `class ${className} {\n`;
     
-    const fields: { name: string, type: string, originalKey: string, isDate: boolean, isObject: boolean, isObjectArray: boolean }[] = [];
-
     // JSDoc properties first
     if (options.includeJSDoc) {
-        for (const key in jsonObject) {
-            if (key === '') continue;
-            const fieldName = toCamelCase(key);
-            const jsDocType = getJSDocType(jsonObject[key], key, dependentClasses, options);
-            classString += `    /** @type {${jsDocType}|null} */\n`;
-            classString += `    ${fieldName};\n\n`;
+        if (Object.keys(jsonObject).length > 0) {
+            for (const key in jsonObject) {
+                if (key === '') continue;
+                const fieldName = toCamelCase(key);
+                const jsDocType = getJSDocType(jsonObject[key], key, dependentClasses, options);
+                classString += `    /** @type {${jsDocType}|null} */\n`;
+                classString += `    ${fieldName};\n\n`;
+            }
         }
-    }
-     if (Object.keys(jsonObject).length === 0) {
-        classString += `\n`;
     }
 
 
@@ -112,7 +109,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         // toJSON method
         classString += `\n    toJSON() {\n`;
         classString += `        return {\n`;
-        for (const key in jsonObject) {
+        const toJSONFields = Object.keys(jsonObject).map(key => {
             const fieldName = toCamelCase(key);
             const value = jsonObject[key];
             const isDate = isIsoDateString(value, options);
@@ -127,9 +124,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             } else if (isObject) {
                 serialization = `this.${fieldName}?.toJSON()`;
             }
-            classString += `            "${key}": ${serialization},\n`;
-        }
-        classString += `        };\n`;
+            return `            "${key}": ${serialization}`;
+        });
+        classString += toJSONFields.join(',\n');
+        classString += `\n        };\n`;
         classString += `    }\n`;
     }
 
@@ -177,5 +175,3 @@ export function generateJavaScriptCode(
 
     return orderedClasses.map(name => classes.get(name)).join('\n');
 }
-
-    

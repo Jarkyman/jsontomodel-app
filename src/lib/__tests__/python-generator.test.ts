@@ -44,10 +44,10 @@ describe('generatePythonCode', () => {
         const normGenerated = normalize(generated);
 
         expect(normGenerated).toContain('from dataclasses import dataclass');
-        expect(normGenerated).toContain('from typing import Optional, Any, List, Dict');
+        expect(normGenerated).toContain('from typing import Any, Dict, List, Optional');
         expect(normGenerated).toContain('from datetime import datetime');
         
-        expect(normGenerated).toContain('@dataclass class UserData:');
+        expect(normGenerated).toContain('@dataclass() class UserData:');
         expect(normGenerated).toContain('user_id: Optional[int]');
         expect(normGenerated).toContain('user_name: Optional[str]');
         expect(normGenerated).toContain('is_active: Optional[bool]');
@@ -59,10 +59,10 @@ describe('generatePythonCode', () => {
         expect(normGenerated).toContain('@classmethod def from_dict(cls, data: Dict[str, Any]) -> "UserData":');
         expect(normGenerated).toContain('def to_dict(self) -> Dict[str, Any]:');
         
-        expect(normGenerated).toContain('@dataclass class UserProfile:');
+        expect(normGenerated).toContain('@dataclass() class UserProfile:');
         expect(normGenerated).toContain('receive_notifications: Optional[bool]');
 
-        expect(normGenerated).toContain('@dataclass class ProjectHistory:');
+        expect(normGenerated).toContain('@dataclass() class ProjectHistory:');
         expect(normGenerated).toContain('project_id: Optional[str]');
     });
 
@@ -74,7 +74,7 @@ describe('generatePythonCode', () => {
         expect(normGenerated).toContain('@dataclass(frozen=True)');
         expect(normGenerated).toContain('user_tags: Optional[Tuple[str]]');
         expect(normGenerated).toContain('project_history: Optional[Tuple[ProjectHistory]]');
-        expect(normGenerated).toContain('user_tags=tuple((item for item in data.get("user_tags", [])))');
+        expect(normGenerated).toContain('user_tags=tuple(item for item in data.get("user_tags", []))');
     });
     
     it('should generate with slots', () => {

@@ -48,14 +48,14 @@ function isIsoDateString(value: any): boolean {
 function getSwiftType(value: any, key: string, classes: Map<string, string>, options: SwiftGeneratorOptions): string {
     if (options.dateStrategy !== 'none' && isIsoDateString(value)) return 'Date';
 
-    if (value === null) return 'AnyCodable';
+    if (value === null) return options.isCodable ? 'AnyCodable' : 'Any';
 
     const type = typeof value;
     if (type === 'string') return 'String';
     if (type === 'number') return value % 1 === 0 ? 'Int' : 'Double';
     if (type === 'boolean') return 'Bool';
     if (Array.isArray(value)) {
-        if (value.length === 0) return '[AnyCodable]';
+        if (value.length === 0) return options.isCodable ? '[AnyCodable]' : '[Any]';
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getSwiftType(value[0], singularKey, classes, options);
         return `[${listType}]`;
@@ -67,7 +67,7 @@ function getSwiftType(value: any, key: string, classes: Map<string, string>, opt
         }
         return className;
     }
-    return 'AnyCodable';
+    return options.isCodable ? 'AnyCodable' : 'Any';
 }
 
 function generateSampleValue(type: string, value: any, options: SwiftGeneratorOptions, isRoot: boolean = false): string {
@@ -83,7 +83,7 @@ function generateSampleValue(type: string, value: any, options: SwiftGeneratorOp
     if (type === 'Int' || type === 'Double') return `${value}`;
     if (type === 'Bool') return `${value}`;
     if (type === 'Date') return `Date()`; // Or parse from string
-    if (type === 'AnyCodable') return `nil`;
+    if (type === 'AnyCodable' || type === 'Any') return `nil`;
 
     // For custom classes
     return `${type}.sample`;
@@ -114,7 +114,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const fieldName = toCamelCase(key);
         const swiftType = getSwiftType(jsonObject[key], key, classes, options);
         
-        const isOptional = swiftType.includes('AnyCodable') && !swiftType.startsWith('[') ? '' : '?';
+        const isOptional = swiftType.includes('AnyCodable') || swiftType.includes('Any') ? '?' : '?';
         const keyword = options.useStruct ? 'let' : 'var';
         let propertyWrapper = '';
         if (options.isPublished && !options.useStruct) {
@@ -181,9 +181,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     // Add Equatable conformance for classes
     if (options.isEquatable) {
-        classDefinition += `\nfunc == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+        classDefinition += `\n${options.useStruct ? '' : 'extension '}${className} {\n`;
+        classDefinition += `    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
         const comparisons = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' &&\n        ');
-        classDefinition += `    return ${comparisons || 'true'}\n`;
+        classDefinition += `        return ${comparisons || 'true'}\n`;
+        classDefinition += `    }\n`;
         classDefinition += `}\n`;
     }
 
@@ -357,11 +359,10 @@ export function generateSwiftCode(
         generatedClassNames.unshift(rootClassName);
     }
     
-    const needsAnyCodable = Array.from(finalClasses.values()).some(code => code.includes('AnyCodable'));
+    const allGeneratedCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');
     
-    const needsDateComment = Array.from(finalClasses.values()).some(code => code.includes(': Date?'));
-
-    const finalCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');
+    const needsAnyCodable = allGeneratedCode.includes('AnyCodable');
+    const needsDateComment = allGeneratedCode.includes(': Date?');
 
     let header = `import Foundation\n`;
     if (options.isPublished || options.isMainActor) {
@@ -370,5 +371,5 @@ export function generateSwiftCode(
 
     const dateComment = needsDateComment ? generateDateHandlingComment(options) : '';
 
-    return `${header}\n${dateComment}${finalCode}${needsAnyCodable ? `\n${anyCodableStruct}`: ''}`;
+    return `${header}\n${dateComment}${allGeneratedCode}${needsAnyCodable ? `\n${anyCodableStruct}`: ''}`;
 }

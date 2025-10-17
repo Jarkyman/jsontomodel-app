@@ -1,3 +1,4 @@
+
 export interface ErlangGeneratorOptions {
     useSnakeCase?: boolean;
     includeTypes?: boolean;
@@ -16,6 +17,10 @@ export interface ErlangGeneratorOptions {
   
   function toPascalCase(str: string): string {
     return str.replace(/(?:^|_)(\w)/g, (_, c) => c.toUpperCase());
+  }
+
+  function toCamelCase(str: string): string {
+    return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
   }
   
   function inferErlangType(value: any): string {
@@ -40,14 +45,14 @@ export interface ErlangGeneratorOptions {
     options: ErlangGeneratorOptions,
     modules: Map<string, string>
   ) {
-    const moduleName = options.useSnakeCase ? toSnakeCase(name) : toPascalCase(name);
-    if (modules.has(moduleName)) return;
+    const recordName = (options.useSnakeCase ? toSnakeCase(name) : toCamelCase(name)).toLowerCase();
+    if (modules.has(recordName)) return;
   
     const records: string[] = [];
     const types: string[] = [];
   
     for (const [key, value] of Object.entries(json)) {
-      const fieldName = options.useSnakeCase ? toSnakeCase(key) : key;
+      const fieldName = options.useSnakeCase ? toSnakeCase(key) : toCamelCase(key);
       const type = options.includeTypes ? `%% @type ${fieldName} :: ${inferErlangType(value)}` : '';
       const defaultValue = options.includeDefaults ? ` = ${formatDefaultValue(value)}` : '';
   
@@ -60,19 +65,16 @@ export interface ErlangGeneratorOptions {
         generateErlangModule(nestedName, value, options, modules);
       }
       if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-        const nestedName = `${name}_${key}`;
+        const nestedName = `${name}_${key.endsWith('s') ? key.slice(0, -1) : key}`;
         generateErlangModule(nestedName, value[0], options, modules);
       }
     }
   
-    let code = `%% Generated module: ${moduleName}
-  `;  
+    let code = `%% Generated module: ${toPascalCase(name)}\n`;  
     if (types.length) code += types.join('\n') + '\n';
-    code += `-record(${moduleName.toLowerCase()}, {
-    ${records.join(',\n  ')}
-  }).\n`;
+    code += `-record(${recordName}, {\n    ${records.join(',\n  ')}\n  }).\n`;
   
-    modules.set(moduleName, code);
+    modules.set(recordName, code);
   }
   
   export function generateErlangCode(
@@ -85,10 +87,8 @@ export interface ErlangGeneratorOptions {
     }
   
     const modules = new Map<string, string>();
-    generateErlangModule(rootName, json, options, modules);
+    generateErlangModule(rootName, json, {...defaultOptions, ...options}, modules);
   
     return Array.from(modules.values()).reverse().join('\n');
   }
   
-
-    

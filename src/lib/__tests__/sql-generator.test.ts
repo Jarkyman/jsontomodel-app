@@ -45,7 +45,9 @@ describe('generateSQLSchema', () => {
             CREATE TABLE user_posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 post_id INTEGER NOT NULL,
-                post_title VARCHAR(255) NOT NULL
+                post_title VARCHAR(255) NOT NULL,
+                user_id INTEGER,
+                FOREIGN KEY (user_id) REFERENCES user(id)
             );
         `;
 
