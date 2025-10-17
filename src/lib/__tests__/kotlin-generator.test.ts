@@ -34,34 +34,36 @@ describe('generateKotlinCode', () => {
         };
 
         const expectedOutput = `
-            import kotlinx.serialization.Serializable
             import kotlinx.serialization.SerialName
+            import kotlinx.serialization.Serializable
             import kotlinx.serialization.json.JsonElement
 
             @Serializable
             data class DataModel(
-                @SerialName("id") val id: Int?,
-                @SerialName("name") val name: String?,
-                @SerialName("email") val email: String?,
-                @SerialName("is_active") val isActive: Boolean?,
-                @SerialName("score") val score: Double?,
-                @SerialName("preferences") val preferences: Preferences?,
-                @SerialName("roles") val roles: List<String>?,
-                @SerialName("tags") val tags: List<JsonElement>?,
-                @SerialName("profile_picture") val profilePicture: JsonElement?
+                val id: Int?,
+                val name: String?,
+                val email: String?,
+                @SerialName("is_active")
+                val isActive: Boolean?,
+                val score: Double?,
+                val preferences: Preferences?,
+                val roles: List<String>?,
+                val tags: List<JsonElement>?,
+                @SerialName("profile_picture")
+                val profilePicture: JsonElement?
             )
 
             @Serializable
             data class Preferences(
-                @SerialName("newsletter") val newsletter: Boolean?,
-                @SerialName("notifications") val notifications: Notifications?
+                val newsletter: Boolean?,
+                val notifications: Notifications?
             )
 
             @Serializable
             data class Notifications(
-                @SerialName("email") val email: Boolean?,
-                @SerialName("sms") val sms: Boolean?,
-                @SerialName("push") val push: Boolean?
+                val email: Boolean?,
+                val sms: Boolean?,
+                val push: Boolean?
             )
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
@@ -136,8 +138,8 @@ describe('generateKotlinCode', () => {
                             isActive = json["is_active"] as? Boolean?,
                             score = json["score"] as? Double?,
                             preferences = json["preferences"]?.let { Preferences.fromJson(it as Map<String, Any>) },
-                            roles = (json["roles"] as? List<*>)?.map { it as String },
-                            tags = (json["tags"] as? List<*>)?.map { it as Any },
+                            roles = (json["roles"] as? List<*>)?.mapNotNull { it as String },
+                            tags = (json["tags"] as? List<*>)?.mapNotNull { it as Any },
                             profilePicture = json["profile_picture"] as? Any?
                         )
                     }
@@ -226,7 +228,9 @@ describe('generateKotlinCode', () => {
                 @SerializedName("is_active") val isActive: Boolean?,
                 @SerializedName("score") val score: Double?,
                 @SerializedName("preferences") val preferences: Preferences?,
-                @SerializedName("roles") val roles: List<String>?
+                @SerializedName("roles") val roles: List<String>?,
+                @SerializedName("tags") val tags: List<Any>?,
+                @SerializedName("profile_picture") val profilePicture: Any?
             )
 
             data class Preferences(
@@ -263,7 +267,9 @@ describe('generateKotlinCode', () => {
                 @Json(name = "is_active") val isActive: Boolean?,
                 @Json(name = "score") val score: Double?,
                 @Json(name = "preferences") val preferences: Preferences?,
-                @Json(name = "roles") val roles: List<String>?
+                @Json(name = "roles") val roles: List<String>?,
+                @Json(name = "tags") val tags: List<Any>?,
+                @Json(name = "profile_picture") val profilePicture: Any?
             )
             
             data class Preferences(

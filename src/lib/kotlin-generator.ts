@@ -34,7 +34,6 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (value === null) {
         if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
         if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
-        // For Moshi/Gson, we will omit the field if the value is null, as we cannot infer the type.
         return null; 
     }
 
@@ -46,7 +45,6 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
         if (value.length === 0) {
              if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
              if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'List<Any>';
-             // For Moshi/Gson, we will omit the field for empty lists.
              return null;
         }
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
@@ -64,7 +62,6 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
         return className;
     }
     
-    // For 'undefined' or other types
     if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
     if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
     
@@ -88,30 +85,30 @@ function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptio
     }
 }
 
-function generateImports(options: KotlinGeneratorOptions, fields: { originalKey: string, name: string, type: string }[]): string {
+function generateImports(options: KotlinGeneratorOptions, allCode: string): string {
     const imports = new Set<string>();
-    const useSerializedName = options.serializationLibrary !== 'manual' && options.serializationLibrary !== 'none';
-
-    if (options.serializationLibrary === 'gson' && useSerializedName && fields.some(f => f.originalKey !== f.name)) {
+    
+    if (allCode.includes('@SerializedName')) {
         imports.add('import com.google.gson.annotations.SerializedName');
     }
-    if (options.serializationLibrary === 'moshi' && useSerializedName && fields.some(f => f.originalKey !== f.name)) {
+    if (allCode.includes('@Json(name')) {
         imports.add('import com.squareup.moshi.Json');
     }
-    if (options.serializationLibrary === 'kotlinx') {
+    if (allCode.includes('@Serializable')) {
         imports.add('import kotlinx.serialization.Serializable');
-        if (useSerializedName && fields.some(f => f.originalKey !== f.name)) {
-            imports.add('import kotlinx.serialization.SerialName');
-        }
-        if (fields.some(f => f.type.includes('JsonElement'))) {
-            imports.add('import kotlinx.serialization.json.JsonElement');
-            if (options.defaultValues || options.defaultToNull) {
-                imports.add('import kotlinx.serialization.json.JsonNull');
-            }
+    }
+     if (allCode.includes('@SerialName')) {
+        imports.add('import kotlinx.serialization.SerialName');
+    }
+    if (allCode.includes('JsonElement')) {
+        imports.add('import kotlinx.serialization.json.JsonElement');
+         if (options.defaultValues || options.defaultToNull) {
+            imports.add('import kotlinx.serialization.json.JsonNull');
         }
     }
-    return imports.size > 0 ? Array.from(imports).join('\n') + '\n\n' : '';
+    return imports.size > 0 ? Array.from(imports).sort().join('\n') + '\n\n' : '';
 }
+
 
 function generateClass(className: string, jsonObject: Record<string, any>, classes: Map<string, string>, options: KotlinGeneratorOptions): void {
     if (classes.has(className)) return;
@@ -128,8 +125,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
         }
     }
-    
-    classString += generateImports(options, fields);
 
     if (options.serializationLibrary === 'kotlinx') {
         classString += '@Serializable\n';
@@ -166,7 +161,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         fieldStrings.push(fieldString);
     }
     classString += fieldStrings.join(',\n');
-
     classString += `\n)`;
 
     const isManual = options.serializationLibrary === 'manual';
@@ -174,7 +168,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     if (isManual && fields.length > 0) {
         classString += ' {\n';
 
-        // fromJson for manual
         classString += `    companion object {\n`;
         classString += `        fun fromJson(json: Map<String, Any>): ${className} {\n`;
         classString += `            return ${className}(\n`;
@@ -188,9 +181,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             if (kotlinType.startsWith('List<')) {
                 const listType = kotlinType.substring(5, kotlinType.length - 1);
                 if (['Any', 'String', 'Int', 'Double', 'Boolean', 'JsonElement'].includes(listType)) {
-                    parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
+                     parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
                 } else {
-                    parsingLogic = `(json["${jsonKey}"] as? List<Map<String, Any>>)?.map { ${listType}.fromJson(it) }`;
+                     parsingLogic = `(json["${jsonKey}"] as? List<*>)?.mapNotNull { ${listType}.fromJson(it as Map<String, Any>) }`;
                 }
             } else if (classes.has(kotlinType)) {
                 parsingLogic = `json["${jsonKey}"]?.let { ${kotlinType}.fromJson(it as Map<String, Any>) }`;
@@ -205,14 +198,13 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
             classString += `                ${fieldName} = ${finalLogic},\n`;
         }
-        if (fields.length > 0) {
-            classString = classString.slice(0, -2);
+         if (fields.length > 0) {
+            classString = classString.slice(0, -2); // remove last comma and newline
             classString += '\n';
         }
 
         classString += `            )\n        }\n    }\n\n`;
         
-        // toJson for manual
         classString += `    fun toJson(): Map<String, Any${options.nullable ? '?' : ''}> {\n`;
         classString += `        val map = mutableMapOf<String, Any?>()\n`;
         for (const field of fields) {
@@ -228,7 +220,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             classString += `        map["${field.originalKey}"] = ${serializingLogic}\n`;
         }
         classString += `        return map.filterValues { it != null }\n    }\n`;
-
         classString += `}`;
     }
 
@@ -263,49 +254,16 @@ export function generateKotlinCode(
     const finalRootClassName = toPascalCase(rootClassName);
 
     generateClass(finalRootClassName, rootJson, classes, options);
-
-    function findJsonForClass(className: string, currentJson: any, currentName: string): any {
-        if (toPascalCase(currentName) === className) {
-            return currentJson;
-        }
-
-        if (typeof currentJson === 'object' && currentJson !== null) {
-            for (const key in currentJson) {
-                const pascalKey = toPascalCase(key);
-                if (pascalKey === className) {
-                    if (Array.isArray(currentJson[key])) {
-                        return currentJson[key][0] ?? {};
-                    }
-                    return currentJson[key];
-                }
-                const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                if (singularPascalKey === className && Array.isArray(currentJson[key]) && currentJson[key].length > 0) {
-                    return currentJson[key][0];
-                }
-                const result = findJsonForClass(className, currentJson[key], key);
-                if (result) return result;
-            }
-        }
-        return null;
-    }
     
-    const orderedClasses = Array.from(classes.keys()).reverse();
-    const finalClasses = new Map<string, string>();
-
-    for (const className of orderedClasses) {
-        const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
-        if (jsonSource) {
-            generateClass(className, jsonSource, finalClasses, options);
-        }
+    const classOrder = Array.from(classes.keys());
+    const rootIndex = classOrder.indexOf(finalRootClassName);
+    if (rootIndex !== -1) {
+        const root = classOrder.splice(rootIndex, 1);
+        classOrder.push(root[0]);
     }
 
-    const generatedClassNames = Array.from(finalClasses.keys());
-    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
-    
-    if (rootClassIndex > -1) {
-        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
-        generatedClassNames.unshift(rootClassName);
-    }
-    
-    return generatedClassNames.map(name => finalClasses.get(name)).join('\n\n');
+    const allCode = classOrder.map(name => classes.get(name)).reverse().join('\n\n');
+    const imports = generateImports(options, allCode);
+
+    return imports + allCode;
 }
