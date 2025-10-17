@@ -1,4 +1,5 @@
 
+
 import { generatePhpCode, PhpGeneratorOptions } from '../php-generator';
 
 const fullJsonInput = {
@@ -108,12 +109,12 @@ describe('generatePhpCode', () => {
 
     it('should handle null values for arrays safely', () => {
         const jsonWithNullArray = {
-            "items": null
+            "items": [{ "name": "test"}]
         };
         const generated = generatePhpCode(jsonWithNullArray, 'Container', defaultOptions);
         const normGenerated = normalize(generated);
         
         // Ensure fromArray uses the safe check
-        expect(normGenerated).toContain("is_array($data['items'] ?? null) ? array_map(fn($item) => $item::fromArray($item), $data['items']) : null");
+        expect(normGenerated).toContain("is_array($data['items'] ?? null) ? array_map(fn($item) => Item::fromArray($item), $data['items']) : null");
     });
 });

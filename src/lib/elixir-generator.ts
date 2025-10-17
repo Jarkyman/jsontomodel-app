@@ -1,4 +1,5 @@
 
+
 export interface ElixirGeneratorOptions {
   useSnakeCase?: boolean;
   includeTypes?: boolean;
@@ -82,6 +83,8 @@ function generateElixirModule(
       generateElixirModule(nestedModuleName, value[0], options, modules);
     }
   }
+  
+  fields.sort((a,b) => a.name.localeCompare(b.name));
 
   let code = `defmodule ${moduleName} do\n`;
 

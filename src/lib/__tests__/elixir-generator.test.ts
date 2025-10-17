@@ -1,4 +1,5 @@
 
+
 import { generateElixirCode, ElixirGeneratorOptions } from '../elixir-generator';
 
 const fullJsonInput = {

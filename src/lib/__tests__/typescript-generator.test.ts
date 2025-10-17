@@ -1,4 +1,5 @@
 
+
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from '../typescript-generator';
 
 const fullJsonInput = {

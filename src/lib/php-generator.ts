@@ -1,4 +1,5 @@
 
+
 export interface PhpGeneratorOptions {
     typedProperties: boolean;
     finalClasses: boolean;
@@ -87,6 +88,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const { type: phpType, isObject, isObjectArray } = getPhpType(jsonObject[key], key, classes, options);
         fields.push({ name: fieldName, type: phpType, originalKey: key, isObject, isObjectArray });
     }
+
+    fields.sort((a, b) => a.name.localeCompare(b.name));
 
     if (options.constructorPropertyPromotion) {
         
