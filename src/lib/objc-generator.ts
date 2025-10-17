@@ -47,8 +47,9 @@ function generateClass(
   if (classes.has(className)) return;
 
   const fields: { key: string; type: string; objcName: string; rawType: string }[] = [];
+  const sortedKeys = Object.keys(jsonObject).sort();
 
-  for (const key in jsonObject) {
+  for (const key of sortedKeys) {
     if (!key) continue;
     const rawValue = jsonObject[key];
     const objcName = sanitizeIdentifier(options.toCamelCase ? toCamelCase(key) : key);
@@ -77,9 +78,8 @@ function generateClass(
 
   if (options.properties) {
     for (const field of fields) {
-      const nullability = options.nullability ? 'nullable' : '';
-      const finalNullability = nullability ? ` ${nullability}` : '';
-      code += `@property (nonatomic, strong,${finalNullability}) ${field.type}${field.objcName};\n`;
+      const nullability = options.nullability ? ', nullable' : '';
+      code += `@property (nonatomic, strong${nullability}) ${field.type}${field.objcName};\n`;
     }
   }
 
@@ -125,6 +125,10 @@ export function generateObjCCode(
 
   const classes = new Map<string, string>();
   const className = sanitizeIdentifier(toPascalCase(rootClassName));
+  
+  if (Object.keys(json).length === 0) {
+      return `@interface ${options.rootClassPrefix}${className} : NSObject\n@end\n\n@implementation ${options.rootClassPrefix}${className}\n@end\n`;
+  }
 
   generateClass(className, json, classes, { ...defaultOptions, ...options });
 
