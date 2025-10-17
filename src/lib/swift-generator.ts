@@ -114,7 +114,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const fieldName = toCamelCase(key);
         const swiftType = getSwiftType(jsonObject[key], key, classes, options);
         
-        const isOptional = swiftType.includes('AnyCodable') ? '' : '?';
+        const isOptional = swiftType.includes('AnyCodable') && !swiftType.startsWith('[') ? '' : '?';
         const keyword = options.useStruct ? 'let' : 'var';
         let propertyWrapper = '';
         if (options.isPublished && !options.useStruct) {
@@ -140,7 +140,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         }
     }
     
-    if (!options.useStruct && options.isHashable) {
+    if (options.isHashable) {
         classDefinition += `\n    func hash(into hasher: inout Hasher) {\n`;
         for (const field of fields) {
             classDefinition += `        hasher.combine(${field.name})\n`;
@@ -180,13 +180,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classDefinition += '}\n';
 
     // Add Equatable conformance for classes
-    if (!options.useStruct && options.isEquatable && fields.length > 0) {
+    if (options.isEquatable) {
         classDefinition += `\nfunc == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
         const comparisons = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' &&\n        ');
-        classDefinition += `    return ${comparisons}\n`;
+        classDefinition += `    return ${comparisons || 'true'}\n`;
         classDefinition += `}\n`;
     }
-
 
     classes.set(className, classDefinition);
 
@@ -360,7 +359,6 @@ export function generateSwiftCode(
     
     const needsAnyCodable = Array.from(finalClasses.values()).some(code => code.includes('AnyCodable'));
     
-    // Check if any generated class is a class that conforms to Equatable
     const needsDateComment = Array.from(finalClasses.values()).some(code => code.includes(': Date?'));
 
     const finalCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');

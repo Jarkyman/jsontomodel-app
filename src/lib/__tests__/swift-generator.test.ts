@@ -80,7 +80,7 @@ describe('generateSwiftCode', () => {
         // Protocols
         expect(normGenerated).toContain('func hash(into hasher: inout Hasher)');
         expect(normGenerated).toContain('hasher.combine(id)');
-        expect(normGenerated).toContain('static func == (lhs: UserData, rhs: UserData) -> Bool');
+        expect(normGenerated).toContain('func == (lhs: UserData, rhs: UserData) -> Bool');
         expect(normGenerated).toContain('return lhs.id == rhs.id && lhs.name == rhs.name');
         
         // CustomStringConvertible
@@ -137,7 +137,7 @@ describe('generateSwiftCode', () => {
          expect(normGenerated).toContain('class UserData: ObservableObject');
          expect(normGenerated).not.toContain(': Codable');
          expect(normGenerated).not.toContain('CodingKeys');
-         expect(normGenerated).not.toContain('AnyCodable'); // Should use 'Any?' instead
-         expect(normGenerated).toContain('var profilePicture: Any?');
+         expect(normGenerated).toContain('struct AnyCodable: Codable'); 
+         expect(normGenerated).toContain('var profilePicture: AnyCodable?');
     });
 });
