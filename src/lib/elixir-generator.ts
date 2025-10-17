@@ -42,7 +42,7 @@ function formatDefaultValue(value: any): string {
   if (typeof value === 'string') return `"${value}"`;
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (value === null) return 'nil';
-  return value;
+  return value.toString();
 }
 
 function generateElixirModule(
@@ -58,7 +58,10 @@ function generateElixirModule(
   const fields: string[] = [];
   const types: string[] = [];
 
-  for (const [rawKey, value] of Object.entries(json)) {
+  const sortedKeys = Object.keys(json).sort();
+
+  for (const rawKey of sortedKeys) {
+    const value = json[rawKey];
     const fieldName = options.useSnakeCase ? toSnakeCase(rawKey) : toCamelCase(rawKey);
     const typeName = options.useSnakeCase ? toSnakeCase(rawKey) : toCamelCase(rawKey);
 
