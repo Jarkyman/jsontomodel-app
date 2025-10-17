@@ -103,7 +103,7 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
                  const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                  generateStruct(singularKey, value[0], structs, options);
             } else if (!Array.isArray(value)) {
-                generateStruct(toPascalCase(key), value, classes, options);
+                generateStruct(toPascalCase(key), value, structs, options);
             }
         }
     }
