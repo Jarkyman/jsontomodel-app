@@ -71,10 +71,16 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
         }
     }
 
-    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith('[] | null') && !baseType.includes(')[]')) {
+    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith('[]')) {
+       if(baseType.endsWith('[] | null')) {
+        return baseType
+       }
+       if (baseType.endsWith(')[]')) {
+            return `${baseType} | null`;
+        }
         return `${baseType} | null`;
     }
-     if (options.allowNulls && baseType.endsWith('[]')) {
+     if (options.allowNulls && baseType.endsWith('[]') && !baseType.endsWith(')[]')) {
         return `${baseType} | null`;
     }
 
@@ -93,8 +99,9 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
 
 
     const fields: { name: string, type: string }[] = [];
+    const sortedKeys = Object.keys(jsonObject).sort();
 
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const tsType = getTypescriptType(jsonObject[key], key, types, options);
@@ -105,10 +112,6 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
         const readonly = options.readonlyFields ? 'readonly ' : '';
         const optional = options.optionalFields ? '?' : '';
         let finalType = field.type;
-        // special handling for profilePicture which is null
-        if (field.name === "profilePicture" && finalType === "any | null") {
-            finalType = "any";
-        }
         typeString += `    ${readonly}${field.name}${optional}: ${finalType};\n`;
     }
 
@@ -123,7 +126,7 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
     types.set(typeName, typeString);
 
     // Recursively generate for sub-objects
-    for (const key in jsonObject) {
+    sortedKeys.forEach(key => {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null && !isIsoDateString(value)) {
@@ -134,7 +137,7 @@ function generateType(typeName: string, jsonObject: Record<string, any>, types: 
                 generateType(toPascalCase(key), value, types, options);
             }
         }
-    }
+    });
 }
 
 
