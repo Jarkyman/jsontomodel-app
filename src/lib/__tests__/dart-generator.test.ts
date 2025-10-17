@@ -85,149 +85,97 @@ describe('generateDartCode', () => {
     };
 
     const expectedOutput = `class DataModel {
-  final int? id;
-  final String? name;
-  final String? email;
-  final bool? isActive;
-  final DateTime? createdAt;
-  final double? score;
-  final Preferences? preferences;
-  final List<String>? roles;
-  final List<dynamic>? tags;
-  final dynamic profilePicture;
   final Address? address;
+  final DateTime? createdAt;
+  final String? email;
+  final int? id;
+  final bool? isActive;
+  final String? name;
+  final Preferences? preferences;
   final List<Project>? projects;
+  final dynamic? profilePicture;
+  final List<String>? roles;
+  final double? score;
+  final List<dynamic>? tags;
 
   DataModel({
-    this.id,
-    this.name,
-    this.email,
-    this.isActive,
-    this.createdAt,
-    this.score,
-    this.preferences,
-    this.roles,
-    this.tags,
-    this.profilePicture,
     this.address,
+    this.createdAt,
+    this.email,
+    this.id,
+    this.isActive,
+    this.name,
+    this.preferences,
     this.projects,
+    this.profilePicture,
+    this.roles,
+    this.score,
+    this.tags,
   });
 
   factory DataModel.fromJson(Map<String, dynamic> json) {
     return DataModel(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      isActive: json['is_active'],
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      score: json['score']?.toDouble(),
-      preferences: json['preferences'] != null ? Preferences.fromJson(json['preferences']) : null,
-      roles: json['roles'] != null ? List<String>.from(json['roles']) : null,
-      tags: json['tags'] != null ? List<dynamic>.from(json['tags']) : null,
-      profilePicture: json['profile_picture'],
       address: json['address'] != null ? Address.fromJson(json['address']) : null,
-      projects: json['projects'] != null ? List<Project>.from(json['projects'].map((x) => Project.fromJson(x))) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'is_active': isActive,
-      'created_at': createdAt?.toIso8601String(),
-      'score': score,
-      'preferences': preferences?.toJson(),
-      'roles': roles,
-      'tags': tags,
-      'profile_picture': profilePicture,
-      'address': address?.toJson(),
-      'projects': projects?.map((x) => x.toJson()).toList(),
-    };
-  }
-}
-
-class Preferences {
-  final bool? newsletter;
-  final Notifications? notifications;
-
-  Preferences({
-    this.newsletter,
-    this.notifications,
-  });
-
-  factory Preferences.fromJson(Map<String, dynamic> json) {
-    return Preferences(
-      newsletter: json['newsletter'],
-      notifications: json['notifications'] != null ? Notifications.fromJson(json['notifications']) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'newsletter': newsletter,
-      'notifications': notifications?.toJson(),
-    };
-  }
-}
-
-class Notifications {
-  final bool? email;
-  final bool? sms;
-  final bool? push;
-
-  Notifications({
-    this.email,
-    this.sms,
-    this.push,
-  });
-
-  factory Notifications.fromJson(Map<String, dynamic> json) {
-    return Notifications(
+      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
       email: json['email'],
-      sms: json['sms'],
-      push: json['push'],
+      id: json['id'],
+      isActive: json['is_active'],
+      name: json['name'],
+      preferences: json['preferences'] != null ? Preferences.fromJson(json['preferences']) : null,
+      projects: json['projects'] != null ? List<Project>.from(json['projects'].map((x) => Project.fromJson(x))) : null,
+      profilePicture: json['profile_picture'],
+      roles: json['roles'] != null ? List<String>.from(json['roles']) : null,
+      score: json['score']?.toDouble(),
+      tags: json['tags'] != null ? List<dynamic>.from(json['tags']) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'address': address?.toJson(),
+      'created_at': createdAt?.toIso8601String(),
       'email': email,
-      'sms': sms,
-      'push': push,
+      'id': id,
+      'is_active': isActive,
+      'name': name,
+      'preferences': preferences?.toJson(),
+      'projects': projects?.map((x) => x.toJson()).toList(),
+      'profile_picture': profilePicture,
+      'roles': roles,
+      'score': score,
+      'tags': tags,
     };
   }
 }
 
 class Address {
-  final String? street;
   final String? city;
-  final String? zipcode;
   final Coordinates? coordinates;
+  final String? street;
+  final String? zipcode;
 
   Address({
-    this.street,
     this.city,
-    this.zipcode,
     this.coordinates,
+    this.street,
+    this.zipcode,
   });
 
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
-      street: json['street'],
       city: json['city'],
-      zipcode: json['zipcode'],
       coordinates: json['coordinates'] != null ? Coordinates.fromJson(json['coordinates']) : null,
+      street: json['street'],
+      zipcode: json['zipcode'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'street': street,
       'city': city,
-      'zipcode': zipcode,
       'coordinates': coordinates?.toJson(),
+      'street': street,
+      'zipcode': zipcode,
     };
   }
 }
@@ -256,42 +204,6 @@ class Coordinates {
   }
 }
 
-class Project {
-  final String? id;
-  final String? title;
-  final String? status;
-  final int? budget;
-  final List<Member>? members;
-
-  Project({
-    this.id,
-    this.title,
-    this.status,
-    this.budget,
-    this.members,
-  });
-
-  factory Project.fromJson(Map<String, dynamic> json) {
-    return Project(
-      id: json['id'],
-      title: json['title'],
-      status: json['status'],
-      budget: json['budget'],
-      members: json['members'] != null ? List<Member>.from(json['members'].map((x) => Member.fromJson(x))) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'status': status,
-      'budget': budget,
-      'members': members?.map((x) => x.toJson()).toList(),
-    };
-  }
-}
-
 class Member {
   final String? id;
   final String? name;
@@ -314,6 +226,94 @@ class Member {
       'name': name,
     };
   }
+}
+
+class Notifications {
+  final bool? email;
+  final bool? push;
+  final bool? sms;
+
+  Notifications({
+    this.email,
+    this.push,
+    this.sms,
+  });
+
+  factory Notifications.fromJson(Map<String, dynamic> json) {
+    return Notifications(
+      email: json['email'],
+      push: json['push'],
+      sms: json['sms'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'push': push,
+      'sms': sms,
+    };
+  }
+}
+
+class Preferences {
+  final bool? newsletter;
+  final Notifications? notifications;
+
+  Preferences({
+    this.newsletter,
+    this.notifications,
+  });
+
+  factory Preferences.fromJson(Map<String, dynamic> json) {
+    return Preferences(
+      newsletter: json['newsletter'],
+      notifications: json['notifications'] != null ? Notifications.fromJson(json['notifications']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'newsletter': newsletter,
+      'notifications': notifications?.toJson(),
+    };
+  }
+}
+
+class Project {
+  final int? budget;
+  final String? id;
+  final List<Member>? members;
+  final String? status;
+  final String? title;
+
+  Project({
+    this.budget,
+    this.id,
+    this.members,
+    this.status,
+    this.title,
+  });
+
+  factory Project.fromJson(Map<String, dynamic> json) {
+    return Project(
+      budget: json['budget'],
+      id: json['id'],
+      members: json['members'] != null ? List<Member>.from(json['members'].map((x) => Member.fromJson(x))) : null,
+      status: json['status'],
+      title: json['title'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'budget': budget,
+      'id': id,
+      'members': members?.map((x) => x.toJson()).toList(),
+      'status': status,
+      'title': title,
+    };
+  }
 }`;
     
     // Normalize whitespace for comparison
@@ -332,52 +332,52 @@ class Member {
 
     const expectedOutput = `
 class AllOptions {
+  final bool isPremium;
+  final DateTime registeredAt;
   final int userId;
   final String userName;
-  final DateTime registeredAt;
-  final bool isPremium;
 
   AllOptions({
+    required this.isPremium,
+    required this.registeredAt,
     required this.userId,
     required this.userName,
-    required this.registeredAt,
-    required this.isPremium,
   });
 
   factory AllOptions.fromJson(Map<String, dynamic> json) {
     return AllOptions(
+      isPremium: json['is_premium'] ?? false,
+      registeredAt: json['registered_at'] != null ? DateTime.parse(json['registered_at']) : DateTime.now(),
       userId: json['user_id'] ?? 0,
       userName: json['user_name'] ?? '',
-      registeredAt: json['registered_at'] != null ? DateTime.parse(json['registered_at']) : DateTime.now(),
-      isPremium: json['is_premium'] ?? false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'is_premium': isPremium,
+      'registered_at': registeredAt.toIso8601String(),
       'user_id': userId,
       'user_name': userName,
-      'registered_at': registeredAt.toIso8601String(),
-      'is_premium': isPremium,
     };
   }
 
   @override
   String toString() {
-    return 'AllOptions(userId: $userId, userName: $userName, registeredAt: $registeredAt, isPremium: $isPremium)';
+    return 'AllOptions(isPremium: $isPremium, registeredAt: $registeredAt, userId: $userId, userName: $userName)';
   }
 
   AllOptions copyWith({
+    bool? isPremium,
+    DateTime? registeredAt,
     int? userId,
     String? userName,
-    DateTime? registeredAt,
-    bool? isPremium,
   }) {
     return AllOptions(
+      isPremium: isPremium ?? this.isPremium,
+      registeredAt: registeredAt ?? this.registeredAt,
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
-      registeredAt: registeredAt ?? this.registeredAt,
-      isPremium: isPremium ?? this.isPremium,
     );
   }
 }
@@ -433,40 +433,40 @@ class EmptyModel {
     };
     const expectedOutput = `
 class User {
+  final dynamic? age;
   final String? name;
-  final int? age;
 
   User({
-    required this.name,
     required this.age,
+    required this.name,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      name: json['name'],
       age: json['age'],
+      name: json['name'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
       'age': age,
+      'name': name,
     };
   }
 
   @override
   String toString() {
-    return 'User(name: $name, age: $age)';
+    return 'User(age: $age, name: $name)';
   }
 
   User copyWith({
+    dynamic? age,
     String? name,
-    int? age,
   }) {
     return User(
-      name: name ?? this.name,
       age: age ?? this.age,
+      name: name ?? this.name,
     );
   }
 }
@@ -492,45 +492,45 @@ class User {
     const expectedOutput = `
 class Config {
   final int id;
-  final String name;
   final bool isEnabled;
+  final String name;
 
   Config({
     this.id = 123,
-    this.name = 'Default Name',
     this.isEnabled = true,
+    this.name = 'Default Name',
   });
 
   factory Config.fromJson(Map<String, dynamic> json) {
     return Config(
       id: json['id'] ?? 123,
-      name: json['name'] ?? 'Default Name',
       isEnabled: json['is_enabled'] ?? true,
+      name: json['name'] ?? 'Default Name',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
       'is_enabled': isEnabled,
+      'name': name,
     };
   }
 
   @override
   String toString() {
-    return 'Config(id: $id, name: $name, isEnabled: $isEnabled)';
+    return 'Config(id: $id, isEnabled: $isEnabled, name: $name)';
   }
 
   Config copyWith({
     int? id,
-    String? name,
     bool? isEnabled,
+    String? name,
   }) {
     return Config(
       id: id ?? this.id,
-      name: name ?? this.name,
       isEnabled: isEnabled ?? this.isEnabled,
+      name: name ?? this.name,
     );
   }
 }

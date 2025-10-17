@@ -138,8 +138,8 @@ describe('generateKotlinCode', () => {
                             isActive = json["is_active"] as? Boolean?,
                             score = json["score"] as? Double?,
                             preferences = json["preferences"]?.let { Preferences.fromJson(it as Map<String, Any>) },
-                            roles = (json["roles"] as? List<*>)?.mapNotNull { it as String },
-                            tags = (json["tags"] as? List<*>)?.mapNotNull { it as Any },
+                            roles = (json["roles"] as? List<*>)?.mapNotNull { it as? String },
+                            tags = (json["tags"] as? List<*>)?.mapNotNull { it as? Any },
                             profilePicture = json["profile_picture"] as? Any?
                         )
                     }

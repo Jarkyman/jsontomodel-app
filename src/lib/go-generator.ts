@@ -1,4 +1,5 @@
 
+
 export interface GoGeneratorOptions {
     usePointers: boolean;
     packageName: string;
@@ -14,7 +15,7 @@ const defaultOptions: GoGeneratorOptions = {
 function toPascalCase(str: string): string {
     const pascal = str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
     // Handle specific acronyms common in Go
-    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/g, (match) => match.toUpperCase());
+    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/gi, (match) => match.toUpperCase());
 }
 
 function isIsoDateString(value: any): boolean {

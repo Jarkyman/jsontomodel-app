@@ -1,4 +1,5 @@
 
+
 export interface SwiftGeneratorOptions {
     isCodable: boolean;
     useStruct: boolean;
@@ -109,7 +110,9 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classDefinition += `${typeDeclaration} ${className}${protocols.length > 0 ? `: ${protocols.join(', ')}` : ''} {\n`;
 
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
-    for (const key in jsonObject) {
+    const sortedKeys = Object.keys(jsonObject).sort();
+    
+    for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const swiftType = getSwiftType(jsonObject[key], key, classes, options);
@@ -196,7 +199,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     classes.set(className, classDefinition);
 
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null && !isIsoDateString(value)) {
@@ -318,53 +321,15 @@ export function generateSwiftCode(
 
     generateClass(finalRootClassName, rootJson, classes, options);
 
-    function findJsonForClass(className: string, currentJson: any, currentName: string): any {
-        if (toPascalCase(currentName) === className) {
-            return currentJson;
-        }
-
-        if (typeof currentJson === 'object' && currentJson !== null) {
-            for (const key in currentJson) {
-                const value = currentJson[key];
-                 if (isIsoDateString(value)) continue;
-
-                const pascalKey = toPascalCase(key);
-                if (pascalKey === className) {
-                    if (Array.isArray(value)) {
-                        return value[0] ?? {};
-                    }
-                    return value;
-                }
-                const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                if (singularPascalKey === className && Array.isArray(value) && value.length > 0) {
-                    return value[0];
-                }
-                const result = findJsonForClass(className, value, key);
-                if (result) return result;
-            }
-        }
-        return null;
-    }
-    
     const orderedClasses = Array.from(classes.keys()).reverse();
-    const finalClasses = new Map<string, string>();
-
-    for (const className of orderedClasses) {
-        const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
-        if (jsonSource) {
-            generateClass(className, jsonSource, finalClasses, options);
-        }
-    }
-
-    const generatedClassNames = Array.from(finalClasses.keys());
-    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
     
+    const rootClassIndex = orderedClasses.indexOf(finalRootClassName);
     if (rootClassIndex > -1) {
-        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
-        generatedClassNames.unshift(rootClassName);
+        const [rootClass] = orderedClasses.splice(rootClassIndex, 1);
+        orderedClasses.push(rootClass);
     }
     
-    const allGeneratedCode = generatedClassNames.map(name => finalClasses.get(name)).join('\n');
+    const allGeneratedCode = orderedClasses.reverse().map(name => classes.get(name)).join('\n');
     
     const needsAnyCodable = allGeneratedCode.includes('AnyCodable');
     const needsDateComment = allGeneratedCode.includes(': Date?');

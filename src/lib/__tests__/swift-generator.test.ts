@@ -1,4 +1,5 @@
 
+
 import { generateSwiftCode, SwiftGeneratorOptions } from '../swift-generator';
 
 const fullJsonInput = {

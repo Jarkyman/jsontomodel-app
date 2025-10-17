@@ -1,4 +1,5 @@
 
+
 export interface KotlinGeneratorOptions {
     useVal: boolean;
     nullable: boolean;
@@ -30,11 +31,10 @@ function toCamelCase(str: string): string {
     return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
-function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string | null {
+function getKotlinType(value: any, key: string, classes: Map<string, string>, options: KotlinGeneratorOptions): string {
     if (value === null) {
         if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
-        if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
-        return null; 
+        return 'Any';
     }
 
     const type = typeof value;
@@ -44,14 +44,11 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     if (Array.isArray(value)) {
         if (value.length === 0) {
              if (options.serializationLibrary === 'kotlinx') return 'List<JsonElement>';
-             if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'List<Any>';
-             return null;
+             return 'List<Any>';
         }
         const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
         const listType = getKotlinType(value[0], singularKey, classes, options);
         
-        if (listType === null) return null;
-
         return `List<${listType}>`;
     }
     if (type === 'object') {
@@ -63,9 +60,7 @@ function getKotlinType(value: any, key: string, classes: Map<string, string>, op
     }
     
     if (options.serializationLibrary === 'kotlinx') return 'JsonElement';
-    if (options.serializationLibrary === 'manual' || options.serializationLibrary === 'none') return 'Any';
-    
-    return null;
+    return 'Any';
 }
 
 function getKotlinDefaultValue(kotlinType: string, options: KotlinGeneratorOptions): string {
@@ -116,14 +111,13 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     let classString = '';
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     
-    for (const key in jsonObject) {
+    const sortedKeys = Object.keys(jsonObject).sort();
+
+    for (const key of sortedKeys) {
         if (key === '') continue;
         const fieldName = toCamelCase(key);
         const kotlinType = getKotlinType(jsonObject[key], key, classes, options);
-
-        if (kotlinType) {
-            fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
-        }
+        fields.push({ name: fieldName, originalKey: key, type: kotlinType, value: jsonObject[key] });
     }
 
     if (options.serializationLibrary === 'kotlinx') {
@@ -181,7 +175,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
             if (kotlinType.startsWith('List<')) {
                 const listType = kotlinType.substring(5, kotlinType.length - 1);
                 if (['Any', 'String', 'Int', 'Double', 'Boolean', 'JsonElement'].includes(listType)) {
-                     parsingLogic = `(json["${jsonKey}"] as? List<*>)?.map { it as ${listType} }`;
+                     parsingLogic = `(json["${jsonKey}"] as? List<*>)?.mapNotNull { it as? ${listType} }`;
                 } else {
                      parsingLogic = `(json["${jsonKey}"] as? List<*>)?.mapNotNull { ${listType}.fromJson(it as Map<String, Any>) }`;
                 }
@@ -225,7 +219,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
 
     classes.set(className, classString);
 
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null) {
@@ -255,14 +249,14 @@ export function generateKotlinCode(
 
     generateClass(finalRootClassName, rootJson, classes, options);
     
-    const classOrder = Array.from(classes.keys());
-    const rootIndex = classOrder.indexOf(finalRootClassName);
-    if (rootIndex !== -1) {
-        const root = classOrder.splice(rootIndex, 1);
-        classOrder.push(root[0]);
+    const orderedClasses = Array.from(classes.keys()).reverse();
+    const rootIndex = orderedClasses.indexOf(finalRootClassName);
+    if(rootIndex !== -1) {
+        const root = orderedClasses.splice(rootIndex, 1)[0];
+        orderedClasses.unshift(root);
     }
-
-    const allCode = classOrder.map(name => classes.get(name)).reverse().join('\n\n');
+    
+    const allCode = orderedClasses.map(name => classes.get(name)).join('\n\n');
     const imports = generateImports(options, allCode);
 
     return imports + allCode;

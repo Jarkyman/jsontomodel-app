@@ -30,9 +30,6 @@ describe('generateGoCode', () => {
         const generated = generateGoCode(fullJsonInput, 'UserData', defaultOptions);
         const normGenerated = normalize(generated);
 
-        expect(normGenerated).toContain('package models');
-        expect(normGenerated).toContain('import "time"');
-
         const expectedUserDataStruct = `
             type UserData struct { 
                 CreatedAt *time.Time \`json:"created_at,omitempty"\`

@@ -107,9 +107,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     let classString = `class ${className} {\n`;
     const constructorParams: string[] = [];
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
+    
+    const sortedKeys = Object.keys(jsonObject).sort();
 
     // Fields
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         if (key === '') continue; // Skip empty keys
         const fieldName = options.camelCaseFields ? toCamelCase(key) : key;
         const dartType = getDartType(jsonObject[key], key, classes, options);
@@ -247,7 +249,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         if (options.toJson || options.toString) classString += `\n`;
         classString += `  ${className} copyWith({\n`;
         for (const field of fields) {
-             const nullable = field.type === 'dynamic' || options.nullableFields ? '?' : '';
+             const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields)) ? '?' : '';
             classString += `    ${field.type}${nullable} ${field.name},\n`;
         }
         classString += `  }) {\n`;
@@ -272,7 +274,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
     classes.set(className, classString);
 
      // Recursively generate for sub-objects
-    for (const key in jsonObject) {
+    for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
         if (type === 'object' && value !== null) {
@@ -304,71 +306,20 @@ export function generateDartCode(
     }
     
     const classes = new Map<string, string>();
-    const classOrder: string[] = [];
-
-    const originalGenerateClass = (className: string, jsonObject: Record<string, any>, classesMap: Map<string, string>, opts: DartGeneratorOptions) => {
-        generateClass(className, jsonObject, classesMap, opts);
-        if (!classOrder.includes(className)) {
-            classOrder.push(className);
-        }
-    };
-    
     const rootJson = {...json};
     const finalRootClassName = toPascalCase(rootClassName);
 
-    originalGenerateClass(finalRootClassName, rootJson, classes, options);
-
-    // This is a bit of a hack to ensure dependencies are generated before they are used.
-    // We reverse the order of generation because deeper classes are added to the list last.
+    generateClass(finalRootClassName, rootJson, classes, options);
+    
     const orderedClasses = Array.from(classes.keys()).reverse();
-    const finalClasses = new Map<string, string>();
-
-    for (const className of orderedClasses) {
-        const jsonSource = findJsonForClass(className, rootJson, finalRootClassName);
-        if (jsonSource) {
-            generateClass(className, jsonSource, finalClasses, options);
-        }
+    
+    // Reorder to ensure dependencies are defined before use.
+    // The root class should be last.
+    const rootClassIndex = orderedClasses.indexOf(finalRootClassName);
+    if(rootClassIndex !== -1) {
+        const root = orderedClasses.splice(rootClassIndex, 1);
+        orderedClasses.push(root[0]);
     }
 
-    // A helper to find the original JSON object for a given class name
-    function findJsonForClass(className: string, currentJson: any, currentName: string): any {
-        if (toPascalCase(currentName) === className) {
-            return currentJson;
-        }
-
-        if (typeof currentJson === 'object' && currentJson !== null) {
-            for (const key in currentJson) {
-                const value = currentJson[key];
-                 if (isIsoDateString(value)) continue;
-
-                const pascalKey = toPascalCase(key);
-                if (pascalKey === className) {
-                    if (Array.isArray(value)) {
-                        return value[0] ?? {};
-                    }
-                    return value;
-                }
-                 const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                if (singularPascalKey === className && Array.isArray(value) && value.length > 0) {
-                    return value[0];
-                }
-                const result = findJsonForClass(className, value, key);
-                if (result) return result;
-            }
-        }
-        return null;
-    }
-    
-    const generatedClassNames = Array.from(finalClasses.keys());
-    const rootClassIndex = generatedClassNames.findIndex(name => name === finalRootClassName);
-    
-    if (rootClassIndex > -1) {
-        const [rootClassName] = generatedClassNames.splice(rootClassIndex, 1);
-        generatedClassNames.unshift(rootClassName);
-    }
-    
-    const generatedClasses = generatedClassNames.map(name => finalClasses.get(name));
-
-
-    return generatedClasses.join('\n');
+    return orderedClasses.reverse().map(name => classes.get(name)).join('\n');
 }
