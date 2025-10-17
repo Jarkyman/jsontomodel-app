@@ -39,6 +39,19 @@ describe('generateKotlinCode', () => {
             import kotlinx.serialization.json.JsonElement
 
             @Serializable
+            data class Notifications(
+                val email: Boolean?,
+                val sms: Boolean?,
+                val push: Boolean?
+            )
+            
+            @Serializable
+            data class Preferences(
+                val newsletter: Boolean?,
+                val notifications: Notifications?
+            )
+
+            @Serializable
             data class DataModel(
                 val id: Int?,
                 val name: String?,
@@ -51,19 +64,6 @@ describe('generateKotlinCode', () => {
                 val tags: List<JsonElement>?,
                 @SerialName("profile_picture")
                 val profilePicture: JsonElement?
-            )
-
-            @Serializable
-            data class Preferences(
-                val newsletter: Boolean?,
-                val notifications: Notifications?
-            )
-
-            @Serializable
-            data class Notifications(
-                val email: Boolean?,
-                val sms: Boolean?,
-                val push: Boolean?
             )
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
@@ -80,6 +80,17 @@ describe('generateKotlinCode', () => {
             defaultToNull: false,
         };
         const expectedOutput = `
+            data class Notifications(
+                val email: Boolean?,
+                val sms: Boolean?,
+                val push: Boolean?
+            )
+
+            data class Preferences(
+                val newsletter: Boolean?,
+                val notifications: Notifications?
+            )
+
             data class DataModel(
                 val id: Int?,
                 val name: String?,
@@ -90,17 +101,6 @@ describe('generateKotlinCode', () => {
                 val roles: List<String>?,
                 val tags: List<Any>?,
                 val profilePicture: Any?
-            )
-
-            data class Preferences(
-                val newsletter: Boolean?,
-                val notifications: Notifications?
-            )
-
-            data class Notifications(
-                val email: Boolean?,
-                val sms: Boolean?,
-                val push: Boolean?
             )
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
@@ -118,6 +118,51 @@ describe('generateKotlinCode', () => {
         };
 
         const expectedOutput = `
+            data class Notifications(
+                val email: Boolean?,
+                val sms: Boolean?,
+                val push: Boolean?
+            ) {
+                 companion object {
+                    fun fromJson(json: Map<String, Any>): Notifications {
+                        return Notifications(
+                            email = json["email"] as? Boolean?,
+                            sms = json["sms"] as? Boolean?,
+                            push = json["push"] as? Boolean?
+                        )
+                    }
+                }
+
+                fun toJson(): Map<String, Any?> {
+                    val map = mutableMapOf<String, Any?>()
+                    map["email"] = email
+                    map["sms"] = sms
+                    map["push"] = push
+                    return map.filterValues { it != null }
+                }
+            }
+
+            data class Preferences(
+                val newsletter: Boolean?,
+                val notifications: Notifications?
+            ) {
+                 companion object {
+                    fun fromJson(json: Map<String, Any>): Preferences {
+                        return Preferences(
+                            newsletter = json["newsletter"] as? Boolean?,
+                            notifications = json["notifications"]?.let { Notifications.fromJson(it as Map<String, Any>) }
+                        )
+                    }
+                }
+
+                fun toJson(): Map<String, Any?> {
+                    val map = mutableMapOf<String, Any?>()
+                    map["newsletter"] = newsletter
+                    map["notifications"] = notifications?.toJson()
+                    return map.filterValues { it != null }
+                }
+            }
+
             data class DataModel(
                 val id: Int?,
                 val name: String?,
@@ -159,51 +204,6 @@ describe('generateKotlinCode', () => {
                     return map.filterValues { it != null }
                 }
             }
-
-            data class Preferences(
-                val newsletter: Boolean?,
-                val notifications: Notifications?
-            ) {
-                 companion object {
-                    fun fromJson(json: Map<String, Any>): Preferences {
-                        return Preferences(
-                            newsletter = json["newsletter"] as? Boolean?,
-                            notifications = json["notifications"]?.let { Notifications.fromJson(it as Map<String, Any>) }
-                        )
-                    }
-                }
-
-                fun toJson(): Map<String, Any?> {
-                    val map = mutableMapOf<String, Any?>()
-                    map["newsletter"] = newsletter
-                    map["notifications"] = notifications?.toJson()
-                    return map.filterValues { it != null }
-                }
-            }
-
-            data class Notifications(
-                val email: Boolean?,
-                val sms: Boolean?,
-                val push: Boolean?
-            ) {
-                 companion object {
-                    fun fromJson(json: Map<String, Any>): Notifications {
-                        return Notifications(
-                            email = json["email"] as? Boolean?,
-                            sms = json["sms"] as? Boolean?,
-                            push = json["push"] as? Boolean?
-                        )
-                    }
-                }
-
-                fun toJson(): Map<String, Any?> {
-                    val map = mutableMapOf<String, Any?>()
-                    map["email"] = email
-                    map["sms"] = sms
-                    map["push"] = push
-                    return map.filterValues { it != null }
-                }
-            }
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
         expect(normalize(generated)).toBe(normalize(expectedOutput));
@@ -221,6 +221,17 @@ describe('generateKotlinCode', () => {
         const expectedOutput = `
             import com.google.gson.annotations.SerializedName
 
+            data class Notifications(
+                @SerializedName("email") val email: Boolean?,
+                @SerializedName("sms") val sms: Boolean?,
+                @SerializedName("push") val push: Boolean?
+            )
+
+            data class Preferences(
+                 @SerializedName("newsletter") val newsletter: Boolean?,
+                 @SerializedName("notifications") val notifications: Notifications?
+            )
+
             data class DataModel(
                 @SerializedName("id") val id: Int?,
                 @SerializedName("name") val name: String?,
@@ -231,17 +242,6 @@ describe('generateKotlinCode', () => {
                 @SerializedName("roles") val roles: List<String>?,
                 @SerializedName("tags") val tags: List<Any>?,
                 @SerializedName("profile_picture") val profilePicture: Any?
-            )
-
-            data class Preferences(
-                 @SerializedName("newsletter") val newsletter: Boolean?,
-                 @SerializedName("notifications") val notifications: Notifications?
-            )
-            
-            data class Notifications(
-                @SerializedName("email") val email: Boolean?,
-                @SerializedName("sms") val sms: Boolean?,
-                @SerializedName("push") val push: Boolean?
             )
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
@@ -260,6 +260,17 @@ describe('generateKotlinCode', () => {
         const expectedOutput = `
             import com.squareup.moshi.Json
 
+            data class Notifications(
+                @Json(name = "email") val email: Boolean?,
+                @Json(name = "sms") val sms: Boolean?,
+                @Json(name = "push") val push: Boolean?
+            )
+            
+            data class Preferences(
+                @Json(name = "newsletter") val newsletter: Boolean?,
+                @Json(name = "notifications") val notifications: Notifications?
+            )
+
             data class DataModel(
                 @Json(name = "id") val id: Int?,
                 @Json(name = "name") val name: String?,
@@ -270,17 +281,6 @@ describe('generateKotlinCode', () => {
                 @Json(name = "roles") val roles: List<String>?,
                 @Json(name = "tags") val tags: List<Any>?,
                 @Json(name = "profile_picture") val profilePicture: Any?
-            )
-            
-            data class Preferences(
-                @Json(name = "newsletter") val newsletter: Boolean?,
-                @Json(name = "notifications") val notifications: Notifications?
-            )
-
-            data class Notifications(
-                @Json(name = "email") val email: Boolean?,
-                @Json(name = "sms") val sms: Boolean?,
-                @Json(name = "push") val push: Boolean?
             )
         `;
         const generated = generateKotlinCode(fullJsonInput, 'DataModel', options);
@@ -299,6 +299,17 @@ describe('generateKotlinCode', () => {
         };
 
         const expectedOutput = `
+            data class Notifications(
+                val email: Boolean = false,
+                val sms: Boolean = false,
+                val push: Boolean = false
+            )
+
+            data class Preferences(
+                val newsletter: Boolean = false,
+                val notifications: Notifications = Notifications()
+            )
+
             data class DataModel(
                 val id: Int = 0,
                 val name: String = "",
@@ -309,17 +320,6 @@ describe('generateKotlinCode', () => {
                 val roles: List<String> = emptyList(),
                 val tags: List<Any> = emptyList(),
                 val profilePicture: Any = Any()
-            )
-
-            data class Preferences(
-                val newsletter: Boolean = false,
-                val notifications: Notifications = Notifications()
-            )
-
-            data class Notifications(
-                val email: Boolean = false,
-                val sms: Boolean = false,
-                val push: Boolean = false
             )
         `;
 
@@ -338,6 +338,17 @@ describe('generateKotlinCode', () => {
         };
 
         const expectedOutput = `
+            data class Notifications(
+                val email: Boolean? = null,
+                val sms: Boolean? = null,
+                val push: Boolean? = null
+            )
+
+            data class Preferences(
+                val newsletter: Boolean? = null,
+                val notifications: Notifications? = null
+            )
+
             data class DataModel(
                 val id: Int? = null,
                 val name: String? = null,
@@ -348,17 +359,6 @@ describe('generateKotlinCode', () => {
                 val roles: List<String>? = null,
                 val tags: List<Any>? = null,
                 val profilePicture: Any? = null
-            )
-
-            data class Preferences(
-                val newsletter: Boolean? = null,
-                val notifications: Notifications? = null
-            )
-            
-            data class Notifications(
-                val email: Boolean? = null,
-                val sms: Boolean? = null,
-                val push: Boolean? = null
             )
         `;
 

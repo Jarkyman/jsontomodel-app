@@ -249,14 +249,16 @@ export function generateKotlinCode(
 
     generateClass(finalRootClassName, rootJson, classes, options);
     
-    const orderedClasses = Array.from(classes.keys()).reverse();
-    const rootIndex = orderedClasses.indexOf(finalRootClassName);
-    if(rootIndex !== -1) {
-        const root = orderedClasses.splice(rootIndex, 1)[0];
-        orderedClasses.unshift(root);
-    }
+    // Sort classes by dependency
+    const sortedClassNames = Array.from(classes.keys()).sort((a, b) => {
+        const aDeps = classes.get(a) || '';
+        const bDeps = classes.get(b) || '';
+        if (aDeps.includes(` ${b}(`)) return 1; // a depends on b
+        if (bDeps.includes(` ${a}(`)) return -1; // b depends on a
+        return a.localeCompare(b); // fallback to alphabetical
+    });
     
-    const allCode = orderedClasses.map(name => classes.get(name)).join('\n\n');
+    const allCode = sortedClassNames.map(name => classes.get(name)).join('\n\n');
     const imports = generateImports(options, allCode);
 
     return imports + allCode;

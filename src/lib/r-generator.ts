@@ -64,21 +64,33 @@ export interface RGeneratorOptions {
     const queue: [string, Record<string, any>][] = [[toPascalCase(rootName), json]];
     const seen = new Set<string>();
   
+    function traverse(obj: any) {
+        if (typeof obj !== 'object' || obj === null) return;
+
+        for (const key of Object.keys(obj)) {
+            const value = obj[key];
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                const childName = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
+                if (!seen.has(childName)) {
+                   queue.push([childName, value[0]]);
+                   traverse(value[0]);
+                }
+            } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+                const childName = toPascalCase(key);
+                 if (!seen.has(childName)) {
+                    queue.push([childName, value]);
+                    traverse(value);
+                 }
+            }
+        }
+    }
+    
+    traverse(json);
+
     while (queue.length > 0) {
       const [name, obj] = queue.shift()!;
       if (seen.has(name)) continue;
       seen.add(name);
-  
-      const sortedKeys = Object.keys(obj).sort();
-      for (const key of sortedKeys) {
-        const value = obj[key];
-        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
-          queue.push([toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key), value[0]]);
-        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-          queue.push([toPascalCase(key), value]);
-        }
-      }
-  
       generated.set(name, generateConstructor(name, obj, options));
     }
   
@@ -86,3 +98,4 @@ export interface RGeneratorOptions {
   }
   
   export { defaultOptions };
+  

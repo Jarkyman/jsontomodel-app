@@ -58,9 +58,7 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
         } else if (type === 'boolean') {
             goType = 'bool';
         } else if (Array.isArray(value)) {
-            if (value.length === 0) {
-                goType = '[]interface{}';
-            } else if (arrayContainsNull(value)) {
+            if (value.length === 0 || arrayContainsNull(value)) {
                 goType = '[]interface{}';
             } else {
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
@@ -69,7 +67,8 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
                 if (hasMixedNumberTypes(value)) {
                     sliceType = 'float64';
                 } else {
-                    sliceType = getGoType(value[0], singularKey, structs, { ...options, usePointers: false }); // get base type without pointer
+                    // Temporarily disable usePointers for the slice type to get the base type.
+                    sliceType = getGoType(value[0], singularKey, structs, { ...options, usePointers: false });
                 }
 
                 if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}' && !sliceType.startsWith('[]')) {
