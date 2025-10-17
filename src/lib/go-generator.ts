@@ -13,9 +13,17 @@ const defaultOptions: GoGeneratorOptions = {
 };
 
 function toPascalCase(str: string): string {
-    const pascal = str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
-    // Handle specific acronyms common in Go
-    return pascal.replace(/\b(Id|Url|Api|Json|Html|Http|Https)\b/gi, (match) => match.toUpperCase());
+    let pascal = str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
+    
+    // Handle specific acronyms common in Go, especially at the end of a word.
+    const acronyms = ["Id", "Url", "Api", "Json", "Html", "Http", "Https"];
+    for (const acronym of acronyms) {
+        if (pascal.endsWith(acronym)) {
+            pascal = pascal.slice(0, -acronym.length) + acronym.toUpperCase();
+        }
+    }
+    
+    return pascal;
 }
 
 function isIsoDateString(value: any): boolean {
@@ -174,10 +182,19 @@ export function generateGoCode(
     }
     
     const orderedStructs = Array.from(classes.keys()).sort((a,b) => {
-        if(a === toPascalCase(rootStructName)) return 1;
-        if(b === toPascalCase(rootStructName)) return -1;
+        const classA = classes.get(a) || '';
+        const classB = classes.get(b) || '';
+
+        // If B's definition uses A, A should come first.
+        if (classB.includes(` ${a} `) || classB.includes(`[]${a}`)) return -1;
+        // If A's definition uses B, B should come first.
+        if (classA.includes(` ${b} `) || classA.includes(`[]${b}`)) return 1;
+
+        if (a === toPascalCase(rootStructName)) return 1;
+        if (b === toPascalCase(rootStructName)) return -1;
+
         return a.localeCompare(b);
-    }).reverse();
+    });
     
     let allCode = orderedStructs.map(name => classes.get(name)).join('\n');
 
