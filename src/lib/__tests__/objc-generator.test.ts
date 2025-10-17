@@ -40,7 +40,7 @@ describe('generateObjCCode', () => {
         expect(normGenerated).toContain('@property (nonatomic, strong, nullable) NSArray *tags;');
         
         // Check for User initializer
-        expect(normGenerated).toContain('- (instancetype)initWithUserId:(NSNumber *)userId userName:(NSString *)userName isActive:(NSNumber *)isActive profile:(DMProfile *)profile tags:(NSArray *)tags');
+        expect(normGenerated).toContain('- (instancetype)initWithIsActive:(NSNumber *)isActive profile:(DMProfile *)profile tags:(NSArray *)tags userId:(NSNumber *)userId userName:(NSString *)userName');
     });
 
     it('should generate without nullability annotations when disabled', () => {

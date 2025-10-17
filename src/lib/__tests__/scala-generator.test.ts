@@ -30,7 +30,7 @@ describe('generateScaleCode', () => {
         expect(normGenerated).toContain("case class Profile( val theme: String )");
         
         // Check for main user class
-        expect(normGenerated).toContain("case class UserData( val user_id: Int, val user_name: String, val is_active: Boolean, val profile: Profile, val tags: List[String] )");
+        expect(normGenerated).toContain("case class UserData( val is_active: Boolean, val profile: Profile, val tags: List[String], val user_id: Int, val user_name: String )");
     });
 
     it('should generate without types if disabled', () => {
@@ -44,7 +44,7 @@ describe('generateScaleCode', () => {
         const options: ScaleGeneratorOptions = { ...defaultOptions, defaultValues: true };
         const generated = generateScaleCode({ "name": "test", "count": 5 }, 'Item', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain("case class Item( val name: String = \"test\", val count: Int = 5 )");
+        expect(normGenerated).toContain("case class Item( val count: Int = 5, val name: String = \"test\" )");
     });
 
     it('should not use snake case if disabled', () => {

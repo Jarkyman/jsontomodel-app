@@ -83,7 +83,7 @@ function generateScaleClass(
   }
 
   const classType = options.includeStruct ? 'case class' : 'class';
-  const params = fields.length > 0 ? `(\n  ${fields.join(',\n  ')}\n)` : '()';
+  const params = fields.length > 0 ? `( ${fields.join(', ')} )` : '()';
 
   const code = `${classType} ${className}${params}`;
   modules.set(className, code);

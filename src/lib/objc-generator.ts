@@ -72,14 +72,18 @@ function generateClass(
     fields.push({ key, type, objcName, rawType });
   }
 
+  // Sort fields alphabetically by objcName for consistent output
+  fields.sort((a, b) => a.objcName.localeCompare(b.objcName));
+
   const prefix = options.rootClassPrefix;
   const classDef = `${prefix}${className}`;
   let code = `@interface ${classDef} : NSObject\n\n`;
 
   if (options.properties) {
     for (const field of fields) {
-      const nullability = options.nullability ? ', nullable' : '';
-      code += `@property (nonatomic, strong${nullability}) ${field.type}${field.objcName};\n`;
+      const nullability = options.nullability ? 'nullable' : '';
+      const propertyDeclaration = `@property (nonatomic, strong${nullability ? `, ${nullability}` : ''}) ${field.type}${field.objcName};\n`;
+      code += propertyDeclaration;
     }
   }
 
