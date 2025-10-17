@@ -4,12 +4,14 @@ export interface CppGeneratorOptions {
     namespace: string;
     usePointersForNull: boolean;
     cppVersion: '17' | '20' | '03';
+    useNlohmann: boolean;
 }
 
 const defaultOptions: CppGeneratorOptions = {
     namespace: "DataModels",
     usePointersForNull: false, // This will be determined by cppVersion
-    cppVersion: '17'
+    cppVersion: '17',
+    useNlohmann: true,
 };
 
 function toPascalCase(str: string): string {
@@ -52,7 +54,7 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     const useOptional = options.cppVersion !== '03';
     
     let structDef = `struct ${structName} {\n`;
-    let conversionDef = `NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(${structName}`;
+    let conversionDef = options.useNlohmann ? `NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(${structName}` : '';
 
     const fields: { name: string, type: string, originalKey: string }[] = [];
     const sortedKeys = Object.keys(jsonObject).sort();
@@ -84,11 +86,12 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
     }
     structDef += '};\n';
     
-    // Add fields to NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE
-    for(const field of fields) {
-        conversionDef += `, ${field.name}`;
+    if (options.useNlohmann) {
+        for(const field of fields) {
+            conversionDef += `, ${field.name}`;
+        }
+        conversionDef += ');\n';
     }
-    conversionDef += ');\n';
 
 
     // Recursively generate for sub-objects that were identified
@@ -100,7 +103,7 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
                  const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                  generateStruct(singularKey, value[0], structs, options);
             } else if (!Array.isArray(value)) {
-                generateStruct(toPascalCase(key), value, structs, options);
+                generateStruct(toPascalCase(key), value, classes, options);
             }
         }
     }
@@ -178,13 +181,17 @@ export function generateCppCode(
        header += `#include <optional>\n`;
     }
 
-    header += `#include <nlohmann/json.hpp>
+    if (internalOptions.useNlohmann) {
+        header += `#include <nlohmann/json.hpp>\n`;
+    }
 
-namespace ${options.namespace} {
+    header += `
+namespace ${options.namespace} {\n\n`;
 
-using nlohmann::json;
+    if (internalOptions.useNlohmann) {
+        header += `using nlohmann::json;\n\n`;
+    }
 
-`;
 
     // Forward declare all structs
     for (const name of orderedStructNames) {
@@ -202,10 +209,12 @@ using nlohmann::json;
     }
 
     // Define all conversions
-    for (const name of orderedStructNames) {
-        const defs = allStructs.get(name);
-        if (defs) {
-            header += defs.conversionDef + '\n';
+    if (internalOptions.useNlohmann) {
+        for (const name of orderedStructNames) {
+            const defs = allStructs.get(name);
+            if (defs) {
+                header += defs.conversionDef + '\n';
+            }
         }
     }
     

@@ -22,7 +22,6 @@ import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generat
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
 import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
-import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
 import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
@@ -214,6 +213,7 @@ const initialCppOptions: CppGeneratorOptions = {
   namespace: "DataModels",
   usePointersForNull: false,
   cppVersion: "17",
+  useNlohmann: true,
 };
 
 const initialVbNetOptions: VbNetGeneratorOptions = {
@@ -289,7 +289,8 @@ type TypescriptOptionKey = keyof TypeScriptGeneratorOptions;
 type GoOptionKey = keyof GoGeneratorOptions;
 type PhpOptionKey = keyof PhpGeneratorOptions;
 type JavascriptOptionKey = keyof JavaScriptGeneratorOptions;
-type CppOptionKey = Exclude<keyof CppGeneratorOptions, 'cppVersion'>;
+type CppOptionKey = Exclude<keyof CppGeneratorOptions, 'cppVersion' | 'useNlohmann'>;
+type CppToggleOptionKey = 'useNlohmann';
 type VbNetOptionKey = keyof VbNetGeneratorOptions;
 type RustOptionKey = keyof RustGeneratorOptions;
 type RubyOptionKey = keyof RubyGeneratorOptions;
@@ -694,6 +695,10 @@ export default function ModelForgeClient({ selectedLanguage: lang }: ModelForgeC
     });
   };
   
+  const handleToggleCppOption = (option: CppToggleOptionKey) => {
+    setCppOptions(prev => ({ ...prev, [option]: !prev[option] }));
+  };
+
   const handleToggleVbNetOption = (option: VbNetOptionKey) => {
     setVbnetOptions(prev => ({...prev, [option]: !prev[option] }));
   };
@@ -978,7 +983,14 @@ export default function ModelForgeClient({ selectedLanguage: lang }: ModelForgeC
       {selectedLanguage === 'cpp' && (
         <Card className="max-w-2xl mx-auto shadow-sm">
           <CardContent className="p-6 space-y-4">
-              <div className="flex items-center justify-center gap-2 pt-4">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton
+                  checked={cppOptions.useNlohmann}
+                  onClick={() => handleToggleCppOption('useNlohmann')}
+                  label="nlohmann macros"
+                />
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
                   <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
                   <Select 
                       value={cppOptions.cppVersion} 
