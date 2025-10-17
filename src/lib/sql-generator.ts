@@ -28,6 +28,10 @@ function toSnakeCase(str: string): string {
         .toLowerCase();
 }
 
+function toPascalCase(str: string): string {
+    return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
+}
+
 function inferSQLType(value: any): string {
   if (typeof value === 'number') return Number.isInteger(value) ? 'INTEGER' : 'REAL';
   if (typeof value === 'boolean') return 'BOOLEAN';
@@ -77,12 +81,10 @@ function generateSQLTable(
         foreignKeys.push(`  FOREIGN KEY (${fieldName}_id) REFERENCES ${nestedTableName}(id)`);
       }
     } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-      const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
-      const nestedName = `${name}_${singularKey}`;
       const childTableName = `${options.tablePrefix || ''}${options.useSnakeCase ? toSnakeCase(`${name}_${key}`) : `${name}${toPascalCase(key)}`}`;
 
       // This creates the many-to-many or one-to-many table
-      generateSQLTable(key, value[0], options, tables, tableName, 'id');
+      generateSQLTable(`${name}_${key}`, value[0], options, tables, tableName, 'id');
     } else {
       const nullStr = options.useNotNull ? ' NOT NULL' : '';
       const defaultStr = options.defaultValues

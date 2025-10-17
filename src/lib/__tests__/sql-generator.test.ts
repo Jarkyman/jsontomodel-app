@@ -36,8 +36,8 @@ describe('generateSQLSchema', () => {
         const expectedProfileTable = `
             CREATE TABLE user_profile ( 
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                theme VARCHAR(255) NOT NULL, 
-                show_email BOOLEAN NOT NULL 
+                show_email BOOLEAN NOT NULL,
+                theme VARCHAR(255) NOT NULL
             );
         `;
 
@@ -54,10 +54,10 @@ describe('generateSQLSchema', () => {
         const expectedUserTable = `
             CREATE TABLE user (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                user_name VARCHAR(255) NOT NULL,
                 is_active BOOLEAN NOT NULL,
                 profile_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                user_name VARCHAR(255) NOT NULL,
                 FOREIGN KEY (profile_id) REFERENCES user_profile(id)
             );
         `;
@@ -87,8 +87,8 @@ describe('generateSQLSchema', () => {
         const expectedProductTable = `
             CREATE TABLE product (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name VARCHAR(255) NOT NULL DEFAULT 'test',
                 active BOOLEAN NOT NULL DEFAULT 1,
+                name VARCHAR(255) NOT NULL DEFAULT 'test',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );

@@ -51,7 +51,10 @@ export interface ErlangGeneratorOptions {
     const records: string[] = [];
     const types: string[] = [];
   
-    for (const [key, value] of Object.entries(json)) {
+    const sortedKeys = Object.keys(json).sort();
+
+    for (const key of sortedKeys) {
+      const value = json[key];
       const fieldName = options.useSnakeCase ? toSnakeCase(key) : toCamelCase(key);
       const type = options.includeTypes ? `%% @type ${fieldName} :: ${inferErlangType(value)}` : '';
       const defaultValue = options.includeDefaults ? ` = ${formatDefaultValue(value)}` : '';
@@ -91,4 +94,3 @@ export interface ErlangGeneratorOptions {
   
     return Array.from(modules.values()).reverse().join('\n');
   }
-  

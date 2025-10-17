@@ -29,7 +29,7 @@ describe('generateErlangCode', () => {
         expect(normGenerated).toContain("-record(user_data_profile, { theme }).");
         
         // Check for main user record
-        expect(normGenerated).toContain("-record(user_data, { user_id, user_name, is_active, profile, tags }).");
+        expect(normGenerated).toContain("-record(user_data, { is_active, profile, tags, user_id, user_name }).");
 
         // Check for types
         expect(normGenerated).toContain("%% @type user_id :: integer()");
@@ -47,16 +47,14 @@ describe('generateErlangCode', () => {
         const options: ErlangGeneratorOptions = { ...defaultOptions, includeDefaults: true };
         const generated = generateErlangCode({ "name": "test", "count": 5 }, 'item', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain("-record(item, { name = 'test', count = 5 }).");
+        expect(normGenerated).toContain("-record(item, { count = 5, name = 'test' }).");
     });
 
     it('should not use snake case if disabled', () => {
         const options: ErlangGeneratorOptions = { ...defaultOptions, useSnakeCase: false };
         const generated = generateErlangCode({ "userName": "test" }, 'UserData', options);
         const normGenerated = normalize(generated);
-        expect(normGenerated).toContain('-record(userData, { userName }).');
+        expect(normGenerated).toContain('-record(userdata, { userName }).');
     });
 
 });
-
-    

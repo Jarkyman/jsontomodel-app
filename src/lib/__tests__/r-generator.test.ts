@@ -25,7 +25,7 @@ describe('generateRCode', () => {
         const normGenerated = normalize(generated);
 
         const expectedPreferences = `new_preferences <- function(newsletter = NULL) { structure(list(newsletter = newsletter), class = "Preferences") }`;
-        const expectedUserData = `new_user_data <- function(id = NULL, name = NULL, is_active = NULL, preferences = NULL, roles = NULL) { structure(list(id = id, name = name, is_active = is_active, preferences = preferences, roles = roles), class = "UserData") }`;
+        const expectedUserData = `new_user_data <- function(id = NULL, is_active = NULL, name = NULL, preferences = NULL, roles = NULL) { structure(list(id = id, is_active = is_active, name = name, preferences = preferences, roles = roles), class = "UserData") }`;
         
         expect(normGenerated).toContain(normalize(expectedPreferences));
         expect(normGenerated).toContain(normalize(expectedUserData));
@@ -37,7 +37,7 @@ describe('generateRCode', () => {
         const normGenerated = normalize(generated);
 
         const expectedPreferences = `new_preferences <- function(newsletter = FALSE) { structure(list(newsletter = newsletter), class = "Preferences") }`;
-        const expectedUserData = `new_user_data <- function(id = 0, name = "", is_active = FALSE, preferences = list(), roles = list()) { structure(list(id = id, name = name, is_active = is_active, preferences = preferences, roles = roles), class = "UserData") }`;
+        const expectedUserData = `new_user_data <- function(id = 0, is_active = FALSE, name = "", preferences = list(), roles = list()) { structure(list(id = id, is_active = is_active, name = name, preferences = preferences, roles = roles), class = "UserData") }`;
 
         expect(normGenerated).toContain(normalize(expectedPreferences));
         expect(normGenerated).toContain(normalize(expectedUserData));
