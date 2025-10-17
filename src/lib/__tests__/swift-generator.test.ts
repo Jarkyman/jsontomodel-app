@@ -81,7 +81,8 @@ describe('generateSwiftCode', () => {
         expect(normGenerated).toContain('func hash(into hasher: inout Hasher)');
         expect(normGenerated).toContain('hasher.combine(id)');
         expect(normGenerated).toContain('func == (lhs: UserData, rhs: UserData) -> Bool');
-        expect(normGenerated).toContain('return lhs.id == rhs.id && lhs.name == rhs.name');
+        const allFieldsEquatable = Object.keys(fullJsonInput).sort().map(k => `lhs.${toCamelCase(k)} == rhs.${toCamelCase(k)}`).join(' && ');
+        expect(normGenerated).toContain(allFieldsEquatable);
         
         // CustomStringConvertible
         expect(normGenerated).toContain('var description: String');
