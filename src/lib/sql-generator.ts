@@ -28,10 +28,6 @@ function toSnakeCase(str: string): string {
         .toLowerCase();
 }
 
-function toPascalCase(str: string): string {
-    return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
-}
-
 function inferSQLType(value: any): string {
   if (typeof value === 'number') return Number.isInteger(value) ? 'INTEGER' : 'REAL';
   if (typeof value === 'boolean') return 'BOOLEAN';
@@ -56,7 +52,6 @@ export function generateSQLSchema(
   const finalOptions = { ...defaultOptions, ...options };
   const tables = new Map<string, string>();
   
-  // Create a queue for processing to ensure correct table creation order
   const queue: [string, any, string?, string?][] = [[rootName, json]];
   const processed = new Set<string>();
 
@@ -98,6 +93,7 @@ export function generateSQLSchema(
               const type = finalOptions.useTypeInference ? inferSQLType(value) : 'TEXT';
               const nullStr = finalOptions.useNotNull ? ' NOT NULL' : '';
               const defaultStr = finalOptions.defaultValues ? (
+                  value === null ? '' :
                   typeof value === 'number' ? ` DEFAULT ${value}` :
                   typeof value === 'boolean' ? ` DEFAULT ${value ? 1 : 0}` :
                   typeof value === 'string' ? ` DEFAULT '${value.replace(/'/g, "''")}'` : ''
@@ -119,12 +115,14 @@ export function generateSQLSchema(
             lines.push('  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
         }
 
-      const allLines = [...lines, ...foreignKeys].sort((a,b) => {
-          // Keep PK first
+      const sortedLines = lines.sort((a, b) => {
           if (a.includes('PRIMARY KEY')) return -1;
           if (b.includes('PRIMARY KEY')) return 1;
           return a.localeCompare(b);
       });
+      
+      const allLines = [...sortedLines, ...foreignKeys];
+      
       tables.set(tableName, `CREATE TABLE ${tableName} (\n${allLines.join(',\n')}\n);`);
       processed.add(tableName);
       queue.unshift(...subQueue);

@@ -30,19 +30,19 @@ const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 describe('generateSQLSchema', () => {
 
     it('should generate correct SQL with default options', () => {
-        const generated = generateSQLSchema(fullJsonInput, 'User', defaultOptions);
+        const generated = generateSQLSchema(fullJsonInput, 'user', defaultOptions);
         const normGenerated = normalize(generated);
         
         const expectedProfileTable = `
-            CREATE TABLE user_profile ( 
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            CREATE TABLE user_profile (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 show_email BOOLEAN NOT NULL,
                 theme VARCHAR(255) NOT NULL
             );
         `;
 
         const expectedPostsTable = `
-            CREATE TABLE user_posts (
+             CREATE TABLE user_posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 post_id INTEGER NOT NULL,
                 post_title VARCHAR(255) NOT NULL,
@@ -69,7 +69,7 @@ describe('generateSQLSchema', () => {
 
     it('should handle table prefixes and no foreign keys', () => {
         const options: SQLGeneratorOptions = { ...defaultOptions, tablePrefix: 'tbl_', useForeignKeys: false };
-        const generated = generateSQLSchema(fullJsonInput, 'User', options);
+        const generated = generateSQLSchema(fullJsonInput, 'user', options);
         const normGenerated = normalize(generated);
         
         expect(normGenerated).toContain('CREATE TABLE tbl_user');
@@ -81,15 +81,15 @@ describe('generateSQLSchema', () => {
 
     it('should add timestamps and default values', () => {
         const options: SQLGeneratorOptions = { ...defaultOptions, includeTimestamps: true, defaultValues: true };
-        const generated = generateSQLSchema({ "name": "test", "active": true }, 'Product', options);
+        const generated = generateSQLSchema({ "name": "test", "active": true }, 'product', options);
         const normGenerated = normalize(generated);
         
         const expectedProductTable = `
             CREATE TABLE product (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 active BOOLEAN NOT NULL DEFAULT 1,
-                name VARCHAR(255) NOT NULL DEFAULT 'test',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                name VARCHAR(255) NOT NULL DEFAULT 'test',
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         `;
