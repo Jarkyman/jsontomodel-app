@@ -27,10 +27,10 @@ describe('generateScaleCode', () => {
         const normGenerated = normalize(generated);
 
         // Check for profile class
-        expect(normGenerated).toContain("case class UserDataProfile( val theme: String )");
+        expect(normGenerated).toContain("case class Profile( val theme: String )");
         
         // Check for main user class
-        expect(normGenerated).toContain("case class UserData( val user_id: Int, val user_name: String, val is_active: Boolean, val profile: UserDataProfile, val tags: List[String] )");
+        expect(normGenerated).toContain("case class UserData( val user_id: Int, val user_name: String, val is_active: Boolean, val profile: Profile, val tags: List[String] )");
     });
 
     it('should generate without types if disabled', () => {

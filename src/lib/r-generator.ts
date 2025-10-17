@@ -10,7 +10,10 @@ export interface RGeneratorOptions {
   };
   
   function toSnakeCase(str: string): string {
-    return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+    return str
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
+      .toLowerCase();
   }
   
   function getRValue(value: any, useDefault: boolean): string {
@@ -28,7 +31,9 @@ export interface RGeneratorOptions {
     const assignments: string[] = [];
     const functionName = toSnakeCase(name);
   
-    for (const key in json) {
+    const sortedKeys = Object.keys(json).sort();
+
+    for (const key of sortedKeys) {
       const value = json[key];
       const rKey = toSnakeCase(key);
       const defaultValue = getRValue(value, options.defaultValues);
@@ -39,9 +44,9 @@ export interface RGeneratorOptions {
     const body = `  structure(list(${assignments.join(', ')}), class = "${name}")`;
   
     return `new_${functionName} <- function(${params.join(', ')}) {
-  ${body}
-  }
-  `;
+${body}
+}
+`;
   }
   
   export function generateRCode(
@@ -62,7 +67,8 @@ export interface RGeneratorOptions {
       if (seen.has(name)) continue;
       seen.add(name);
   
-      for (const key in obj) {
+      const sortedKeys = Object.keys(obj).sort();
+      for (const key of sortedKeys) {
         const value = obj[key];
         if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
           queue.push([capitalizeSingular(key), value[0]]);
@@ -82,7 +88,8 @@ export interface RGeneratorOptions {
   }
   
   function capitalizeSingular(str: string): string {
-    return capitalize(str.endsWith('s') ? str.slice(0, -1) : str);
+    const singular = str.endsWith('s') ? str.slice(0, -1) : str;
+    return capitalize(singular);
   }
   
   export { defaultOptions };

@@ -50,6 +50,7 @@ function isIsoDateString(value: any): boolean {
 
 function getDartType(value: any, key: string, classes: Map<string, string>, options: DartGeneratorOptions): string {
     if (options.supportDateTime && isIsoDateString(value)) return 'DateTime';
+    if (value === null) return 'dynamic';
     
     const type = typeof value;
     if (type === 'string') return 'String';
@@ -114,7 +115,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const dartType = getDartType(jsonObject[key], key, classes, options);
         
         const isNullable = options.nullableFields;
-        const nullable = isNullable ? '?' : '';
+        const nullable = isNullable || dartType === 'dynamic' ? '?' : '';
         
         const final = options.finalFields ? 'final ' : '';
         classString += `  ${final}${dartType}${nullable} ${fieldName};\n`;
@@ -130,6 +131,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         for (const field of fields) {
             if (options.requiredFields) {
                 constructorParams.push(`    required this.${field.name}`);
+            } else if (options.defaultValues && !options.nullableFields) {
+                 constructorParams.push(`    this.${field.name} = ${getDefaultValue(field.type, field.value, options)}`);
             } else {
                 constructorParams.push(`    this.${field.name}`);
             }
@@ -180,12 +183,12 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
                     }
                 } else {
                     let parseSuffix = '';
-                    if (dartType === 'double' && !options.useValuesAsDefaults) parseSuffix = '?.toDouble()';
+                    if (dartType === 'double') parseSuffix = '?.toDouble()';
                     
                     if (options.defaultValues && !isNullable) {
                         parsingLogic = `json['${jsonKey}']${parseSuffix} ?? ${getDefaultValue(dartType, value, options)}`;
                     } else {
-                        parsingLogic = `json['${jsonKey}']${parseSuffix}`;
+                         parsingLogic = `json['${jsonKey}']${parseSuffix}`;
                     }
                 }
                 classString += `      ${fieldName}: ${parsingLogic},\n`;
@@ -244,7 +247,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         if (options.toJson || options.toString) classString += `\n`;
         classString += `  ${className} copyWith({\n`;
         for (const field of fields) {
-            classString += `    ${field.type}? ${field.name},\n`;
+             const nullable = field.type === 'dynamic' || options.nullableFields ? '?' : '';
+            classString += `    ${field.type}${nullable} ${field.name},\n`;
         }
         classString += `  }) {\n`;
         if (fields.length > 0) {
@@ -288,8 +292,15 @@ export function generateDartCode(
     rootClassName: string = 'DataModel', 
     options: DartGeneratorOptions = defaultOptions
 ): string {
-    if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
-        throw new Error("Invalid or empty JSON object provided.");
+    if (typeof json !== 'object' || json === null) {
+        throw new Error("Invalid JSON object provided.");
+    }
+
+    if (Object.keys(json).length === 0) {
+        const emptyOptions = { ...options, requiredFields: false, nullableFields: true, defaultValues: false };
+        const classes = new Map<string, string>();
+        generateClass(toPascalCase(rootClassName), {}, classes, emptyOptions);
+        return classes.get(toPascalCase(rootClassName)) || '';
     }
     
     const classes = new Map<string, string>();
@@ -327,18 +338,21 @@ export function generateDartCode(
 
         if (typeof currentJson === 'object' && currentJson !== null) {
             for (const key in currentJson) {
+                const value = currentJson[key];
+                 if (isIsoDateString(value)) continue;
+
                 const pascalKey = toPascalCase(key);
                 if (pascalKey === className) {
-                    if (Array.isArray(currentJson[key])) {
-                        return currentJson[key][0] ?? {};
+                    if (Array.isArray(value)) {
+                        return value[0] ?? {};
                     }
-                    return currentJson[key];
+                    return value;
                 }
                  const singularPascalKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
-                if (singularPascalKey === className && Array.isArray(currentJson[key]) && currentJson[key].length > 0) {
-                    return currentJson[key][0];
+                if (singularPascalKey === className && Array.isArray(value) && value.length > 0) {
+                    return value[0];
                 }
-                const result = findJsonForClass(className, currentJson[key], key);
+                const result = findJsonForClass(className, value, key);
                 if (result) return result;
             }
         }

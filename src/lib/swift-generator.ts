@@ -114,7 +114,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         const fieldName = toCamelCase(key);
         const swiftType = getSwiftType(jsonObject[key], key, classes, options);
         
-        const isOptional = swiftType.includes('AnyCodable') || swiftType.includes('Any') ? '?' : '?';
+        const isOptional = '?';
         const keyword = options.useStruct ? 'let' : 'var';
         let propertyWrapper = '';
         if (options.isPublished && !options.useStruct) {
@@ -176,16 +176,21 @@ function generateClass(className: string, jsonObject: Record<string, any>, class
         classDefinition += `        )\n`;
         classDefinition += `    }\n`;
     }
+    
+    const equatableFields = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' && ');
+
+    if (options.isEquatable && options.useStruct) {
+         classDefinition += `\n    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+         classDefinition += `        return ${equatableFields || 'true'}\n`;
+         classDefinition += `    }\n`;
+    }
 
     classDefinition += '}\n';
 
-    // Add Equatable conformance for classes
-    if (options.isEquatable) {
-        classDefinition += `\n${options.useStruct ? '' : 'extension '}${className} {\n`;
-        classDefinition += `    static func == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
-        const comparisons = fields.map(f => `lhs.${f.name} == rhs.${f.name}`).join(' &&\n        ');
-        classDefinition += `        return ${comparisons || 'true'}\n`;
-        classDefinition += `    }\n`;
+    // Add Equatable conformance for classes outside the main definition
+    if (options.isEquatable && !options.useStruct) {
+        classDefinition += `\nfunc == (lhs: ${className}, rhs: ${className}) -> Bool {\n`;
+        classDefinition += `    return ${equatableFields || 'true'}\n`;
         classDefinition += `}\n`;
     }
 
@@ -371,5 +376,5 @@ export function generateSwiftCode(
 
     const dateComment = needsDateComment ? generateDateHandlingComment(options) : '';
 
-    return `${header}\n${dateComment}${allGeneratedCode}${needsAnyCodable ? `\n${anyCodableStruct}`: ''}`;
+    return `${header}\n${dateComment}${allGeneratedCode}${needsAnyCodable && options.isCodable ? `\n${anyCodableStruct}`: ''}`;
 }

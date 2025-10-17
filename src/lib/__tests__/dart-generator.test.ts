@@ -81,6 +81,7 @@ describe('generateDartCode', () => {
         defaultValues: false,
         supportDateTime: true,
         camelCaseFields: true,
+        useValuesAsDefaults: false,
     };
 
     const expectedOutput = `class DataModel {
@@ -119,7 +120,7 @@ describe('generateDartCode', () => {
       email: json['email'],
       isActive: json['is_active'],
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      score: json['score'],
+      score: json['score']?.toDouble(),
       preferences: json['preferences'] != null ? Preferences.fromJson(json['preferences']) : null,
       roles: json['roles'] != null ? List<String>.from(json['roles']) : null,
       tags: json['tags'] != null ? List<dynamic>.from(json['tags']) : null,

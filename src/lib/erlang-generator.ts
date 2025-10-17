@@ -72,7 +72,7 @@ export interface ErlangGeneratorOptions {
   
     let code = `%% Generated module: ${toPascalCase(name)}\n`;  
     if (types.length) code += types.join('\n') + '\n';
-    code += `-record(${recordName}, {\n    ${records.join(',\n  ')}\n  }).\n`;
+    code += `-record(${recordName}, {\n    ${records.join(',\n    ')}\n  }).\n`;
   
     modules.set(recordName, code);
   }

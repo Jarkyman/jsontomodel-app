@@ -59,7 +59,10 @@ function generateSQLTable(
     lines.push('  id INTEGER PRIMARY KEY AUTOINCREMENT');
   }
 
-  for (const [key, value] of Object.entries(json)) {
+  const sortedKeys = Object.keys(json).sort();
+
+  for (const key of sortedKeys) {
+    const value = json[key];
     const fieldName = options.useSnakeCase ? toSnakeCase(key) : key;
     let type = 'TEXT';
     if (options.useTypeInference) type = inferSQLType(value);
@@ -76,7 +79,10 @@ function generateSQLTable(
     } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
       const singularKey = key.endsWith('s') ? key.slice(0, -1) : key;
       const nestedName = `${name}_${singularKey}`;
-      generateSQLTable(nestedName, value[0], options, tables, tableName, 'id');
+      const childTableName = `${options.tablePrefix || ''}${options.useSnakeCase ? toSnakeCase(`${name}_${key}`) : `${name}${toPascalCase(key)}`}`;
+
+      // This creates the many-to-many or one-to-many table
+      generateSQLTable(key, value[0], options, tables, tableName, 'id');
     } else {
       const nullStr = options.useNotNull ? ' NOT NULL' : '';
       const defaultStr = options.defaultValues

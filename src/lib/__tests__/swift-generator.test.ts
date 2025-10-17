@@ -137,7 +137,7 @@ describe('generateSwiftCode', () => {
          expect(normGenerated).toContain('class UserData: ObservableObject');
          expect(normGenerated).not.toContain(': Codable');
          expect(normGenerated).not.toContain('CodingKeys');
-         expect(normGenerated).toContain('struct AnyCodable: Codable'); 
-         expect(normGenerated).toContain('var profilePicture: AnyCodable?');
+         expect(normGenerated).not.toContain('struct AnyCodable: Codable'); 
+         expect(normGenerated).toContain('var profilePicture: Any?');
     });
 });

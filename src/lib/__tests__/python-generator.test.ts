@@ -74,7 +74,7 @@ describe('generatePythonCode', () => {
         expect(normGenerated).toContain('@dataclass(frozen=True)');
         expect(normGenerated).toContain('user_tags: Optional[Tuple[str]]');
         expect(normGenerated).toContain('project_history: Optional[Tuple[ProjectHistory]]');
-        expect(normGenerated).toContain('user_tags=tuple(item for item in data.get("user_tags", []))');
+        expect(normGenerated).toContain('user_tags=tuple((item for item in data.get("user_tags", []))) if data.get("user_tags") else None,');
     });
     
     it('should generate with slots', () => {

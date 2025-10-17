@@ -55,14 +55,10 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
                 
                 // If the inner type already includes a null union, don't add another one.
                 if (options.allowNulls && !listType.includes('| null')) {
-                    if (listType.includes(' | ')) {
-                        listType = `(${listType} | null)`;
-                    } else {
-                        listType = `${listType} | null`;
-                    }
+                     baseType = `(${listType} | null)[]`;
+                } else {
+                     baseType = `${listType}[]`;
                 }
-                
-                baseType = `${listType}[]`;
             }
         } else if (type === 'object') {
             const typeName = toPascalCase(key);
@@ -75,7 +71,10 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
         }
     }
 
-    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null')) {
+    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith('[] | null') && !baseType.includes(')[]')) {
+        return `${baseType} | null`;
+    }
+     if (options.allowNulls && baseType.endsWith('[]')) {
         return `${baseType} | null`;
     }
 

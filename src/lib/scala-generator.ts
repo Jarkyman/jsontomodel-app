@@ -65,7 +65,10 @@ function generateScaleClass(
   const fields: string[] = [];
   const nestedClasses = new Set<string>();
 
-  for (const [key, value] of Object.entries(json)) {
+  const sortedKeys = Object.keys(json).sort();
+
+  for (const key of sortedKeys) {
+    const value = json[key];
     const fieldName = options.useSnakeCase ? toSnakeCase(key) : toCamelCase(key);
     let type = '';
     if (options.includeTypes) {
@@ -86,7 +89,8 @@ function generateScaleClass(
   modules.set(className, code);
 
   // After processing fields, recurse for nested classes that were identified
-  for (const [key, value] of Object.entries(json)) {
+  for (const key of sortedKeys) {
+      const value = json[key];
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           const nestedClassName = toPascalCase(key);
           generateScaleClass(nestedClassName, value, options, modules);

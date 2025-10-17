@@ -272,7 +272,8 @@ export function generateJavaCode(
             const classDef = classes.get(name) || '';
             // Remove imports from nested classes as they are at the top level
             const defWithoutImports = classDef.replace(/import\s+.*;\n/g, '').trim();
-            finalCode += `\n    ${defWithoutImports}\n`;
+            const staticClassDef = defWithoutImports.replace('public class', 'public static class');
+            finalCode += `\n    ${staticClassDef}\n`;
         }
     });
 
