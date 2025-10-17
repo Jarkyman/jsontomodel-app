@@ -3,9 +3,6 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { Home } from 'lucide-react';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -75,21 +72,18 @@ export default function LanguagePage({ params }: Params) {
   if (!languageInfo) {
     notFound();
   }
+  
+  const langName = languageInfo.label;
+  const title = `JSON to ${langName} Converter`;
+  const description = `Instantly convert JSON into clean, type-safe ${langName} models.`;
+
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-       <div className="absolute top-4 left-4">
-        <Button asChild variant="outline">
-          <Link href="/">
-            <Home className="mr-2 h-4 w-4" />
-            Home
-          </Link>
-        </Button>
-      </div>
-      <ModelForgeLoader selectedLanguage={langParam} />
+      <ModelForgeLoader selectedLanguage={langParam} title={title} description={description}/>
     </main>
   );
 }

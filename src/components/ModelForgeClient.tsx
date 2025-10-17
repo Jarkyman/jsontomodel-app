@@ -313,9 +313,11 @@ const FilterButton = ({ onClick, checked, label, disabled }: { onClick: () => vo
 
 interface ModelForgeClientProps {
   selectedLanguage: string;
+  title: string;
+  description: string;
 }
 
-export default function ModelForgeClient({ selectedLanguage: lang }: ModelForgeClientProps) {
+export default function ModelForgeClient({ selectedLanguage: lang, title, description }: ModelForgeClientProps) {
   const router = useRouter();
   const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
@@ -777,6 +779,15 @@ export default function ModelForgeClient({ selectedLanguage: lang }: ModelForgeC
 
   return (
     <div className="w-full max-w-7xl space-y-8">
+      <header className="text-center">
+        <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
+          {title}
+        </h1>
+        <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
+          {description}
+        </p>
+      </header>
+
       <section aria-labelledby="language-selection" className="mx-auto flex w-full max-w-sm items-center gap-4">
         <h2 id="language-selection" className="sr-only">Language Selection</h2>
         <div className="relative w-full">
