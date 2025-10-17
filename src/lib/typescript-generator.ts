@@ -53,7 +53,6 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                 let listType = getTypescriptType(value[0], singularKey, types, options);
                 
-                // If the inner type already includes a null union, don't add another one.
                 if (options.allowNulls && !listType.includes('| null')) {
                      baseType = `(${listType} | null)[]`;
                 } else {
@@ -71,17 +70,12 @@ function getTypescriptType(value: any, key: string, types: Map<string, string>, 
         }
     }
 
-    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith('[]')) {
-       if(baseType.endsWith('[] | null')) {
-        return baseType
-       }
-       if (baseType.endsWith(')[]')) {
-            return `${baseType} | null`;
-        }
+    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith(')[]')) {
         return `${baseType} | null`;
     }
-     if (options.allowNulls && baseType.endsWith('[]') && !baseType.endsWith(')[]')) {
-        return `${baseType} | null`;
+    
+    if (options.allowNulls && baseType.endsWith('[]') && !baseType.endsWith(')[]')) {
+       return `${baseType} | null`;
     }
 
     return baseType;
@@ -147,7 +141,9 @@ export function generateTypescriptCode(
     options: TypeScriptGeneratorOptions = defaultOptions
 ): string {
     if (typeof json !== 'object' || json === null || Object.keys(json).length === 0) {
-        throw new Error("Invalid or empty JSON object provided.");
+        const keyword = options.useType ? 'type' : 'interface';
+        const emptyDef = `export ${keyword} ${toPascalCase(rootTypeName)} = {}`;
+        return options.useType ? `${emptyDef};` : emptyDef;
     }
     
     const types = new Map<string, string>();
