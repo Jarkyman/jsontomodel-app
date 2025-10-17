@@ -69,7 +69,7 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
                 if (hasMixedNumberTypes(value)) {
                     sliceType = 'float64';
                 } else {
-                    sliceType = getGoType(value[0], singularKey, structs, options);
+                    sliceType = getGoType(value[0], singularKey, structs, { ...options, usePointers: false }); // get base type without pointer
                 }
 
                 if (options.useArrayOfPointers && !sliceType.startsWith('*') && sliceType !== 'interface{}' && !sliceType.startsWith('[]')) {
@@ -89,7 +89,6 @@ function getGoType(value: any, key: string, structs: Map<string, string>, option
         }
     }
     
-    // Use pointers for non-slice/map/interface types to handle nullability at the field level.
     if (options.usePointers && !goType.startsWith('[]') && !goType.startsWith('map[') && goType !== 'interface{}') {
         if (!goType.startsWith('*')) {
             return `*${goType}`;
@@ -121,7 +120,6 @@ function generateStruct(structName: string, jsonObject: Record<string, any>, str
 
     structs.set(structName, structString);
 
-    // Recursively generate for sub-objects
     for (const key of sortedKeys) {
         const value = jsonObject[key];
         const type = typeof value;
@@ -155,7 +153,6 @@ export function generateGoCode(
     let finalCode = `package ${options.packageName}\n\n`;
     let allCode = orderedStructs.map(name => structs.get(name)).join('\n');
 
-    // Add time import if necessary
     if (allCode.includes('time.Time')) {
         finalCode += 'import "time"\n\n';
     }

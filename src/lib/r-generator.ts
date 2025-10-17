@@ -1,4 +1,5 @@
 
+
 export interface RGeneratorOptions {
     useStruct: boolean; // ignored in R, kept for parity
     defaultValues: boolean;
@@ -15,6 +16,10 @@ export interface RGeneratorOptions {
       .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
       .toLowerCase();
   }
+
+  function toPascalCase(str: string): string {
+    return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c.toUpperCase()).replace(/[-_]/g, '');
+  }
   
   function getRValue(value: any, useDefault: boolean): string {
     if (!useDefault) return 'NULL';
@@ -29,7 +34,7 @@ export interface RGeneratorOptions {
   function generateConstructor(name: string, json: Record<string, any>, options: RGeneratorOptions): string {
     const params: string[] = [];
     const assignments: string[] = [];
-    const functionName = toSnakeCase(name);
+    const functionName = toSnakeCase(toPascalCase(name));
   
     const sortedKeys = Object.keys(json).sort();
 
@@ -41,12 +46,9 @@ export interface RGeneratorOptions {
       assignments.push(`${rKey} = ${rKey}`);
     }
   
-    const body = `  structure(list(${assignments.join(', ')}), class = "${name}")`;
+    const body = `  structure(list(${assignments.join(', ')}), class = "${toPascalCase(name)}")`;
   
-    return `new_${functionName} <- function(${params.join(', ')}) {
-${body}
-}
-`;
+    return `new_${functionName} <- function(${params.join(', ')}) {\n${body}\n}`;
   }
   
   export function generateRCode(
@@ -58,8 +60,8 @@ ${body}
       throw new Error('Invalid JSON object');
     }
   
-    const generated: string[] = [];
-    const queue: [string, Record<string, any>][] = [[rootName, json]];
+    const generated = new Map<string, string>();
+    const queue: [string, Record<string, any>][] = [[toPascalCase(rootName), json]];
     const seen = new Set<string>();
   
     while (queue.length > 0) {
@@ -70,26 +72,17 @@ ${body}
       const sortedKeys = Object.keys(obj).sort();
       for (const key of sortedKeys) {
         const value = obj[key];
-        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-          queue.push([capitalizeSingular(key), value[0]]);
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+          queue.push([toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key), value[0]]);
         } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-          queue.push([capitalize(key), value]);
+          queue.push([toPascalCase(key), value]);
         }
       }
   
-      generated.push(generateConstructor(name, obj, options));
+      generated.set(name, generateConstructor(name, obj, options));
     }
   
-    return generated.reverse().join('\n');
-  }
-  
-  function capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-  
-  function capitalizeSingular(str: string): string {
-    const singular = str.endsWith('s') ? str.slice(0, -1) : str;
-    return capitalize(singular);
+    return Array.from(generated.values()).reverse().join('\n\n');
   }
   
   export { defaultOptions };

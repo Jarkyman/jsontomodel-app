@@ -12,7 +12,7 @@ const fullJsonInput = {
     },
     "roles": ["admin", "editor"],
     "profile_picture_url": null,
-    "scores": [10, 20, 30.5],
+    "scores": [10, 20.5], // mixed int and float
     "nullable_roles": ["admin", null, "viewer"]
 };
 
@@ -31,20 +31,20 @@ describe('generateGoCode', () => {
         const normGenerated = normalize(generated);
 
         const expectedUserDataStruct = `
-            type UserData struct { 
+            type UserData struct {
                 CreatedAt *time.Time \`json:"created_at,omitempty"\`
                 ID *int \`json:"id,omitempty"\`
-                IsActive *bool \`json:"is_active,omitempty"\` 
+                IsActive *bool \`json:"is_active,omitempty"\`
                 Name *string \`json:"name,omitempty"\`
                 NullableRoles []interface{} \`json:"nullable_roles,omitempty"\`
-                Preferences *Preferences \`json:"preferences,omitempty"\` 
-                ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\` 
+                Preferences *Preferences \`json:"preferences,omitempty"\`
+                ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\`
                 Roles []string \`json:"roles,omitempty"\`
                 Scores []float64 \`json:"scores,omitempty"\`
             }
         `;
         const expectedPreferencesStruct = `
-            type Preferences struct { 
+            type Preferences struct {
                 Newsletter *bool \`json:"newsletter,omitempty"\`
             }
         `;
@@ -59,14 +59,14 @@ describe('generateGoCode', () => {
         const normGenerated = normalize(generated);
         
         const expectedUserDataStruct = `
-            type UserData struct { 
+            type UserData struct {
                 CreatedAt time.Time \`json:"created_at,omitempty"\`
                 ID int \`json:"id,omitempty"\`
-                IsActive bool \`json:"is_active,omitempty"\` 
+                IsActive bool \`json:"is_active,omitempty"\`
                 Name string \`json:"name,omitempty"\`
                 NullableRoles []interface{} \`json:"nullable_roles,omitempty"\`
-                Preferences Preferences \`json:"preferences,omitempty"\` 
-                ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\` 
+                Preferences Preferences \`json:"preferences,omitempty"\`
+                ProfilePictureURL interface{} \`json:"profile_picture_url,omitempty"\`
                 Roles []string \`json:"roles,omitempty"\`
                 Scores []float64 \`json:"scores,omitempty"\`
             }
