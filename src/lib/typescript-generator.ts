@@ -54,10 +54,13 @@ function getTypescriptType(value: any, key: string, types: Set<string>, options:
                 const singularKey = toPascalCase(key.endsWith('s') ? key.slice(0, -1) : key);
                 let listType = getTypescriptType(value[0], singularKey, types, options);
                 
-                if (options.allowNulls && !listType.includes(' | null')) {
-                     baseType = `(${listType} | null)[]`;
-                } else if (listType.includes(' | null')) {
+                // This is the core fix: ensure that if the listType itself is nullable, it's wrapped correctly.
+                // And then, the whole array can also be null.
+                if (listType.includes(' | null')) {
                      baseType = `(${listType})[]`;
+                }
+                else if (options.allowNulls) {
+                     baseType = `(${listType} | null)[]`;
                 }
                 else {
                      baseType = `${listType}[]`;
@@ -72,12 +75,8 @@ function getTypescriptType(value: any, key: string, types: Set<string>, options:
         }
     }
 
-    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null') && !baseType.endsWith(')[]')) {
+    if (options.allowNulls && baseType !== 'any' && !baseType.endsWith(' | null')) {
         return `${baseType} | null`;
-    }
-    
-    if (options.allowNulls && baseType.endsWith('[]') && !baseType.endsWith(')[]')) {
-       return `${baseType} | null`;
     }
 
     return baseType;
@@ -103,6 +102,7 @@ function generateType(typeName: string, jsonObject: Record<string, any>, options
         fields.push({ name: fieldName, type: tsType });
     }
 
+    // Sort fields alphabetically for consistent output
     fields.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const field of fields) {
@@ -179,7 +179,11 @@ export function generateTypescriptCode(
         });
     }
     
-    const orderedTypes = Array.from(types.keys()).reverse();
+    const orderedTypes = Array.from(types.keys()).sort((a,b) => {
+        if(a === toPascalCase(rootTypeName)) return 1;
+        if(b === toPascalCase(rootTypeName)) return -1;
+        return a.localeCompare(b);
+    });
 
     const finalCode = orderedTypes.map(name => types.get(name)).join('\n');
 
