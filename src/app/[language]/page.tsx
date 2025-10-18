@@ -3,7 +3,6 @@
 
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
-import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 const languages = [
@@ -28,48 +27,6 @@ const languages = [
   { value: "erlang", label: "Erlang" },
   { value: "scala", label: "Scala" },
 ];
-
-// Note: generateMetadata is a server-only function and will still run on the server
-// even though the component is a client component.
-export async function generateMetadata({
-  params,
-}: {
-  params: { language: string };
-}): Promise<Metadata> {
-  const langParam = params.language;
-  const languageInfo = languages.find(l => l.value === langParam);
-
-  if (!languageInfo) {
-    return {
-      title: 'JSON to Model - Page Not Found',
-      description: 'The requested language is not supported.',
-    };
-  }
-
-  const langName = languageInfo.label;
-  const title = `JSON to ${langName} Converter | Generate ${langName} Models`;
-  const description = `Instantly convert JSON into clean, type-safe ${langName} models. Our free code generator simplifies your workflow, saving you time and effort.`;
-
-  return {
-    title,
-    description,
-    keywords: [
-      `json to ${langName.toLowerCase()}`,
-      'json converter',
-      'code generator',
-      langName.toLowerCase(),
-      'data models',
-      'type-safe',
-      'json classes',
-    ],
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-    },
-    robots: 'index, follow',
-  };
-}
 
 export default function LanguagePage({
   params,
@@ -96,11 +53,4 @@ export default function LanguagePage({
       <ModelForgeLoader selectedLanguage={langParam} title={title} description={description}/>
     </main>
   );
-}
-
-// Note: generateStaticParams is a server-only function and will still run on the server.
-export async function generateStaticParams(): Promise<{ language: string }[]> {
-  return languages.map(lang => ({
-    language: lang.value,
-  }));
 }
