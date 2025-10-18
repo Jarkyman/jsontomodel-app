@@ -37,6 +37,17 @@ const defaultOptions: SwiftGeneratorOptions = {
 
 const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
 
+// Helper function to match generator's logic
+function toCamelCase(str: string): string {
+    let s = str.replace(/([-_][a-z])/ig, ($1) => {
+        return $1.toUpperCase()
+            .replace('-', '')
+            .replace('_', '');
+    });
+    return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+
 describe('generateSwiftCode', () => {
 
     it('should generate a default struct with Codable', () => {
