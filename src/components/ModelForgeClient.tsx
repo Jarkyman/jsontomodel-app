@@ -22,6 +22,7 @@ import { generateCSharpCode, CSharpGeneratorOptions } from "@/lib/csharp-generat
 import { generateTypescriptCode, TypeScriptGeneratorOptions } from "@/lib/typescript-generator";
 import { generateGoCode, GoGeneratorOptions } from "@/lib/go-generator";
 import { generatePhpCode, PhpGeneratorOptions } from "@/lib/php-generator";
+import { generateJavaScriptCode, JavaScriptGeneratorOptions } from "@/lib/javascript-generator";
 import { generateCppCode, CppGeneratorOptions } from "@/lib/cpp-generator";
 import { generateVbNetCode, VbNetGeneratorOptions } from "@/lib/vbnet-generator";
 import { generateRustCode, RustGeneratorOptions } from "@/lib/rust-generator";
