@@ -252,7 +252,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         classString += `  ${className} copyWith({\n`;
         if (fields.length > 0) {
             const copyWithParams = fields.map(field => {
-                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || !options.finalFields) ? '?' : '';
+                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || !options.finalFields || options.requiredFields) ? '?' : '';
                 return `    ${field.type}${nullable} ${field.name}`;
             });
             copyWithParams.sort();
@@ -261,10 +261,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         classString += `  }) {\n`;
         if (fields.length > 0) {
             classString += `    return ${className}(\n`;
-            for (const field of fields) {
-                classString += `      ${field.name}: ${field.name} ?? this.${field.name},\n`;
-            }
-            classString += `    );\n`;
+            const copyWithAssignments = fields.map(field => `      ${field.name}: ${field.name} ?? this.${field.name}`);
+            copyWithAssignments.sort();
+            classString += copyWithAssignments.join(',\n');
+            classString += `\n    );\n`;
         } else {
             classString += `    return ${className}();\n`;
         }
