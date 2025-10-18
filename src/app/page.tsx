@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Separator } from '@/components/ui/separator';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -316,6 +317,25 @@ export default function Home() {
           </AccordionItem>
           </Accordion>
         </section>
+
+        <footer className="w-full pt-8">
+          <div className="w-full max-w-4xl mx-auto">
+            <Separator />
+            <div className="text-center text-sm text-muted-foreground py-4">
+              © {new Date().getFullYear()} Hartvig Solutions. Created by{' '}
+              <a
+                href="https://hartvigsolutions.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                Hartvig Solutions
+              </a>
+              .
+            </div>
+          </div>
+        </footer>
+
       </div>
     </main>
   );
