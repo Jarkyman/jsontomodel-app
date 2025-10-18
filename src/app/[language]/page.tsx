@@ -1,8 +1,9 @@
-import ModelForgeLoader from '@/components/ModelForgeLoader';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { notFound } from 'next/navigation';
+"use client";
 
-export const runtime = 'edge';
+import ModelForgeClient from '@/components/ModelForgeClient';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { notFound, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -27,7 +28,11 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export default function LanguagePage({ params }: { params: { language: string } }) {
+type Props = {
+  params: { language: string };
+};
+
+export default function LanguagePage({ params }: Props) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -45,7 +50,7 @@ export default function LanguagePage({ params }: { params: { language: string } 
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <ModelForgeLoader selectedLanguage={langParam} title={title} description={description}/>
+      <ModelForgeClient selectedLanguage={langParam} title={title} description={description}/>
     </main>
   );
 }
