@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ModelForgeClient from '@/components/ModelForgeClient';
+import { ThemeToggle } from './theme-toggle';
 
 const LoadingSkeleton = () => (
   <div className="w-full max-w-7xl space-y-8">
@@ -40,8 +41,18 @@ export default function ModelForgeLoader({ selectedLanguage, title, description 
   }, []);
 
   if (!isClient) {
-    return <LoadingSkeleton />;
+    return (
+        <>
+            <ThemeToggle />
+            <LoadingSkeleton />
+        </>
+    );
   }
 
-  return <ModelForgeClient selectedLanguage={selectedLanguage} title={title} description={description} />;
+  return (
+    <>
+        <ThemeToggle />
+        <ModelForgeClient selectedLanguage={selectedLanguage} title={title} description={description} />
+    </>
+  );
 }
