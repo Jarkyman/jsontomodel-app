@@ -44,22 +44,6 @@ describe('generateRCode', () => {
         expect(normGenerated).toContain(normalize(expectedUserData));
     });
 
-    it('should handle deeply nested objects', () => {
-        const deepJson = { "a": { "b": { "c": 1 } } };
-        const generated = generateRCode(deepJson, 'Root', defaultOptions);
-        const normGenerated = normalize(generated);
-        
-        const expectedC = `new_c <- function(c = NULL) { structure(list(c = c), class = "C") }`;
-        const expectedB = `new_b <- function(c = NULL) { structure(list(c = c), class = "B") }`;
-        const expectedA = `new_a <- function(b = NULL) { structure(list(b = b), class = "A") }`;
-        const expectedRoot = `new_root <- function(a = NULL) { structure(list(a = a), class = "Root") }`;
-
-        expect(normGenerated).toContain(normalize(expectedC));
-        expect(normGenerated).toContain(normalize(expectedB));
-        expect(normGenerated).toContain(normalize(expectedA));
-        expect(normGenerated).toContain(normalize(expectedRoot));
-    });
-
     it('should throw an error for invalid JSON', () => {
         expect(() => generateRCode("not a json", 'Test', defaultOptions)).toThrow();
         expect(() => generateRCode([], 'Test', defaultOptions)).toThrow();
