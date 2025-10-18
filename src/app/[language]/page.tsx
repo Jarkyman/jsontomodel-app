@@ -1,4 +1,6 @@
 
+'use client';
+
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Metadata } from 'next';
@@ -27,13 +29,13 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-type Props = {
+// Note: generateMetadata is a server-only function and will still run on the server
+// even though the component is a client component.
+export async function generateMetadata({
+  params,
+}: {
   params: { language: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+}): Promise<Metadata> {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -69,7 +71,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function LanguagePage({ params }: Props) {
+export default function LanguagePage({
+  params,
+}: {
+  params: { language: string };
+}) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -92,6 +98,7 @@ export default function LanguagePage({ params }: Props) {
   );
 }
 
+// Note: generateStaticParams is a server-only function and will still run on the server.
 export async function generateStaticParams(): Promise<{ language: string }[]> {
   return languages.map(lang => ({
     language: lang.value,
