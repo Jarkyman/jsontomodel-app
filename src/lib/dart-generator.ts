@@ -252,7 +252,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         classString += `  ${className} copyWith({\n`;
         if (fields.length > 0) {
             const copyWithParams = fields.map(field => {
-                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || (options.requiredFields && !options.finalFields)) ? '?' : '';
+                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || !options.finalFields) ? '?' : '';
                 return `    ${field.type}${nullable} ${field.name}`;
             });
             copyWithParams.sort();
@@ -318,12 +318,6 @@ export function generateDartCode(
     }
 
     const orderedClasses = Array.from(classes.keys()).sort();
-
-    const rootIndex = orderedClasses.indexOf(toPascalCase(rootClassName));
-    if(rootIndex > -1){
-        const root = orderedClasses.splice(rootIndex, 1)[0];
-        orderedClasses.push(root);
-    }
     
     return orderedClasses.map(name => classes.get(name)).join('\n');
 }
