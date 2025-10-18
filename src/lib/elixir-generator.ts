@@ -88,14 +88,18 @@ function generateElixirModule(
 
   let code = `defmodule ${moduleName} do\n`;
 
-  if (options.includeTypes && fields.length > 0) {
-    code += fields.map(f => `  ${f.type}`).join('\n') + '\n\n';
-  }
+  if (fields.length > 0) {
+    if (options.includeTypes) {
+      code += fields.map(f => `  ${f.type}`).join('\n') + '\n\n';
+    }
 
-  if (options.includeStruct && fields.length > 0) {
-    code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
-  } else if (!options.includeStruct && !options.includeTypes) {
-    code += `  # Module generated for ${moduleName}\n`;
+    if (options.includeStruct) {
+      code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
+    }
+  } else {
+     if (!options.includeStruct && !options.includeTypes) {
+        code += `  # Module generated for ${moduleName}\n`;
+    }
   }
 
   code += `end`;
