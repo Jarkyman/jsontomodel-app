@@ -102,7 +102,7 @@ function getDefaultValue(dartType: string, value: any, options: DartGeneratorOpt
 function generateClass(className: string, jsonObject: Record<string, any>, options: DartGeneratorOptions): { classDef: string, dependentClasses: Set<string> } {
     const dependentClasses = new Set<string>();
     let classString = `class ${className} {\n`;
-    const constructorParams: string[] = [];
+    
     const fields: { name: string, type: string, originalKey: string, value: any }[] = [];
     
     const sortedKeys = Object.keys(jsonObject).sort();
@@ -128,20 +128,21 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
     }
 
     // Constructor
+    const constructorParams: string[] = [];
     for (const field of fields) {
         if (options.requiredFields) {
-            constructorParams.push(`    required this.${field.name}`);
+            constructorParams.push(`required this.${field.name}`);
         } else if (options.defaultValues && !options.nullableFields) {
-             constructorParams.push(`    this.${field.name} = ${getDefaultValue(field.type, field.value, options)}`);
+             constructorParams.push(`this.${field.name} = ${getDefaultValue(field.type, field.value, options)}`);
         } else {
-            constructorParams.push(`    this.${field.name}`);
+            constructorParams.push(`this.${field.name}`);
         }
     }
     constructorParams.sort();
 
     if (fields.length > 0) {
         classString += `  ${className}({\n`;
-        classString += `${constructorParams.join(',\n')},\n  });\n\n`;
+        classString += `    ${constructorParams.join(',\n    ')},\n  });\n\n`;
     } else {
         classString += `  ${className}();\n\n`;
     }
@@ -251,9 +252,10 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         classString += `  ${className} copyWith({\n`;
         if (fields.length > 0) {
             const copyWithParams = fields.map(field => {
-                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || options.requiredFields) ? '?' : '';
+                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || (options.requiredFields && !options.finalFields)) ? '?' : '';
                 return `    ${field.type}${nullable} ${field.name}`;
             });
+            copyWithParams.sort();
             classString += copyWithParams.join(',\n') + ',\n';
         }
         classString += `  }) {\n`;
