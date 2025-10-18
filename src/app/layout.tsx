@@ -6,6 +6,7 @@ import Script from 'next/script';
 import Analytics from '@/components/Analytics';
 import SuspenseWrapper from '@/components/SuspenseWrapper';
 import CookieConsent from '@/components/CookieConsent';
+import AdScripts from '@/components/AdScripts';
 
 export const metadata: Metadata = {
   title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
@@ -72,11 +73,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap"
           rel="stylesheet"
         />
-        <Script
-          strategy="beforeInteractive"
-          src={`https://fundingchoicesmessages.google.com/i/pub-9894760850635221?ers=1`}
-        />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9894760850635221" crossOrigin="anonymous"></script>
+        <SuspenseWrapper>
+          <AdScripts />
+        </SuspenseWrapper>
         <script type="application/ld+json">
           {`{
             "@context": "https://schema.org",

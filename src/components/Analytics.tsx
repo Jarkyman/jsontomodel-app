@@ -3,18 +3,30 @@
 
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { pageview, GA_TRACKING_ID } from '@/lib/gtag';
+
+type ConsentStatus = 'granted' | 'denied' | null;
 
 export default function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [consent, setConsent] = useState<ConsentStatus>(null);
 
   useEffect(() => {
-    if (pathname) {
+    const storedConsent = localStorage.getItem("cookie_consent") as ConsentStatus;
+    setConsent(storedConsent);
+  }, []);
+
+  useEffect(() => {
+    if (consent === 'granted' && pathname) {
       pageview(new URL(pathname, window.location.origin));
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, consent]);
+
+  if (consent !== 'granted') {
+    return null;
+  }
 
   return (
     <>
