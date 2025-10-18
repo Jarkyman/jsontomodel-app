@@ -297,7 +297,7 @@ export function generateDartCode(
     if (Object.keys(json).length === 0) {
         const emptyOptions = { ...options, requiredFields: false, nullableFields: true, defaultValues: false };
         const { classDef } = generateClass(toPascalCase(rootClassName), {}, emptyOptions);
-        return classDef.replace(/copyWith\(\{.*\}\)/s, 'copyWith()');
+        return classDef.replace(/copyWith\(\{[\s\S]*?\}\)/, 'copyWith()');
     }
     
     const classes = new Map<string, string>();
