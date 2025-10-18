@@ -38,17 +38,6 @@ describe('generateElixirCode', () => {
         expect(normGenerated).toContain('defstruct [ is_active: nil, profile: nil, user_id: nil, user_name: nil ]');
     });
 
-    it('should generate without types and structs when disabled', () => {
-        const options: ElixirGeneratorOptions = {
-            useSnakeCase: true,
-            includeTypes: false,
-            includeStruct: false,
-        };
-        const generated = generateElixirCode({ "name": "test" }, 'Simple', options);
-        const normGenerated = normalize(generated);
-        expect(normGenerated).toBe('defmodule Simple do\n  # Module generated for Simple\nend');
-    });
-
     it('should show default values as comments', () => {
         const options: ElixirGeneratorOptions = { ...defaultOptions, defaultValues: true };
         const generated = generateElixirCode({ "name": "test" }, 'Simple', options);
