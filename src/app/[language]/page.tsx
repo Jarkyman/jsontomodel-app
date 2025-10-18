@@ -2,7 +2,7 @@
 'use client';
 
 import { ThemeToggle } from '@/components/theme-toggle';
-import ModelForgeLoader from '@/components/ModelForgeLoader';
+import ModelForgeClient from '@/components/ModelForgeClient';
 import { notFound } from 'next/navigation';
 
 const languages = [
@@ -28,11 +28,7 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export default function LanguagePage({
-  params,
-}: {
-  params: { language: string };
-}) {
+export default function LanguagePage({ params }: any) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -50,7 +46,7 @@ export default function LanguagePage({
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <ModelForgeLoader selectedLanguage={langParam} title={title} description={description}/>
+      <ModelForgeClient selectedLanguage={langParam} title={title} description={description}/>
     </main>
   );
 }
