@@ -1,9 +1,9 @@
 
-'use client';
-
 import { ThemeToggle } from '@/components/theme-toggle';
-import ModelForgeClient from '@/components/ModelForgeClient';
+import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { notFound } from 'next/navigation';
+
+export const runtime = 'edge';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -28,7 +28,7 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export default function LanguagePage({ params }: any) {
+export default function LanguagePage({ params }: { params: { language: string } }) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -46,7 +46,7 @@ export default function LanguagePage({ params }: any) {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <ModelForgeClient selectedLanguage={langParam} title={title} description={description}/>
+      <ModelForgeLoader selectedLanguage={langParam} title={title} description={description}/>
     </main>
   );
 }
