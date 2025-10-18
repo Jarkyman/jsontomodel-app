@@ -128,17 +128,19 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
     }
 
     // Constructor
+    for (const field of fields) {
+        if (options.requiredFields) {
+            constructorParams.push(`    required this.${field.name}`);
+        } else if (options.defaultValues && !options.nullableFields) {
+             constructorParams.push(`    this.${field.name} = ${getDefaultValue(field.type, field.value, options)}`);
+        } else {
+            constructorParams.push(`    this.${field.name}`);
+        }
+    }
+    constructorParams.sort();
+
     if (fields.length > 0) {
         classString += `  ${className}({\n`;
-        for (const field of fields) {
-            if (options.requiredFields) {
-                constructorParams.push(`    required this.${field.name}`);
-            } else if (options.defaultValues && !options.nullableFields) {
-                 constructorParams.push(`    this.${field.name} = ${getDefaultValue(field.type, field.value, options)}`);
-            } else {
-                constructorParams.push(`    this.${field.name}`);
-            }
-        }
         classString += `${constructorParams.join(',\n')},\n  });\n\n`;
     } else {
         classString += `  ${className}();\n\n`;
@@ -248,10 +250,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         if (options.toJson || options.toString) classString += `\n`;
         classString += `  ${className} copyWith({\n`;
         if (fields.length > 0) {
-            for (const field of fields) {
-                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields)) ? '?' : '';
-                classString += `    ${field.type}${nullable} ${field.name},\n`;
-            }
+            const copyWithParams = fields.map(field => {
+                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || options.requiredFields) ? '?' : '';
+                return `    ${field.type}${nullable} ${field.name}`;
+            });
+            classString += copyWithParams.join(',\n') + ',\n';
         }
         classString += `  }) {\n`;
         if (fields.length > 0) {
@@ -312,12 +315,14 @@ export function generateDartCode(
         });
     }
 
-    const orderedClasses = Array.from(classes.keys()).sort((a,b) => {
-        if(a === toPascalCase(rootClassName)) return 1;
-        if(b === toPascalCase(rootClassName)) return -1;
-        return a.localeCompare(b);
-    });
+    const orderedClasses = Array.from(classes.keys()).sort();
 
+    const rootIndex = orderedClasses.indexOf(toPascalCase(rootClassName));
+    if(rootIndex > -1){
+        const root = orderedClasses.splice(rootIndex, 1)[0];
+        orderedClasses.push(root);
+    }
+    
     return orderedClasses.map(name => classes.get(name)).join('\n');
 }
 
