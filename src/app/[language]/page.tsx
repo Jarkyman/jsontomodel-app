@@ -1,14 +1,9 @@
 
+"use client";
+
 import { ThemeToggle } from '@/components/theme-toggle';
 import ModelForgeClient from '@/components/ModelForgeClient';
 import { notFound } from 'next/navigation';
-
-export const runtime = 'edge';
-
-type Props = {
-  params: { language: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -33,7 +28,7 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export default function LanguagePage({ params }: Props) {
+export default function LanguagePage({ params }: { params: { language: string } }) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
