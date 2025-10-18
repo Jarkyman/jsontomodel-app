@@ -1,5 +1,4 @@
 
-
 export interface ElixirGeneratorOptions {
   useSnakeCase?: boolean;
   includeTypes?: boolean;
@@ -88,12 +87,14 @@ function generateElixirModule(
 
   let code = `defmodule ${moduleName} do\n`;
 
-  if (fields.length > 0) {
-    if (options.includeTypes) {
+  const hasContent = (options.includeTypes && fields.length > 0) || (options.includeStruct && fields.length > 0);
+
+  if (hasContent) {
+    if (options.includeTypes && fields.length > 0) {
       code += fields.map(f => `  ${f.type}`).join('\n') + '\n\n';
     }
 
-    if (options.includeStruct) {
+    if (options.includeStruct && fields.length > 0) {
       code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
     }
   } else {
@@ -119,13 +120,11 @@ export function generateElixirCode(
   const finalOptions = { ...defaultOptions, ...options };
 
   if (Object.keys(json).length === 0) {
-    let emptyModule = `defmodule ${toPascalCase(rootName)} do`;
+    const moduleName = toPascalCase(rootName);
     if (!finalOptions.includeStruct && !finalOptions.includeTypes) {
-        emptyModule += `\n  # Module generated for ${toPascalCase(rootName)}\nend`;
-    } else {
-        emptyModule += `\nend`;
+        return `defmodule ${moduleName} do\n  # Module generated for ${moduleName}\nend`;
     }
-    return emptyModule;
+    return `defmodule ${moduleName} do\nend`;
   }
 
   const modules = new Map<string, string>();
