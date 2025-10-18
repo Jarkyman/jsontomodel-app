@@ -133,13 +133,15 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
         const useSerializedName = options.serializationLibrary !== 'manual' && options.serializationLibrary !== 'none';
         
         let annotation = '';
-        if (field.name !== field.originalKey && useSerializedName) {
+        if (useSerializedName) {
             if (options.serializationLibrary === 'gson') {
                 annotation = `    @SerializedName("${field.originalKey}")\n`;
             } else if (options.serializationLibrary === 'moshi') {
                 annotation = `    @Json(name = "${field.originalKey}")\n`;
             } else if (options.serializationLibrary === 'kotlinx') {
-                annotation = `    @SerialName("${field.originalKey}")\n`;
+                if (field.name !== field.originalKey) {
+                    annotation = `    @SerialName("${field.originalKey}")\n`;
+                }
             }
         }
         
@@ -252,8 +254,8 @@ export function generateKotlinCode(
     const sortedClassNames = Array.from(classes.keys()).sort((a, b) => {
         const aDeps = classes.get(a) || '';
         const bDeps = classes.get(b) || '';
-        if (aDeps.includes(` ${b}?`) || aDeps.includes(` ${b} `)) return 1;
-        if (bDeps.includes(` ${a}?`) || bDeps.includes(` ${a} `)) return -1;
+        if (aDeps.includes(` ${b}?`) || aDeps.includes(` ${b} `) || aDeps.includes(`(${b}?`) || aDeps.includes(`(${b} `)) return 1;
+        if (bDeps.includes(` ${a}?`) || bDeps.includes(` ${a} `) || bDeps.includes(`(${a}?`) || bDeps.includes(`(${a} `)) return -1;
         return a.localeCompare(b);
     });
 
