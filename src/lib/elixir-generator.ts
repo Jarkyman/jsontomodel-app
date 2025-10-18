@@ -87,20 +87,19 @@ function generateElixirModule(
 
   let code = `defmodule ${moduleName} do\n`;
 
-  const hasContent = (options.includeTypes && fields.length > 0) || (options.includeStruct && fields.length > 0);
+  const hasFields = fields.length > 0;
+  const hasContent = (options.includeTypes && hasFields) || (options.includeStruct && hasFields);
 
   if (hasContent) {
-    if (options.includeTypes && fields.length > 0) {
+    if (options.includeTypes && hasFields) {
       code += fields.map(f => `  ${f.type}`).join('\n') + '\n\n';
     }
 
-    if (options.includeStruct && fields.length > 0) {
+    if (options.includeStruct && hasFields) {
       code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
     }
   } else {
-     if (!options.includeStruct && !options.includeTypes) {
-        code += `  # Module generated for ${moduleName}\n`;
-    }
+    code += `  # Module generated for ${moduleName}\n`;
   }
 
   code += `end`;
@@ -118,13 +117,13 @@ export function generateElixirCode(
   }
 
   const finalOptions = { ...defaultOptions, ...options };
+  const moduleName = toPascalCase(rootName);
+  
+  const hasFields = Object.keys(json).length > 0;
+  const shouldGenerateContent = (finalOptions.includeStruct && hasFields) || (finalOptions.includeTypes && hasFields);
 
-  if (Object.keys(json).length === 0) {
-    const moduleName = toPascalCase(rootName);
-    if (!finalOptions.includeStruct && !finalOptions.includeTypes) {
-        return `defmodule ${moduleName} do\n  # Module generated for ${moduleName}\nend`;
-    }
-    return `defmodule ${moduleName} do\nend`;
+  if (!shouldGenerateContent) {
+    return `defmodule ${moduleName} do\n  # Module generated for ${moduleName}\nend`;
   }
 
   const modules = new Map<string, string>();
