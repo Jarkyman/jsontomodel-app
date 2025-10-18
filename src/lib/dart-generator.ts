@@ -233,8 +233,6 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
                 return `      '${jsonKey}': ${serializingLogic}`;
             });
             
-            // Note: toJson does not need sorting as map key order isn't guaranteed in JSON.
-            // But for consistency in tests, we can sort it.
             toJsonFields.sort();
             classString += toJsonFields.join(',\n') + ',\n';
 
@@ -275,16 +273,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
             const copyWithAssignments = fields.map(field => `      ${field.name}: ${field.name} ?? this.${field.name}`);
             copyWithAssignments.sort();
             classString += copyWithAssignments.join(',\n');
-            classString += `\n    );\n`;
+            classString += `,\n    );\n`;
         } else {
             classString += `    return ${className}();\n`;
         }
         classString += `  }\n`;
-    }
-
-    // Add newline if any method was generated
-    if(options.toJson || options.toString || options.copyWith) {
-        // This was adding extra newlines, let's let the class end handle it.
     }
 
     classString += '}\n';
@@ -304,7 +297,6 @@ export function generateDartCode(
     if (Object.keys(json).length === 0) {
         const emptyOptions = { ...options, requiredFields: false, nullableFields: true, defaultValues: false };
         const { classDef } = generateClass(toPascalCase(rootClassName), {}, emptyOptions);
-        // Correctly handle empty copyWith
         return classDef.replace(/copyWith\(\{.*\}\)/s, 'copyWith()');
     }
     

@@ -195,8 +195,8 @@ class DataModel {
       'is_active': isActive,
       'name': name,
       'preferences': preferences?.toJson(),
-      'projects': projects?.map((x) => x.toJson()).toList(),
       'profile_picture': profilePicture,
+      'projects': projects?.map((x) => x.toJson()).toList(),
       'roles': roles,
       'score': score,
       'tags': tags,
@@ -316,7 +316,6 @@ class Project {
   }
 }`;
     
-    // Normalize whitespace for comparison
     const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
     const generated = generateDartCode(jsonInput, 'DataModel', defaultOptions);
     expect(normalize(generated)).toBe(normalize(expectedOutput));
