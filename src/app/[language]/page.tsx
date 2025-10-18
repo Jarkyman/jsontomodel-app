@@ -1,9 +1,5 @@
-"use client";
-
-import ModelForgeClient from '@/components/ModelForgeClient';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { notFound, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { notFound } from 'next/navigation';
+import LanguageClientPage from './client-page';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -28,11 +24,13 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-type Props = {
-  params: { language: string };
-};
+interface LanguagePageProps {
+  params: {
+    language: string;
+  };
+}
 
-export default function LanguagePage({ params }: Props) {
+export default function LanguagePage({ params }: LanguagePageProps) {
   const langParam = params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
@@ -44,13 +42,11 @@ export default function LanguagePage({ params }: Props) {
   const title = `JSON to ${langName} Converter`;
   const description = `Instantly convert JSON into clean, type-safe ${langName} models.`;
 
-
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <ModelForgeClient selectedLanguage={langParam} title={title} description={description}/>
-    </main>
+    <LanguageClientPage
+      selectedLanguage={langParam}
+      title={title}
+      description={description}
+    />
   );
 }
