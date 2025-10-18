@@ -94,8 +94,8 @@ function generateElixirModule(
 
   if (options.includeStruct && fields.length > 0) {
     code += `  defstruct [ ${fields.map(f => f.default).join(', ')} ]\n`;
-  } else if (!options.includeStruct && !options.includeTypes) {
-    code += `\n  # Module generated for ${moduleName}\n`;
+  } else if (fields.length === 0) {
+    code += `  # Module generated for ${moduleName}\n`;
   }
 
   code += `end`;
