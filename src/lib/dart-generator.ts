@@ -196,11 +196,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
                          parsingLogic = `json['${jsonKey}']${parseSuffix}`;
                     }
                 }
-                return `      ${fieldName}: ${parsingLogic}`;
+                return { name: fieldName, logic: `      ${fieldName}: ${parsingLogic}` };
             });
             
-            fromJsonFields.sort();
-            classString += fromJsonFields.join(',\n') + ',\n';
+            fromJsonFields.sort((a,b) => a.name.localeCompare(b.name));
+            classString += fromJsonFields.map(f => f.logic).join(',\n') + ',\n';
             classString += `    );\n  }\n\n`;
         }
     }
@@ -212,7 +212,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
             classString += `    return {};\n  }\n`;
         } else {
             classString += `    return {\n`;
-            for (const field of fields) {
+            const toJsonFields = fields.map(field => {
                 const jsonKey = field.originalKey;
                 const fieldName = field.name;
                 const dartType = field.type;
@@ -230,8 +230,14 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
                     serializingLogic = `${fieldName}?.toJson()`;
                 }
 
-                classString += `      '${jsonKey}': ${serializingLogic},\n`;
-            }
+                return `      '${jsonKey}': ${serializingLogic}`;
+            });
+            
+            // Note: toJson does not need sorting as map key order isn't guaranteed in JSON.
+            // But for consistency in tests, we can sort it.
+            toJsonFields.sort();
+            classString += toJsonFields.join(',\n') + ',\n';
+
             classString += `    };\n  }\n`;
         }
     }
@@ -278,7 +284,7 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
 
     // Add newline if any method was generated
     if(options.toJson || options.toString || options.copyWith) {
-        classString += `\n`;
+        // This was adding extra newlines, let's let the class end handle it.
     }
 
     classString += '}\n';
