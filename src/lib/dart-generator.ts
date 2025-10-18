@@ -154,7 +154,8 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
             classString += `    return ${className}();\n  }\n\n`;
         } else {
             classString += `    return ${className}(\n`;
-            for (const field of fields) {
+            
+            const fromJsonFields = fields.map(field => {
                 const jsonKey = field.originalKey;
                 const fieldName = field.name;
                 const value = field.value;
@@ -195,8 +196,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
                          parsingLogic = `json['${jsonKey}']${parseSuffix}`;
                     }
                 }
-                classString += `      ${fieldName}: ${parsingLogic},\n`;
-            }
+                return `      ${fieldName}: ${parsingLogic}`;
+            });
+            
+            fromJsonFields.sort();
+            classString += fromJsonFields.join(',\n') + ',\n';
             classString += `    );\n  }\n\n`;
         }
     }
@@ -250,10 +254,11 @@ function generateClass(className: string, jsonObject: Record<string, any>, optio
     if (options.copyWith) {
         if (options.toJson || options.toString) classString += `\n`;
         classString += `  ${className} copyWith({\n`;
+        const copyWithParams: string[] = [];
         if (fields.length > 0) {
-            const copyWithParams = fields.map(field => {
-                const nullable = (field.type === 'dynamic' || options.nullableFields || (options.defaultValues && !options.requiredFields) || !options.finalFields || options.requiredFields) ? '?' : '';
-                return `    ${field.type}${nullable} ${field.name}`;
+            fields.forEach(field => {
+                const nullable = (field.type === 'dynamic' || options.nullableFields || options.defaultValues || options.requiredFields) ? '?' : '';
+                copyWithParams.push(`    ${field.type}${nullable} ${field.name}`);
             });
             copyWithParams.sort();
             classString += copyWithParams.join(',\n') + ',\n';
