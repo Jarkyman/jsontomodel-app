@@ -28,8 +28,8 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-export default function LanguagePage({ params }: { params: { language: string } }) {
-  const langParam = params.language;
+export default function LanguagePage(props: any) {
+  const langParam = props.params.language;
   const languageInfo = languages.find(l => l.value === langParam);
 
   if (!languageInfo) {
