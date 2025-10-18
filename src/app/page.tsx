@@ -52,6 +52,20 @@ const defaultJson = JSON.stringify(
   2
 );
 
+const exampleJson = `{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com"
+}`;
+
+const exampleModelCode = `// Generated for TypeScript
+export type DataModel = {
+  readonly id?: number;
+  readonly name?: string;
+  readonly email?: string;
+};`;
+
+
 export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
@@ -162,6 +176,72 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+        
+        <section className="py-12">
+          <div className="text-center mb-10">
+            <h2 className="font-headline text-3xl font-bold">From JSON to Code in Seconds</h2>
+            <p className="mt-2 text-lg text-muted-foreground max-w-2xl mx-auto">A simple, three-step process to accelerate your development workflow.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 text-left">
+            {/* Step 1 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">1</span>
+                  <span className="font-headline text-xl">Paste Your JSON</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Provide any valid JSON structure, from simple objects to complex, nested data.</p>
+                <pre className="bg-muted p-3 rounded-md font-code text-xs overflow-x-auto"><code>{exampleJson}</code></pre>
+              </CardContent>
+            </Card>
+
+            {/* Step 2 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">2</span>
+                  <span className="font-headline text-xl">Choose Language</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Select from over 20 supported languages and fine-tune the output with powerful options.</p>
+                 <div className="relative w-full">
+                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Select defaultValue="typescript">
+                    <SelectTrigger className="w-full pl-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                       {languages.slice(0, 5).map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                       <SelectItem value="more" disabled>... and 15 more</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Step 3 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">3</span>
+                  <span className="font-headline text-xl">Get Your Code</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">Instantly get clean, type-safe, and ready-to-use models for your project.</p>
+                <pre className="bg-muted p-3 rounded-md font-code text-xs overflow-x-auto"><code>{exampleModelCode}</code></pre>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
 
         <section className="py-8">
           <h2 className="font-headline text-3xl font-bold text-center mb-6">
@@ -240,5 +320,3 @@ export default function Home() {
     </main>
   );
 }
-
-    
