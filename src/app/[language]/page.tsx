@@ -1,8 +1,4 @@
-// Required by Cloudflare next-on-pages for dynamic routes
-export const runtime = 'edge';
-export const preferredRegion = 'auto';
 
-// src/app/[language]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -39,27 +35,31 @@ export default function LanguagePage() {
   const [language, setLanguage] = useState<string | null>(null);
   const [languageInfo, setLanguageInfo] = useState<{value: string, label: string} | null>(null);
 
-  // Guard clause to ensure params object is available.
-  if (!params) {
-    return null; 
-  }
-
   useEffect(() => {
-    const lang = Array.isArray(params.language) ? params.language[0] : params.language;
+    // useParams kan returnere et tomt objekt på første render.
+    if (!params || typeof params.language !== 'string') {
+        // Hvis der ikke er noget sprog i URL'en, omdiriger til en standard.
+        // Dette kan ske, hvis brugeren navigerer direkte til en ugyldig [language] rute.
+        // Vi venter på, at routeren er klar.
+        if (router) {
+            router.push('/typescript');
+        }
+        return;
+    }
+      
+    const lang = params.language;
     const foundLanguage = languages.find(l => l.value === lang);
 
-    if (lang && foundLanguage) {
+    if (foundLanguage) {
       setLanguage(foundLanguage.value);
       setLanguageInfo(foundLanguage);
       document.title = `JSON to ${foundLanguage.label} Converter - Instantly Generate Models`;
-    } else if (lang) {
-      router.push('/_not-found');
     } else {
-      const defaultLang = "typescript";
-      router.push(`/${defaultLang}`);
+      router.push('/_not-found');
     }
   }, [params, router]);
   
+  // Vis intet, mens sproget valideres og indlæses.
   if (!language || !languageInfo) {
     return null;
   }
@@ -78,3 +78,4 @@ export default function LanguagePage() {
     </main>
   );
 }
+
