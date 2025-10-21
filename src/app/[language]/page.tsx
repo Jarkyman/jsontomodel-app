@@ -1,8 +1,6 @@
-
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+// This page must be a Server Component to respect the layout's runtime config.
+// Client-side logic is moved to the ModelForgeClient component.
+import { notFound } from 'next/navigation';
 import ModelForgeClient from '@/components/ModelForgeClient';
 
 const languages = [
@@ -28,54 +26,30 @@ const languages = [
   { value: 'scala', label: 'Scala' },
 ];
 
-export default function LanguagePage() {
-  const router = useRouter();
-  const params = useParams();
-  
-  const [language, setLanguage] = useState<string | null>(null);
-  const [languageInfo, setLanguageInfo] = useState<{value: string, label: string} | null>(null);
+interface LanguagePageProps {
+  params: {
+    language?: string;
+  };
+}
 
-  useEffect(() => {
-    // useParams kan returnere et tomt objekt på første render.
-    if (!params || typeof params.language !== 'string') {
-        // Hvis der ikke er noget sprog i URL'en, omdiriger til en standard.
-        // Dette kan ske, hvis brugeren navigerer direkte til en ugyldig [language] rute.
-        // Vi venter på, at routeren er klar.
-        if (router) {
-            router.push('/typescript');
-        }
-        return;
-    }
-      
-    const lang = params.language;
-    const foundLanguage = languages.find(l => l.value === lang);
+export default function LanguagePage({ params }: LanguagePageProps) {
+  const lang = params.language ?? 'typescript'; // Default to a language
+  const languageInfo = languages.find(l => l.value === lang);
 
-    if (foundLanguage) {
-      setLanguage(foundLanguage.value);
-      setLanguageInfo(foundLanguage);
-      document.title = `JSON to ${foundLanguage.label} Converter - Instantly Generate Models`;
-    } else {
-      router.push('/_not-found');
-    }
-  }, [params, router]);
-  
-  // Vis intet, mens sproget valideres og indlæses.
-  if (!language || !languageInfo) {
-    return null;
+  if (!languageInfo) {
+    notFound();
   }
   
-  const langName = languageInfo.label;
-  const title = `JSON to ${langName} Converter`;
-  const description = `Instantly convert JSON into clean, type-safe ${langName} models.`;
+  const title = `JSON to ${languageInfo.label} Converter`;
+  const description = `Instantly convert JSON into clean, type-safe ${languageInfo.label} models.`;
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <ModelForgeClient
-        selectedLanguage={language}
+        selectedLanguage={lang}
         title={title}
         description={description}
       />
     </main>
   );
 }
-
