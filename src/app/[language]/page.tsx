@@ -1,7 +1,9 @@
 // This page must be a Server Component to respect the layout's runtime config.
 // Client-side logic is moved to the ModelForgeClient component.
 import { notFound } from 'next/navigation';
-import ModelForgeClient from '@/components/ModelForgeClient';
+import ModelForgeLoader from '@/components/ModelForgeLoader';
+
+type LanguageParams = { language?: string };
 
 const languages = [
   { value: 'typescript', label: 'TypeScript' },
@@ -26,15 +28,17 @@ const languages = [
   { value: 'scala', label: 'Scala' },
 ];
 
-interface LanguagePageProps {
-  params: {
-    language?: string;
-  };
+async function resolveLanguage(
+  params: LanguageParams | Promise<LanguageParams> | undefined
+): Promise<string> {
+  const resolved = await Promise.resolve(params ?? {});
+  const lang = typeof resolved.language === "string" ? resolved.language.trim() : "";
+  return lang.length > 0 ? lang : "typescript";
 }
 
-export default function LanguagePage({ params }: LanguagePageProps) {
-  const lang = params.language ?? 'typescript'; // Default to a language
-  const languageInfo = languages.find(l => l.value === lang);
+export default async function LanguagePage(props: any) {
+  const language: string = await resolveLanguage(props?.params);
+  const languageInfo = languages.find(l => l.value === language);
 
   if (!languageInfo) {
     notFound();
@@ -45,8 +49,8 @@ export default function LanguagePage({ params }: LanguagePageProps) {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
-      <ModelForgeClient
-        selectedLanguage={lang}
+      <ModelForgeLoader
+        selectedLanguage={language}
         title={title}
         description={description}
       />
