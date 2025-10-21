@@ -51,6 +51,8 @@ import { Textarea } from "./ui/textarea";
 import AdPlaceholder from "./AdPlaceholder";
 import { event as trackEvent } from "@/lib/gtag";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
+import { ThemeToggle } from "./theme-toggle";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -780,13 +782,21 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
   return (
     <div className="w-full max-w-7xl space-y-8">
-      <header className="text-center">
-        <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
-          {title}
-        </h1>
-        <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-          {description}
-        </p>
+       <header className="flex items-center justify-center text-center relative">
+        <Link href="/" className="absolute left-0">
+            <Button variant="ghost" size="icon">
+                <Home className="h-6 w-6" />
+                <span className="sr-only">Home</span>
+            </Button>
+        </Link>
+        <div className="flex-1">
+            <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
+                {title}
+            </h1>
+            <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
+                {description}
+            </p>
+        </div>
       </header>
 
       <section aria-labelledby="language-selection" className="mx-auto flex w-full max-w-sm items-center gap-4">

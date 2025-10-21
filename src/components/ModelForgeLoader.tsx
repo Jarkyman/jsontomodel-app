@@ -43,7 +43,9 @@ export default function ModelForgeLoader({ selectedLanguage, title, description 
   if (!isClient) {
     return (
         <>
-            <ThemeToggle />
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
             <LoadingSkeleton />
         </>
     );
@@ -51,7 +53,9 @@ export default function ModelForgeLoader({ selectedLanguage, title, description 
 
   return (
     <>
-        <ThemeToggle />
+        <div className="absolute top-4 right-4">
+            <ThemeToggle />
+        </div>
         <ModelForgeClient selectedLanguage={selectedLanguage} title={title} description={description} />
     </>
   );
