@@ -31,13 +31,17 @@ const languages = [
 export default function LanguagePage() {
   const router = useRouter();
   const params = useParams();
-  const langParam = params.language;
-
+  
   const [language, setLanguage] = useState<string | null>(null);
   const [languageInfo, setLanguageInfo] = useState<{value: string, label: string} | null>(null);
 
+  // Guard clause to ensure params object is available.
+  if (!params) {
+    return null; 
+  }
+
   useEffect(() => {
-    const lang = Array.isArray(langParam) ? langParam[0] : langParam;
+    const lang = Array.isArray(params.language) ? params.language[0] : params.language;
     const foundLanguage = languages.find(l => l.value === lang);
 
     if (lang && foundLanguage) {
@@ -48,14 +52,9 @@ export default function LanguagePage() {
       router.push('/_not-found');
     } else {
       const defaultLang = "typescript";
-      const defaultLangInfo = languages.find(l => l.value === defaultLang);
-      if (defaultLangInfo) {
-        setLanguage(defaultLang);
-        setLanguageInfo(defaultLangInfo);
-        document.title = `JSON to ${defaultLangInfo.label} Converter - Instantly Generate Models`;
-      }
+      router.push(`/${defaultLang}`);
     }
-  }, [langParam, router]);
+  }, [params, router]);
   
   if (!language || !languageInfo) {
     return null;
