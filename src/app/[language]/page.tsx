@@ -1,7 +1,7 @@
 // This page must be a Server Component to respect the layout's runtime config.
 // Client-side logic is moved to the ModelForgeClient component.
 import { notFound } from 'next/navigation';
-import ModelForgeLoader from '@/components/ModelForgeLoader';
+import ModelForgeClient from '@/components/ModelForgeClient';
 
 type LanguageParams = { language?: string };
 
@@ -24,7 +24,7 @@ const languages = [
   { value: 'objectivec', label: 'Objective-C' },
   { value: 'sql', label: 'SQL' },
   { value: 'elixir', label: 'Elixir' },
-  { value: 'erlang', label: 'Erlang' },
+  { value 'erlang', label: 'Erlang' },
   { value: 'scala', label: 'Scala' },
 ];
 
@@ -49,7 +49,7 @@ export default async function LanguagePage(props: any) {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
-      <ModelForgeLoader
+      <ModelForgeClient
         selectedLanguage={language}
         title={title}
         description={description}
