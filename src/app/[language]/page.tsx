@@ -1,3 +1,7 @@
+// Required by Cloudflare next-on-pages for dynamic routes
+export const runtime = 'edge';
+export const preferredRegion = 'auto';
+
 // src/app/[language]/page.tsx
 'use client';
 
