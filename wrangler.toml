@@ -1,9 +1,13 @@
+# wrangler.toml (Cloudflare Pages compatible)
 name = "jsontomodel-app"
-compatibility_date = "2024-07-25"
+compatibility_date = "2024-09-01"
+
+# Required by Pages when using next-on-pages output
 pages_build_output_dir = ".vercel/output/static"
 
-[site]
-bucket = ".vercel/output/static"
-
+# Optional env vars
 [vars]
 NODE_VERSION = "22"
+
+# If you truly need Node APIs in functions, you can uncomment:
+# compatibility_flags = ["nodejs_compat"]
