@@ -1,5 +1,5 @@
 
-export declare global {
+declare global {
   interface Window {
     gtag: (...args: any[]) => void;
     dataLayer: any[];
