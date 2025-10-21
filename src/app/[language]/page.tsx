@@ -24,7 +24,7 @@ const languages = [
   { value: 'objectivec', label: 'Objective-C' },
   { value: 'sql', label: 'SQL' },
   { value: 'elixir', label: 'Elixir' },
-  { value 'erlang', label: 'Erlang' },
+  { value: 'erlang', label: 'Erlang' },
   { value: 'scala', label: 'Scala' },
 ];
 
