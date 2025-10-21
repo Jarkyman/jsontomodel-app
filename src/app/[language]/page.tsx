@@ -1,6 +1,8 @@
 // src/app/[language]/page.tsx
+'use client';
 
-import { notFound } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import ModelForgeClient from '@/components/ModelForgeClient';
 
 const languages = [
@@ -26,45 +28,40 @@ const languages = [
   { value: 'scala', label: 'Scala' },
 ];
 
-export function generateStaticParams() {
-  return languages.map((lang) => ({
-    language: lang.value,
-  }));
-}
+export default function LanguagePage() {
+  const router = useRouter();
+  const params = useParams();
+  const langParam = params.language;
 
-type LanguageParams = { language?: string };
+  const [language, setLanguage] = useState<string | null>(null);
+  const [languageInfo, setLanguageInfo] = useState<{value: string, label: string} | null>(null);
 
-// Small helper to safely normalize params that might be a value or a Promise.
-async function resolveLanguage(params: LanguageParams | Promise<LanguageParams> | undefined): Promise<string | undefined> {
-  const resolved = await Promise.resolve(params ?? {});
-  const lang = resolved.language;
+  useEffect(() => {
+    const lang = Array.isArray(langParam) ? langParam[0] : langParam;
+    const foundLanguage = languages.find(l => l.value === lang);
 
-  if (typeof lang === "string" && lang.length > 0 && languages.some(l => l.value === lang)) {
-    return lang;
+    if (lang && foundLanguage) {
+      setLanguage(foundLanguage.value);
+      setLanguageInfo(foundLanguage);
+      document.title = `JSON to ${foundLanguage.label} Converter - Instantly Generate Models`;
+    } else if (lang) {
+      // If a language is in the URL but invalid, redirect to not found.
+      router.push('/_not-found');
+    } else {
+      // Default to typescript if no language is specified
+      const defaultLang = "typescript";
+      const defaultLangInfo = languages.find(l => l.value === defaultLang);
+      setLanguage(defaultLang);
+      setLanguageInfo(defaultLangInfo!);
+      document.title = `JSON to ${defaultLangInfo!.label} Converter - Instantly Generate Models`;
+    }
+  }, [langParam, router]);
+  
+  if (!language || !languageInfo) {
+    // This will show a loading state or blank screen while useEffect runs.
+    return null;
   }
-  // Return undefined if not a valid language to trigger notFound()
-  return undefined;
-}
-
-export async function generateMetadata(props: any) {
-  const language = await resolveLanguage(props?.params);
-  const languageInfo = languages.find((l) => l.value === language);
-  const langName = languageInfo?.label || 'Model';
-
-  return {
-    title: `JSON to ${langName} Converter - Instantly Generate Models`,
-    description: `Easily and freely convert any JSON structure into clean, type-safe ${langName} models and classes. Supports nullable types, custom prefixes, and more.`,
-  };
-}
-
-export default async function LanguagePage(props: any) {
-  const language = await resolveLanguage(props?.params);
-  const languageInfo = languages.find((l) => l.value === language);
-
-  if (!languageInfo) {
-    notFound();
-  }
-
+  
   const langName = languageInfo.label;
   const title = `JSON to ${langName} Converter`;
   const description = `Instantly convert JSON into clean, type-safe ${langName} models.`;
