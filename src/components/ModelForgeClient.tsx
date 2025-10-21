@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Code2, Loader2, Pencil, AlertCircle, Wand2, Home } from "lucide-react";
+import { Copy, Check, Code2, Loader2, Pencil, AlertCircle, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -51,7 +51,6 @@ import { Textarea } from "./ui/textarea";
 import AdPlaceholder from "./AdPlaceholder";
 import { event as trackEvent } from "@/lib/gtag";
 import { useRouter } from "next/navigation";
-import Link from 'next/link';
 import { ThemeToggle } from "./theme-toggle";
 
 const languages = [
@@ -783,12 +782,6 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
   return (
     <div className="w-full max-w-7xl space-y-8">
        <header className="flex items-center justify-center text-center relative">
-        <Link href="/" className="absolute left-0">
-            <Button variant="ghost" size="icon">
-                <Home className="h-6 w-6" />
-                <span className="sr-only">Home</span>
-            </Button>
-        </Link>
         <div className="flex-1">
             <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
                 {title}
