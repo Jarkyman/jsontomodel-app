@@ -2,17 +2,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter }from 'next/navigation';
-import { Code2, Wand2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components_ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Separator } from '@/components/ui/separator';
+import { useRouter, useParams } from 'next/navigation';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
+import { Loader2 } from 'lucide-react';
 
 const languages = [
   { value: "typescript", label: "TypeScript" },
@@ -37,68 +29,42 @@ const languages = [
   { value: "scala", label: "Scala" },
 ];
 
-const defaultJson = JSON.stringify(
-  {
-    "id": 1,
-    "name": "Alice",
-    "email": "alice@example.com",
-    "isActive": true,
-    "createdAt": "2025-07-31T10:00:00Z",
-    "roles": ["admin", "editor"],
-    "profile": {
-      "age": 30,
-      "country": "Denmark"
-    }
-  },
-  null,
-  2
-);
-
-export default function Home() {
+export default function LanguagePage() {
   const router = useRouter();
-  const { toast } = useToast();
-  const [jsonInput, setJsonInput] = useState(defaultJson);
-  const [selectedLanguage, setSelectedLanguage] = useState("typescript");
+  const params = useParams();
   const [isClient, setIsClient] = useState(false);
+  const [isValidLanguage, setIsValidLanguage] = useState(false);
+  
+  const langParam = params.language;
+  const language = typeof langParam === 'string' ? langParam : '';
 
   useEffect(() => {
     setIsClient(true);
-    const storedJson = localStorage.getItem("jsonInput");
-    if (storedJson) {
-      setJsonInput(storedJson);
+    const langExists = languages.some(l => l.value === language);
+    if (language && langExists) {
+      setIsValidLanguage(true);
+      localStorage.setItem("selectedLanguage", language);
+    } else if (language) {
+      router.replace('/_not-found');
     }
-    const storedLang = localStorage.getItem("selectedLanguage");
-    if (storedLang) {
-      const langExists = languages.some(l => l.value === storedLang);
-      if (langExists) {
-        setSelectedLanguage(storedLang);
-      }
-    }
-  }, []);
+  }, [language, router]);
   
-  useEffect(() => {
-    if(isClient) {
-        localStorage.setItem("jsonInput", jsonInput);
-        localStorage.setItem("selectedLanguage", selectedLanguage);
-    }
-  }, [jsonInput, selectedLanguage, isClient]);
-
-  const languageDetails = languages.find(l => l.value === selectedLanguage) || languages[0];
-  const title = `JSON to ${languageDetails.label} Converter`;
-  const description = `Generate ${languageDetails.label} models from JSON data.`;
-
-  if (!isClient) {
+  if (!isClient || !isValidLanguage) {
     return (
-      <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-6 lg:p-8">
-        {/* You can put a loading skeleton here if you want */}
+      <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </main>
     );
   }
 
+  const languageDetails = languages.find(l => l.value === language) || languages[0];
+  const title = `JSON to ${languageDetails.label} Converter`;
+  const description = `Generate ${languageDetails.label} models from JSON data.`;
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-6 lg:p-8">
        <ModelForgeLoader 
-          selectedLanguage={selectedLanguage}
+          selectedLanguage={language}
           title={title}
           description={description}
        />
