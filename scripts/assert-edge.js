@@ -22,8 +22,8 @@ const hasLanguageEdge = (manifest.routes || []).some((r) => {
 });
 
 if (hasLanguageEdge) {
-  console.error('❌ /[language] was unexpectedly configured as an Edge Function.');
-  process.exit(1);
+  console.log('✅ Verified: /[language] is configured as an Edge Function.');
+} else {
+    console.error('❌ /[language] was not configured as an Edge Function.');
+    process.exit(1);
 }
-
-console.log('✅ Verified: /[language] is not configured as an Edge Function.');
