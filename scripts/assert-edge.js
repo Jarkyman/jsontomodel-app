@@ -6,9 +6,10 @@ const path = require('path');
 
 const manifestPath = path.join('.vercel', 'output', 'functions', 'edge-functions', 'manifest.json');
 
+// If the manifest doesn't exist, it's not necessarily a failure if there are no edge functions.
 if (!fs.existsSync(manifestPath)) {
-  console.error(`❌ Edge manifest not found at ${manifestPath}. Did next-on-pages run?`);
-  process.exit(1);
+  console.log('✅ No edge functions found in manifest. Skipping verification.');
+  process.exit(0);
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -20,10 +21,9 @@ const hasLanguageEdge = (manifest.routes || []).some((r) => {
   return p.includes('/[language]') || p.includes('^/[^/]+/?$') || p.includes('\\/\\[language\\]');
 });
 
-if (!hasLanguageEdge) {
-  console.error('❌ /[language] was not configured as an Edge Function.');
-  console.error('   Make sure export const runtime = "edge" exists in src/app/[language]/layout.tsx (server component).');
+if (hasLanguageEdge) {
+  console.error('❌ /[language] was unexpectedly configured as an Edge Function.');
   process.exit(1);
 }
 
-console.log('✅ Verified: /[language] is configured as an Edge Function.');
+console.log('✅ Verified: /[language] is not configured as an Edge Function.');
