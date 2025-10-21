@@ -45,20 +45,19 @@ export default function LanguagePage() {
       setLanguageInfo(foundLanguage);
       document.title = `JSON to ${foundLanguage.label} Converter - Instantly Generate Models`;
     } else if (lang) {
-      // If a language is in the URL but invalid, redirect to not found.
       router.push('/_not-found');
     } else {
-      // Default to typescript if no language is specified
       const defaultLang = "typescript";
       const defaultLangInfo = languages.find(l => l.value === defaultLang);
-      setLanguage(defaultLang);
-      setLanguageInfo(defaultLangInfo!);
-      document.title = `JSON to ${defaultLangInfo!.label} Converter - Instantly Generate Models`;
+      if (defaultLangInfo) {
+        setLanguage(defaultLang);
+        setLanguageInfo(defaultLangInfo);
+        document.title = `JSON to ${defaultLangInfo.label} Converter - Instantly Generate Models`;
+      }
     }
   }, [langParam, router]);
   
   if (!language || !languageInfo) {
-    // This will show a loading state or blank screen while useEffect runs.
     return null;
   }
   
