@@ -32,14 +32,24 @@ export function generateStaticParams() {
   }));
 }
 
-type LanguageParams = { language: string };
+type LanguageParams = { language?: string };
 
-export async function generateMetadata(
-  props: { params: LanguageParams | Promise<LanguageParams> }
-) {
-  const { language } = await props.params;
+// Small helper to safely normalize params that might be a value or a Promise.
+async function resolveLanguage(params: LanguageParams | Promise<LanguageParams> | undefined): Promise<string | undefined> {
+  const resolved = await Promise.resolve(params ?? {});
+  const lang = resolved.language;
+
+  if (typeof lang === "string" && lang.length > 0 && languages.some(l => l.value === lang)) {
+    return lang;
+  }
+  // Return undefined if not a valid language to trigger notFound()
+  return undefined;
+}
+
+export async function generateMetadata(props: any) {
+  const language = await resolveLanguage(props?.params);
   const languageInfo = languages.find((l) => l.value === language);
-  const langName = languageInfo?.label || language.toUpperCase();
+  const langName = languageInfo?.label || 'Model';
 
   return {
     title: `JSON to ${langName} Converter - Instantly Generate Models`,
@@ -47,10 +57,8 @@ export async function generateMetadata(
   };
 }
 
-export default async function LanguagePage(
-  props: { params: LanguageParams | Promise<LanguageParams> }
-) {
-  const { language } = await props.params;
+export default async function LanguagePage(props: any) {
+  const language = await resolveLanguage(props?.params);
   const languageInfo = languages.find((l) => l.value === language);
 
   if (!languageInfo) {
