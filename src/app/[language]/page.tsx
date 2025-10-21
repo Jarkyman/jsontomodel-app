@@ -1,9 +1,7 @@
+// src/app/[language]/page.tsx
 
-'use client';
-
-import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import ModelForgeClient from '@/components/ModelForgeClient';
-import { useEffect } from 'react';
 
 const languages = [
   { value: 'typescript', label: 'TypeScript' },
@@ -28,26 +26,35 @@ const languages = [
   { value: 'scala', label: 'Scala' },
 ];
 
-export default function LanguagePage({
-  params,
-}: {
-  params: { language: string };
-}) {
-  const router = useRouter();
-  const langParam = params.language;
-  const languageInfo = languages.find((l) => l.value === langParam);
+export function generateStaticParams() {
+  return languages.map((lang) => ({
+    language: lang.value,
+  }));
+}
 
-  useEffect(() => {
-    if (!languageInfo) {
-      // notFound() can't be used in client components.
-      // We'll redirect to a 404 page instead.
-      router.push('/_not-found');
-    }
-  }, [languageInfo, router]);
+type LanguageParams = { language: string };
+
+export async function generateMetadata(
+  props: { params: LanguageParams | Promise<LanguageParams> }
+) {
+  const { language } = await props.params;
+  const languageInfo = languages.find((l) => l.value === language);
+  const langName = languageInfo?.label || language.toUpperCase();
+
+  return {
+    title: `JSON to ${langName} Converter - Instantly Generate Models`,
+    description: `Easily and freely convert any JSON structure into clean, type-safe ${langName} models and classes. Supports nullable types, custom prefixes, and more.`,
+  };
+}
+
+export default async function LanguagePage(
+  props: { params: LanguageParams | Promise<LanguageParams> }
+) {
+  const { language } = await props.params;
+  const languageInfo = languages.find((l) => l.value === language);
 
   if (!languageInfo) {
-    // Return null or a loading state while redirecting
-    return null;
+    notFound();
   }
 
   const langName = languageInfo.label;
@@ -57,7 +64,7 @@ export default function LanguagePage({
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
       <ModelForgeClient
-        selectedLanguage={langParam}
+        selectedLanguage={language}
         title={title}
         description={description}
       />
