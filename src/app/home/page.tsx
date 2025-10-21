@@ -68,11 +68,9 @@ export default function HomePage() {
       const langExists = languages.some(l => l.value === storedLang);
       if (langExists) {
         setSelectedLanguage(storedLang);
-        // Navigate to the stored language path on initial load if it exists
-        router.replace(`/${storedLang}`);
       }
     }
-  }, [router]);
+  }, []);
   
   useEffect(() => {
     localStorage.setItem("jsonInput", jsonInput);
