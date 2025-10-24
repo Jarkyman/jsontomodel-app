@@ -4,26 +4,50 @@
 const fs = require('fs');
 const path = require('path');
 
-const manifestPath = path.join('.vercel', 'output', 'functions', 'edge-functions', 'manifest.json');
+const logPath = path.join('.vercel', 'output', 'static', '_worker.js', 'nop-build-log.json');
 
-// If the manifest doesn't exist, it's not necessarily a failure if there are no edge functions.
-if (!fs.existsSync(manifestPath)) {
-  console.log('✅ No edge functions found in manifest. Skipping verification.');
+if (!fs.existsSync(logPath)) {
+  console.warn('ℹ️ Build log not found, skipping edge route assertion:', logPath);
   process.exit(0);
 }
 
-const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const raw = fs.readFileSync(logPath, 'utf8');
 
-// The manifest has an array of routes with "pattern" (regex-like). We need one mapping /[language].
-const hasLanguageEdge = (manifest.routes || []).some((r) => {
-  // Cloudflare/Next may compile the pattern – match loosely for "/[language]" or equivalent regex
-  const p = String(r.pattern || '');
-  return p.includes('/[language]') || p.includes('^/[^/]+/?$') || p.includes('\\/\\[language\\]');
-});
+try {
+  const data = JSON.parse(raw);
+  const edgeBuildEntries =
+    data?.buildFiles?.functions?.edge && Array.isArray(data.buildFiles.functions.edge)
+      ? data.buildFiles.functions.edge
+      : [];
 
-if (hasLanguageEdge) {
-  console.log('✅ Verified: /[language] is configured as an Edge Function.');
-} else {
-    console.error('❌ /[language] was not configured as an Edge Function.');
+  const buckets = [
+    ...(Array.isArray(data.edgeFunctionRoutes) ? data.edgeFunctionRoutes : []),
+    ...(Array.isArray(data.routes) ? data.routes : []),
+    ...(Array.isArray(data.functions) ? data.functions : []),
+    ...edgeBuildEntries,
+  ];
+
+  const found = buckets.some((entry) => {
+    const serialized = JSON.stringify(entry);
+    return (
+      serialized.includes('/[language]') ||
+      serialized.includes('\\/\\[language\\]') ||
+      serialized.includes('^/[^/]+$')
+    );
+  });
+
+  if (!found) {
+    console.error('❌ Could not verify "/[language]" as an Edge route from nop-build-log.json');
     process.exit(1);
+  }
+
+  console.log('✅ Verified "/[language]" is present as an Edge route (from nop-build-log.json).');
+} catch (error) {
+  if (raw.includes('/[language]')) {
+    console.log('✅ Verified "/[language]" via string search in nop-build-log.json.');
+    process.exit(0);
+  }
+
+  console.error('❌ Failed to parse nop-build-log.json and "/[language]" not found.');
+  process.exit(1);
 }

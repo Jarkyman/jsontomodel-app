@@ -19,3 +19,10 @@ The live application can be found at: **[jsontomodel.com](https://jsontomodel.co
 -   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 -   **UI Components:** [Shadcn/ui](https://ui.shadcn.com/)
 -   **Deployment:** [Cloudflare Pages](https://pages.cloudflare.com/).
+
+## 🛠️ Deployment Workflow
+
+-   `main` is the production branch; pushes redeploy both the custom domain and `https://jsontomodel.com`.
+-   `dev` is the shared development branch; pushes redeploy the branch alias at `https://dev.jsontomodel-app.pages.dev`.
+-   Other branches get temporary preview URLs at `https://<branch-name>--jsontomodel-app.pages.dev`.
+-   See `docs/deployment.md` for the detailed setup steps and Cloudflare dashboard configuration.
