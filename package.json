@@ -42,7 +42,7 @@
     "firebase": "^11.9.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.475.0",
-    "next": "15.3.3",
+    "next": "15.5.6",
     "next-themes": "^0.3.0",
     "patch-package": "^8.0.0",
     "react": "^18.3.1",
@@ -67,5 +67,9 @@
     "ts-jest": "^29.2.3",
     "ts-node": "^10.9.2",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@babel/runtime": "^7.28.4",
+    "tmp": "^0.2.5"
   }
 }
