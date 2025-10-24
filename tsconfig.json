@@ -22,7 +22,9 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "lucide-react": ["./types/lucide-react"]
+      "lucide-react": ["./types/lucide-react"],
+      "async_hooks": ["./src/polyfills/async-hooks"],
+      "node:async_hooks": ["./src/polyfills/async-hooks"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", ".next/types/**/*.ts"],
