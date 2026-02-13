@@ -2,11 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
-import Script from 'next/script';
 import Analytics from '@/components/Analytics';
 import SuspenseWrapper from '@/components/SuspenseWrapper';
 import CookieConsent from '@/components/CookieConsent';
-import AdScripts from '@/components/AdScripts';
 
 export const metadata: Metadata = {
   title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
@@ -73,9 +71,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap"
           rel="stylesheet"
         />
-        <SuspenseWrapper>
-          <AdScripts />
-        </SuspenseWrapper>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9894760850635221"
+          crossOrigin="anonymous"
+        ></script>
         <script type="application/ld+json">
           {`{
             "@context": "https://schema.org",

@@ -48,7 +48,6 @@ import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
 import { cn } from "@/lib/utils";
 import { Textarea } from "./ui/textarea";
-import AdPlaceholder from "./AdPlaceholder";
 import { event as trackEvent } from "@/lib/gtag";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
@@ -1274,12 +1273,6 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
           </CardContent>
         </Card>
       </section>
-
-      <AdPlaceholder 
-        className="w-full"
-        adClient="ca-pub-9894760850635221" 
-        adSlot="3992378950" 
-      />
     </div>
   );
 }
