@@ -12,7 +12,7 @@ export default function TermsOfService() {
             <h1 className="mb-8 font-headline text-4xl font-bold tracking-tight">Terms of Service</h1>
 
             <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
-                <p className="text-muted-foreground">Last Updated: {new Date("2024-01-01").toLocaleDateString()}</p>
+                <p className="text-muted-foreground">Last Updated: {new Date("2026-02-26").toLocaleDateString()}</p>
 
                 <section>
                     <h2 className="text-2xl font-bold mt-8 mb-4">1. Acceptance of Terms</h2>
