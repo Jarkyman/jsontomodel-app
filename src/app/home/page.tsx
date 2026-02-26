@@ -301,6 +301,90 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Informational SEO/AdSense Content Section */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8 border-t border-border mt-8">
+        <div className="mx-auto w-full max-w-4xl prose prose-slate dark:prose-invert">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground text-center mb-8">
+            How JSON to Model Works
+          </h2>
+
+          <p className="lead text-lg text-center text-muted-foreground mb-12">
+            The modern standard for converting raw JSON payloads into production-ready data structures across 20+ programming languages.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-12 not-prose">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">1</div>
+                <h3 className="text-xl font-bold">Paste your API Payload</h3>
+              </div>
+              <p className="text-muted-foreground pl-11">
+                Start by pasting a sample JSON response from your API, database export, or configuration file. Our engine analyzes the structure, types, and nested objects immediately.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">2</div>
+                <h3 className="text-xl font-bold">Select a Language</h3>
+              </div>
+              <p className="text-muted-foreground pl-11">
+                Choose from over 20 supported languages and frameworks including Swift, Kotlin, Dart (Flutter), TypeScript, Python, and Go.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">3</div>
+                <h3 className="text-xl font-bold">Configure Options</h3>
+              </div>
+              <p className="text-muted-foreground pl-11">
+                Tweak the generated code using framework-specific settings. Toggle features like `Codable` for Swift, Null Safety for Dart, or Moshi/Gson annotations for Kotlin.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">4</div>
+                <h3 className="text-xl font-bold">Export Type-Safe Code</h3>
+              </div>
+              <p className="text-muted-foreground pl-11">
+                Copy the generated, beautifully formatted data classes directly into your project. Instantly eliminate manual typing errors and tedious boilerplate.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-16 pt-12 border-t border-border space-y-8">
+            <h2 className="text-2xl font-bold">Supported Languages & Frameworks</h2>
+            <p>
+              Depending on your stack, parsing JSON can range from trivial to incredibly frustrating. Our goal is to provide native-feeling schemas for every ecosystem:
+            </p>
+
+            <ul className="grid sm:grid-cols-2 gap-4">
+              <li className="flex flex-col gap-1 p-4 bg-muted/20 rounded-lg border border-border">
+                <strong>Swift (iOS/macOS)</strong>
+                <span className="text-sm text-muted-foreground">Generates Codable structs with custom CodingKeys for seamless bridging to REST APIs.</span>
+              </li>
+              <li className="flex flex-col gap-1 p-4 bg-muted/20 rounded-lg border border-border">
+                <strong>Kotlin (Android)</strong>
+                <span className="text-sm text-muted-foreground">Creates Data Classes compatible with kotlinx.serialization or Moshi.</span>
+              </li>
+              <li className="flex flex-col gap-1 p-4 bg-muted/20 rounded-lg border border-border">
+                <strong>Dart (Flutter)</strong>
+                <span className="text-sm text-muted-foreground">Implements json_serializable support with strict null-safety and copyWith methods.</span>
+              </li>
+              <li className="flex flex-col gap-1 p-4 bg-muted/20 rounded-lg border border-border">
+                <strong>TypeScript</strong>
+                <span className="text-sm text-muted-foreground">Outputs strict Interfaces or Zod validation schemas for modern web apps.</span>
+              </li>
+            </ul>
+            <p className="mt-6 text-sm text-muted-foreground">
+              We also fully support Python, Java, C#, Go, PHP, JavaScript, C++, Visual Basic, Rust, Ruby, R, Objective-C, SQL, Elixir, Erlang, and Scala.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-muted/30 px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
           <div className="mb-8 text-center">

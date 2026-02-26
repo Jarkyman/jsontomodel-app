@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import Analytics from '@/components/Analytics';
 import SuspenseWrapper from '@/components/SuspenseWrapper';
 import CookieConsent from '@/components/CookieConsent';
+import { Footer } from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'JSON to Model - Generate Code for Swift, Kotlin, Dart, and More',
@@ -95,6 +96,7 @@ export default function RootLayout({
           {children}
           <Toaster />
           <CookieConsent />
+          <Footer />
         </ThemeProvider>
         <SuspenseWrapper>
           <Analytics />

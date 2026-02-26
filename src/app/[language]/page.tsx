@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, notFound } from 'next/navigation';
 import ModelForgeLoader from '@/components/ModelForgeLoader';
 import { Loader2 } from 'lucide-react';
 
@@ -34,7 +34,7 @@ export default function LanguagePage() {
   const params = useParams();
   const [isClient, setIsClient] = useState(false);
   const [isValidLanguage, setIsValidLanguage] = useState(false);
-  
+
   const langParam = params.language;
   const language = typeof langParam === 'string' ? langParam : '';
 
@@ -44,12 +44,23 @@ export default function LanguagePage() {
     if (language && langExists) {
       setIsValidLanguage(true);
       localStorage.setItem("selectedLanguage", language);
-    } else if (language) {
-      router.replace('/_not-found');
     }
-  }, [language, router]);
-  
-  if (!isClient || !isValidLanguage) {
+  }, [language]);
+
+  if (!isClient) {
+    return (
+      <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  const langExists = languages.some(l => l.value === language);
+  if (language && !langExists) {
+    notFound();
+  }
+
+  if (!isValidLanguage) {
     return (
       <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -63,11 +74,11 @@ export default function LanguagePage() {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-6 lg:p-8">
-       <ModelForgeLoader 
-          selectedLanguage={language}
-          title={title}
-          description={description}
-       />
+      <ModelForgeLoader
+        selectedLanguage={language}
+        title={title}
+        description={description}
+      />
     </main>
   );
 }
