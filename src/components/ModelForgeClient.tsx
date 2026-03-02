@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { Copy, Check, Code2, Loader2, Pencil, AlertCircle, Wand2 } from "lucide-react";
+import { parseCsvToJson, isLikelyCsv } from "@/lib/csv-parser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -33,16 +34,16 @@ import { generateSQLSchema, SQLGeneratorOptions } from "@/lib/sql-generator";
 import { generateElixirCode, ElixirGeneratorOptions } from "@/lib/elixir-generator";
 import { generateErlangCode, ErlangGeneratorOptions } from "@/lib/erlang-generator";
 import { generateScaleCode, ScaleGeneratorOptions } from "@/lib/scala-generator";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
 } from "./ui/alert-dialog";
 import { Input } from "./ui/input";
 import { ToastAction } from "./ui/toast";
@@ -51,6 +52,7 @@ import { Textarea } from "./ui/textarea";
 import { event as trackEvent } from "@/lib/gtag";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { DragDropZone } from "./DragDropZone";
 
 const languages = [
   { value: "typescript", label: "TypeScript", supported: true },
@@ -76,11 +78,11 @@ const languages = [
 ];
 
 const kotlinSerializationLibraries = [
-    { value: "kotlinx", label: "kotlinx" },
-    { value: "none", label: "None" },
-    { value: "manual", label: "Manual" },
-    { value: "gson", label: "Gson" },
-    { value: "moshi", label: "Moshi" },
+  { value: "kotlinx", label: "kotlinx" },
+  { value: "none", label: "None" },
+  { value: "manual", label: "Manual" },
+  { value: "gson", label: "Gson" },
+  { value: "moshi", label: "Moshi" },
 ];
 
 const defaultJson = JSON.stringify(
@@ -101,17 +103,17 @@ const defaultJson = JSON.stringify(
 );
 
 const initialDartOptions: DartGeneratorOptions = {
-    fromJson: true,
-    toJson: true,
-    copyWith: false,
-    toString: false,
-    nullableFields: true,
-    requiredFields: false,
-    finalFields: true,
-    defaultValues: false,
-    supportDateTime: true,
-    camelCaseFields: true,
-    useValuesAsDefaults: false,
+  fromJson: true,
+  toJson: true,
+  copyWith: false,
+  toString: false,
+  nullableFields: true,
+  requiredFields: false,
+  finalFields: true,
+  defaultValues: false,
+  supportDateTime: true,
+  camelCaseFields: true,
+  useValuesAsDefaults: false,
 };
 
 const initialKotlinOptions: KotlinGeneratorOptions = {
@@ -124,77 +126,77 @@ const initialKotlinOptions: KotlinGeneratorOptions = {
 };
 
 const initialSwiftOptions: SwiftGeneratorOptions = {
-    isCodable: true,
-    useStruct: true,
-    isEquatable: false,
-    isHashable: false,
-    generateCodingKeys: true,
-    generateCustomInit: false,
-    generateSampleData: false,
-    isPublished: false,
-    isMainActor: false,
-    isCustomStringConvertible: false,
-    dateStrategy: 'iso8601'
+  isCodable: true,
+  useStruct: true,
+  isEquatable: false,
+  isHashable: false,
+  generateCodingKeys: true,
+  generateCustomInit: false,
+  generateSampleData: false,
+  isPublished: false,
+  isMainActor: false,
+  isCustomStringConvertible: false,
+  dateStrategy: 'iso8601'
 };
 
 const initialPythonOptions: PythonGeneratorOptions = {
-    dataclass: true,
-    frozen: false,
-    slots: false,
-    fromDict: true,
-    toDict: true,
-    typeHints: true,
-    defaultValues: false,
-    camelCaseToSnakeCase: true,
-    includeRepr: true,
-    includeEq: true,
-    includeHash: false,
-    nestedClasses: true,
-    sampleInstance: false,
+  dataclass: true,
+  frozen: false,
+  slots: false,
+  fromDict: true,
+  toDict: true,
+  typeHints: true,
+  defaultValues: false,
+  camelCaseToSnakeCase: true,
+  includeRepr: true,
+  includeEq: true,
+  includeHash: false,
+  nestedClasses: true,
+  sampleInstance: false,
 };
 
 const initialJavaOptions: JavaGeneratorOptions = {
-    getters: true,
-    setters: false,
-    constructor: true,
-    noArgsConstructor: false,
-    builder: true,
-    equalsHashCode: true,
-    toString: true,
-    snakeCase: true,
-    nested: true,
-    finalFields: true,
-    jsonAnnotations: true,
+  getters: true,
+  setters: false,
+  constructor: true,
+  noArgsConstructor: false,
+  builder: true,
+  equalsHashCode: true,
+  toString: true,
+  snakeCase: true,
+  nested: true,
+  finalFields: true,
+  jsonAnnotations: true,
 };
 
 const initialCSharpOptions: CSharpGeneratorOptions = {
-    namespace: "DataModels",
-    useRecords: true,
-    propertySetters: "init",
-    jsonAnnotations: true,
-    listType: "List<T>"
+  namespace: "DataModels",
+  useRecords: true,
+  propertySetters: "init",
+  jsonAnnotations: true,
+  listType: "List<T>"
 };
 
 const initialTypescriptOptions: TypeScriptGeneratorOptions = {
-    useType: true,
-    optionalFields: true,
-    readonlyFields: true,
-    allowNulls: false,
+  useType: true,
+  optionalFields: true,
+  readonlyFields: true,
+  allowNulls: false,
 };
 
 const initialGoOptions: GoGeneratorOptions = {
-    usePointers: true,
-    packageName: 'main',
-    useArrayOfPointers: false,
+  usePointers: true,
+  packageName: 'main',
+  useArrayOfPointers: false,
 };
 
 const initialPhpOptions: PhpGeneratorOptions = {
-    typedProperties: true,
-    finalClasses: true,
-    readonlyProperties: true,
-    constructorPropertyPromotion: true,
-    fromArray: true,
-    toArray: true,
+  typedProperties: true,
+  finalClasses: true,
+  readonlyProperties: true,
+  constructorPropertyPromotion: true,
+  fromArray: true,
+  toArray: true,
 };
 
 const initialJavascriptOptions: JavaScriptGeneratorOptions = {
@@ -211,14 +213,14 @@ const initialCppOptions: CppGeneratorOptions = {
 };
 
 const initialVbNetOptions: VbNetGeneratorOptions = {
-    moduleName: "DataModels",
-    jsonAnnotations: true,
+  moduleName: "DataModels",
+  jsonAnnotations: true,
 };
 
 const initialRustOptions: RustGeneratorOptions = {
-    deriveClone: true,
-    publicFields: true,
-    useSerdeDefault: true,
+  deriveClone: true,
+  publicFields: true,
+  useSerdeDefault: true,
 };
 
 const initialRubyOptions: RubyGeneratorOptions = {
@@ -354,9 +356,9 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
   const { toast } = useToast();
 
   const handleLanguageChange = (newLang: string) => {
-      setSelectedLanguage(newLang);
-      router.push(`/${newLang}`, { scroll: false });
-      localStorage.setItem("selectedLanguage", newLang);
+    setSelectedLanguage(newLang);
+    router.push(`/${newLang}`, { scroll: false });
+    localStorage.setItem("selectedLanguage", newLang);
   };
 
   const hasEmptyKeys = (obj: any): boolean => {
@@ -380,13 +382,23 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
   const validateJson = (value: string) => {
     if (!value.trim()) {
-        setJsonError(null);
-        setOutputCode("");
-        return false;
+      setJsonError(null);
+      setOutputCode("");
+      return false;
     }
+
+    // Attempt to parse as CSV first if it looks like one
+    if (isLikelyCsv(value)) {
+      const csvData = parseCsvToJson(value);
+      if (csvData) {
+        setJsonError(null);
+        return true;
+      }
+    }
+
     try {
       const parsedJson = JSON.parse(value);
-       if (Object.keys(parsedJson).length === 0) {
+      if (Object.keys(parsedJson).length === 0) {
         setJsonError("JSON object cannot be empty.");
         setOutputCode("");
         return false;
@@ -424,7 +436,7 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
       value: 1,
     });
   };
-  
+
   const generateCode = () => {
     if (!jsonInput.trim()) {
       setOutputCode("");
@@ -442,106 +454,114 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
     let parsedJson;
     try {
-      parsedJson = JSON.parse(jsonInput);
+      if (isLikelyCsv(jsonInput)) {
+        const csvData = parseCsvToJson(jsonInput);
+        if (csvData) {
+          parsedJson = csvData;
+        } else {
+          throw new Error("Invalid CSV format");
+        }
+      } else {
+        parsedJson = JSON.parse(jsonInput);
+      }
     } catch (error) {
       // This should ideally not be reached due to live validation, but as a fallback
       toast({
         variant: "destructive",
-        title: "Invalid JSON",
-        description: "Please check your JSON input for errors.",
+        title: "Invalid Input",
+        description: "Please check your JSON or CSV input for errors.",
       });
       setOutputCode("");
       return;
     }
-    
+
     setIsGenerating(true);
     // Setting a timeout to allow the UI to update to the loading state before the potentially blocking code generation runs.
     setTimeout(() => {
-        try {
-          let result = '';
-          if (selectedLanguage === "dart") {
-            result = generateDartCode(parsedJson, rootClassName, dartOptions);
-          } else if (selectedLanguage === "kotlin") {
-            result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
-          } else if (selectedLanguage === "swift") {
-            result = generateSwiftCode(parsedJson, rootClassName, swiftOptions);
-          } else if (selectedLanguage === "python") {
-            result = generatePythonCode(parsedJson, rootClassName, pythonOptions);
-          } else if (selectedLanguage === "java") {
-            result = generateJavaCode(parsedJson, rootClassName, javaOptions);
-          } else if (selectedLanguage === "csharp") {
-            result = generateCSharpCode(parsedJson, rootClassName, csharpOptions);
-          } else if (selectedLanguage === "typescript") {
-            result = generateTypescriptCode(parsedJson, rootClassName, typescriptOptions);
-          } else if (selectedLanguage === "go") {
-            result = generateGoCode(parsedJson, rootClassName, goOptions);
-          } else if (selectedLanguage === "php") {
-            result = generatePhpCode(parsedJson, rootClassName, phpOptions);
-          } else if (selectedLanguage === "javascript") {
-              result = generateJavaScriptCode(parsedJson, rootClassName, javascriptOptions);
-          } else if (selectedLanguage === "cpp") {
-              result = generateCppCode(parsedJson, rootClassName, cppOptions);
-          } else if (selectedLanguage === "vbnet") {
-              result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
-          } else if (selectedLanguage === "rust") {
-              result = generateRustCode(parsedJson, rootClassName, rustOptions);
-          } else if (selectedLanguage === "ruby") {
-              result = generateRubyCode(parsedJson, rootClassName, rubyOptions);
-          } else if (selectedLanguage === "r") {
-            result = generateRCode(parsedJson, rootClassName, rOptions);
-          } else if (selectedLanguage === "objectivec") {
-            result = generateObjCCode(parsedJson, rootClassName, objcOptions);
-          } else if (selectedLanguage === "sql") {
-            const finalSqlOptions: SQLGeneratorOptions = {
-                ...sqlOptions,
-                tablePrefix: sqlOptions.tablePrefix ? `${sqlOptions.tablePrefix}_` : '',
-            };
-            result = generateSQLSchema(parsedJson, rootClassName, finalSqlOptions);
-          } else if (selectedLanguage === "elixir") {
-            result = generateElixirCode(parsedJson, rootClassName, elixirOptions);
-          } else if (selectedLanguage === "erlang") {
-            result = generateErlangCode(parsedJson, rootClassName, erlangOptions);
-          } else if (selectedLanguage === "scala") {
-            result = generateScaleCode(parsedJson, rootClassName, scalaOptions);
-          } else {
-            toast({
-              title: "Not Implemented",
-              description: `Code generation for ${
-                languages.find((l) => l.value === selectedLanguage)?.label
-              } is not yet supported.`,
-            });
-            setOutputCode("");
-            setIsGenerating(false);
-            return;
-          }
-          
-          setOutputCode(result);
-            
-          if (result && !hasGenerated && userHasInteracted) {
-              toast({
-                  title: "Model Generated",
-                  description: `Your root model is named "${rootClassName}". You can rename it.`,
-                  action: (
-                      <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
-                          Rename
-                      </ToastAction>
-                  ),
-              });
-              setHasGenerated(true);
-          }
-
-        } catch (error) {
-          console.error(error);
-          const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+      try {
+        let result = '';
+        if (selectedLanguage === "dart") {
+          result = generateDartCode(parsedJson, rootClassName, dartOptions);
+        } else if (selectedLanguage === "kotlin") {
+          result = generateKotlinCode(parsedJson, rootClassName, kotlinOptions);
+        } else if (selectedLanguage === "swift") {
+          result = generateSwiftCode(parsedJson, rootClassName, swiftOptions);
+        } else if (selectedLanguage === "python") {
+          result = generatePythonCode(parsedJson, rootClassName, pythonOptions);
+        } else if (selectedLanguage === "java") {
+          result = generateJavaCode(parsedJson, rootClassName, javaOptions);
+        } else if (selectedLanguage === "csharp") {
+          result = generateCSharpCode(parsedJson, rootClassName, csharpOptions);
+        } else if (selectedLanguage === "typescript") {
+          result = generateTypescriptCode(parsedJson, rootClassName, typescriptOptions);
+        } else if (selectedLanguage === "go") {
+          result = generateGoCode(parsedJson, rootClassName, goOptions);
+        } else if (selectedLanguage === "php") {
+          result = generatePhpCode(parsedJson, rootClassName, phpOptions);
+        } else if (selectedLanguage === "javascript") {
+          result = generateJavaScriptCode(parsedJson, rootClassName, javascriptOptions);
+        } else if (selectedLanguage === "cpp") {
+          result = generateCppCode(parsedJson, rootClassName, cppOptions);
+        } else if (selectedLanguage === "vbnet") {
+          result = generateVbNetCode(parsedJson, rootClassName, vbnetOptions);
+        } else if (selectedLanguage === "rust") {
+          result = generateRustCode(parsedJson, rootClassName, rustOptions);
+        } else if (selectedLanguage === "ruby") {
+          result = generateRubyCode(parsedJson, rootClassName, rubyOptions);
+        } else if (selectedLanguage === "r") {
+          result = generateRCode(parsedJson, rootClassName, rOptions);
+        } else if (selectedLanguage === "objectivec") {
+          result = generateObjCCode(parsedJson, rootClassName, objcOptions);
+        } else if (selectedLanguage === "sql") {
+          const finalSqlOptions: SQLGeneratorOptions = {
+            ...sqlOptions,
+            tablePrefix: sqlOptions.tablePrefix ? `${sqlOptions.tablePrefix}_` : '',
+          };
+          result = generateSQLSchema(parsedJson, rootClassName, finalSqlOptions);
+        } else if (selectedLanguage === "elixir") {
+          result = generateElixirCode(parsedJson, rootClassName, elixirOptions);
+        } else if (selectedLanguage === "erlang") {
+          result = generateErlangCode(parsedJson, rootClassName, erlangOptions);
+        } else if (selectedLanguage === "scala") {
+          result = generateScaleCode(parsedJson, rootClassName, scalaOptions);
+        } else {
           toast({
-            variant: "destructive",
-            title: "Error Generating Model",
-            description: errorMessage,
+            title: "Not Implemented",
+            description: `Code generation for ${languages.find((l) => l.value === selectedLanguage)?.label
+              } is not yet supported.`,
           });
           setOutputCode("");
-        } finally {
           setIsGenerating(false);
+          return;
         }
+
+        setOutputCode(result);
+
+        if (result && !hasGenerated && userHasInteracted) {
+          toast({
+            title: "Model Generated",
+            description: `Your root model is named "${rootClassName}". You can rename it.`,
+            action: (
+              <ToastAction altText="Rename" onClick={() => setIsRenameDialogOpen(true)}>
+                Rename
+              </ToastAction>
+            ),
+          });
+          setHasGenerated(true);
+        }
+
+      } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+        toast({
+          variant: "destructive",
+          title: "Error Generating Model",
+          description: errorMessage,
+        });
+        setOutputCode("");
+      } finally {
+        setIsGenerating(false);
+      }
     }, 50); // A small delay for UI to update
   };
 
@@ -550,9 +570,9 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
     const initialJson = storedJson || defaultJson;
     setJsonInput(initialJson);
     validateJson(initialJson);
-    
+
     const storedLang = localStorage.getItem("selectedLanguage");
-    if(storedLang) {
+    if (storedLang) {
       setSelectedLanguage(storedLang);
     }
   }, []);
@@ -569,7 +589,7 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
   useEffect(() => {
     generateCode();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     jsonInput,
     selectedLanguage,
@@ -598,75 +618,75 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
   const handleToggleDartOption = (option: DartOptionKey) => {
     setDartOptions(prev => {
-        const newOptions = { ...prev, [option]: !prev[option] };
+      const newOptions = { ...prev, [option]: !prev[option] };
 
-        if (option === 'useValuesAsDefaults' && newOptions.useValuesAsDefaults) {
-            newOptions.defaultValues = true;
-        }
+      if (option === 'useValuesAsDefaults' && newOptions.useValuesAsDefaults) {
+        newOptions.defaultValues = true;
+      }
 
-        if (option === 'defaultValues' && !newOptions.defaultValues) {
-            newOptions.useValuesAsDefaults = false;
-        }
-        
-        if (option === 'requiredFields' && newOptions.requiredFields) {
-            newOptions.nullableFields = true;
-        }
+      if (option === 'defaultValues' && !newOptions.defaultValues) {
+        newOptions.useValuesAsDefaults = false;
+      }
 
-        return newOptions;
+      if (option === 'requiredFields' && newOptions.requiredFields) {
+        newOptions.nullableFields = true;
+      }
+
+      return newOptions;
     });
   };
 
   const handleToggleKotlinOption = (option: KotlinOptionKey) => {
     setKotlinOptions(prev => {
-        const newOptions = { ...prev, [option]: !prev[option] };
+      const newOptions = { ...prev, [option]: !prev[option] };
 
-        if (option === 'defaultValues' && newOptions.defaultValues) {
-            newOptions.defaultToNull = false;
-        }
-        if (option === 'defaultToNull' && newOptions.defaultToNull) {
-            newOptions.defaultValues = false;
-        }
+      if (option === 'defaultValues' && newOptions.defaultValues) {
+        newOptions.defaultToNull = false;
+      }
+      if (option === 'defaultToNull' && newOptions.defaultToNull) {
+        newOptions.defaultValues = false;
+      }
 
-        return newOptions;
+      return newOptions;
     });
   };
 
   const handleToggleSwiftOption = (option: SwiftOptionKey) => {
-    setSwiftOptions(prev => ({...prev, [option]: !prev[option] }));
+    setSwiftOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
-  
+
   const handleTogglePythonOption = (option: PythonOptionKey) => {
     setPythonOptions(prev => {
-        const newOptions = { ...prev, [option]: !prev[option] };
+      const newOptions = { ...prev, [option]: !prev[option] };
 
-        if (option === 'frozen' && newOptions.frozen) {
-            // Uncheck slots if frozen is checked, as it's a common conflict
-            // newOptions.slots = false;
-        }
-        return newOptions;
+      if (option === 'frozen' && newOptions.frozen) {
+        // Uncheck slots if frozen is checked, as it's a common conflict
+        // newOptions.slots = false;
+      }
+      return newOptions;
     });
   };
 
   const handleToggleJavaOption = (option: JavaOptionKey) => {
     setJavaOptions(prev => {
-        const newOptions = { ...prev, [option]: !prev[option] };
-        if (option === 'finalFields' && newOptions.finalFields) {
-            newOptions.setters = false; // Cannot have setters for final fields
-        }
-         if (option === 'noArgsConstructor' && newOptions.finalFields && newOptions.noArgsConstructor) {
-            // No-arg constructor is not useful with final fields unless there are no fields.
-            // Let's not enforce this automatically for now, but it's a consideration.
-        }
-        return newOptions;
+      const newOptions = { ...prev, [option]: !prev[option] };
+      if (option === 'finalFields' && newOptions.finalFields) {
+        newOptions.setters = false; // Cannot have setters for final fields
+      }
+      if (option === 'noArgsConstructor' && newOptions.finalFields && newOptions.noArgsConstructor) {
+        // No-arg constructor is not useful with final fields unless there are no fields.
+        // Let's not enforce this automatically for now, but it's a consideration.
+      }
+      return newOptions;
     });
   };
-  
+
   const handleCSharpOption = (option: keyof CSharpGeneratorOptions, value: any) => {
     setCSharpOptions(prev => ({ ...prev, [option]: value }));
   };
-  
+
   const handleToggleTypescriptOption = (option: TypescriptOptionKey) => {
-    setTypescriptOptions(prev => ({...prev, [option]: !prev[option] }));
+    setTypescriptOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleGoOption = (option: GoOptionKey) => {
@@ -676,61 +696,61 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
   const handleTogglePhpOption = (option: PhpOptionKey) => {
     setPhpOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
-  
+
   const handleToggleJavascriptOption = (option: JavascriptOptionKey) => {
-    setJavascriptOptions(prev => ({...prev, [option]: !prev[option] }));
+    setJavascriptOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleCppOption = (option: keyof CppGeneratorOptions, value: any) => {
     setCppOptions(prev => {
-        const newOptions = { ...prev, [option]: value };
-        if (option === 'cppVersion') {
-            // When switching to C++03, legacy pointers are necessary.
-            // When switching away, std::optional is preferred.
-            newOptions.usePointersForNull = value === '03';
-        }
-        return newOptions;
+      const newOptions = { ...prev, [option]: value };
+      if (option === 'cppVersion') {
+        // When switching to C++03, legacy pointers are necessary.
+        // When switching away, std::optional is preferred.
+        newOptions.usePointersForNull = value === '03';
+      }
+      return newOptions;
     });
   };
-  
+
   const handleToggleCppOption = (option: CppToggleOptionKey) => {
     setCppOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleVbNetOption = (option: VbNetOptionKey) => {
-    setVbnetOptions(prev => ({...prev, [option]: !prev[option] }));
+    setVbnetOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
-  
+
   const handleToggleRustOption = (option: RustOptionKey) => {
-    setRustOptions(prev => ({...prev, [option]: !prev[option] }));
+    setRustOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleRubyOption = (option: RubyOptionKey) => {
-    setRubyOptions(prev => ({...prev, [option]: !prev[option] }));
+    setRubyOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleROption = (option: ROptionKey) => {
-    setROptions(prev => ({...prev, [option]: !prev[option] }));
+    setROptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleObjcOption = (option: keyof ObjCGeneratorOptions, value: any) => {
     setObjcOptions(prev => ({ ...prev, [option]: value }));
   };
-  
+
   const handleToggleObjcOption = (option: ObjcOptionKey) => {
-     setObjcOptions(prev => ({ ...prev, [option]: !prev[option] }));
+    setObjcOptions(prev => ({ ...prev, [option]: !prev[option] }));
   }
 
   const handleToggleCamelCaseObjcOption = () => {
-    setObjcOptions(prev => ({...prev, toCamelCase: !prev.toCamelCase}));
+    setObjcOptions(prev => ({ ...prev, toCamelCase: !prev.toCamelCase }));
   }
 
   const handleSqlOption = (option: keyof SQLGeneratorOptions, value: any) => {
     setSqlOptions(prev => ({ ...prev, [option]: value }));
   };
-  
+
   const handleToggleSqlOption = (option: SqlOptionKey) => {
-    setSqlOptions(prev => ({...prev, [option]: !prev[option] }));
+    setSqlOptions(prev => ({ ...prev, [option]: !prev[option] }));
   };
 
   const handleToggleElixirOption = (option: ElixirOptionKey) => {
@@ -764,6 +784,26 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
   const handleFormatJson = () => {
     if (!jsonInput) return;
     try {
+      if (isLikelyCsv(jsonInput)) {
+        const csvData = parseCsvToJson(jsonInput);
+        if (csvData) {
+          const formatted = JSON.stringify(csvData, null, 2);
+          setJsonInput(formatted);
+          validateJson(formatted);
+          toast({
+            title: "CSV converted",
+            description: "Your CSV has been converted to JSON and formatted.",
+          });
+        } else {
+          toast({
+            title: "Invalid CSV",
+            description: "We detected CSV but couldn't parse it correctly. Check your formatting.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
       const parsedJson = JSON.parse(jsonInput);
       const formattedJson = JSON.stringify(parsedJson, null, 2);
       setJsonInput(formattedJson);
@@ -779,41 +819,46 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
 
 
   return (
-    <div className="w-full max-w-7xl space-y-8">
-       <header className="flex items-center justify-center text-center relative">
-        <div className="flex-1">
+    <DragDropZone onFileDrop={(content) => {
+      setJsonInput(content);
+      validateJson(content);
+      setUserHasInteracted(true);
+    }}>
+      <div className="w-full max-w-7xl space-y-8 mx-auto">
+        <header className="flex items-center justify-center text-center relative">
+          <div className="flex-1">
             <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-primary">
-                {title}
+              {title}
             </h1>
             <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-                {description}
+              {description}
             </p>
-        </div>
-      </header>
+          </div>
+        </header>
 
-      <section aria-labelledby="language-selection" className="mx-auto flex w-full max-w-sm items-center gap-4">
-        <h2 id="language-selection" className="sr-only">Language Selection</h2>
-        <div className="relative w-full">
-           <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-           <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="w-full pl-10">
-              <SelectValue placeholder="Select language..." />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map((lang) => (
-                <SelectItem key={lang.value} value={lang.value}>
-                  {lang.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </section>
+        <section aria-labelledby="language-selection" className="mx-auto flex w-full max-w-sm items-center gap-4">
+          <h2 id="language-selection" className="sr-only">Language Selection</h2>
+          <div className="relative w-full">
+            <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-full pl-10">
+                <SelectValue placeholder="Select language..." />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
 
-      {selectedLanguage === 'dart' && (
-      <Card className="max-w-2xl mx-auto shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex flex-wrap items-center justify-center gap-2">
+        {selectedLanguage === 'dart' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={dartOptions.fromJson} onClick={() => handleToggleDartOption('fromJson')} label="fromJson" />
                 <FilterButton checked={dartOptions.toJson} onClick={() => handleToggleDartOption('toJson')} label="toJson" />
                 <FilterButton checked={dartOptions.copyWith} onClick={() => handleToggleDartOption('copyWith')} label="copyWith" />
@@ -825,136 +870,136 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 <FilterButton checked={dartOptions.useValuesAsDefaults} onClick={() => handleToggleDartOption('useValuesAsDefaults')} label="use values as defaults" />
                 <FilterButton checked={dartOptions.supportDateTime} onClick={() => handleToggleDartOption('supportDateTime')} label="support DateTime" />
                 <FilterButton checked={dartOptions.camelCaseFields} onClick={() => handleToggleDartOption('camelCaseFields')} label="camelCase" />
-          </div>
-        </CardContent>
-      </Card>
-      )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'kotlin' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'kotlin' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6 space-y-4">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <FilterButton checked={kotlinOptions.useVal} onClick={() => handleToggleKotlinOption('useVal')} label="val" />
-                    <FilterButton checked={kotlinOptions.nullable} onClick={() => handleToggleKotlinOption('nullable')} label="nullable" />
-                    <FilterButton checked={kotlinOptions.dataClass} onClick={() => handleToggleKotlinOption('dataClass')} label="data class" />
-                    <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
-                    <FilterButton checked={kotlinOptions.defaultToNull} onClick={() => handleToggleKotlinOption('defaultToNull')} label="default to null" />
-                </div>
-                 <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                    <span className="text-sm font-medium text-muted-foreground">Serialization Library:</span>
-                    <Select 
-                        value={kotlinOptions.serializationLibrary} 
-                        onValueChange={(value) => setKotlinOptions(prev => ({...prev, serializationLibrary: value as any}))}
-                    >
-                        <SelectTrigger className="w-auto">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {kotlinSerializationLibraries.map((lib) => (
-                            <SelectItem key={lib.value} value={lib.value}>
-                                {lib.label}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                 </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={kotlinOptions.useVal} onClick={() => handleToggleKotlinOption('useVal')} label="val" />
+                <FilterButton checked={kotlinOptions.nullable} onClick={() => handleToggleKotlinOption('nullable')} label="nullable" />
+                <FilterButton checked={kotlinOptions.dataClass} onClick={() => handleToggleKotlinOption('dataClass')} label="data class" />
+                <FilterButton checked={kotlinOptions.defaultValues} onClick={() => handleToggleKotlinOption('defaultValues')} label="default values" />
+                <FilterButton checked={kotlinOptions.defaultToNull} onClick={() => handleToggleKotlinOption('defaultToNull')} label="default to null" />
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                <span className="text-sm font-medium text-muted-foreground">Serialization Library:</span>
+                <Select
+                  value={kotlinOptions.serializationLibrary}
+                  onValueChange={(value) => setKotlinOptions(prev => ({ ...prev, serializationLibrary: value as any }))}
+                >
+                  <SelectTrigger className="w-auto">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kotlinSerializationLibraries.map((lib) => (
+                      <SelectItem key={lib.value} value={lib.value}>
+                        {lib.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'swift' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'swift' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <FilterButton checked={swiftOptions.isCodable} onClick={() => handleToggleSwiftOption('isCodable')} label="Codable" />
-                    <FilterButton checked={swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="struct" />
-                    <FilterButton checked={!swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="class" />
-                    <FilterButton checked={swiftOptions.isEquatable} onClick={() => handleToggleSwiftOption('isEquatable')} label="Equatable" />
-                    <FilterButton checked={swiftOptions.isHashable} onClick={() => handleToggleSwiftOption('isHashable')} label="Hashable" />
-                    <FilterButton checked={swiftOptions.isCustomStringConvertible} onClick={() => handleToggleSwiftOption('isCustomStringConvertible')} label="Debug Description" />
-                    <FilterButton checked={swiftOptions.generateSampleData} onClick={() => handleToggleSwiftOption('generateSampleData')} label="Sample Data" />
-                    <FilterButton checked={swiftOptions.isPublished} onClick={() => handleToggleSwiftOption('isPublished')} label="@Published" />
-                    <FilterButton checked={swiftOptions.isMainActor} onClick={() => handleToggleSwiftOption('isMainActor')} label="@MainActor" />
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={swiftOptions.isCodable} onClick={() => handleToggleSwiftOption('isCodable')} label="Codable" />
+                <FilterButton checked={swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="struct" />
+                <FilterButton checked={!swiftOptions.useStruct} onClick={() => handleToggleSwiftOption('useStruct')} label="class" />
+                <FilterButton checked={swiftOptions.isEquatable} onClick={() => handleToggleSwiftOption('isEquatable')} label="Equatable" />
+                <FilterButton checked={swiftOptions.isHashable} onClick={() => handleToggleSwiftOption('isHashable')} label="Hashable" />
+                <FilterButton checked={swiftOptions.isCustomStringConvertible} onClick={() => handleToggleSwiftOption('isCustomStringConvertible')} label="Debug Description" />
+                <FilterButton checked={swiftOptions.generateSampleData} onClick={() => handleToggleSwiftOption('generateSampleData')} label="Sample Data" />
+                <FilterButton checked={swiftOptions.isPublished} onClick={() => handleToggleSwiftOption('isPublished')} label="@Published" />
+                <FilterButton checked={swiftOptions.isMainActor} onClick={() => handleToggleSwiftOption('isMainActor')} label="@MainActor" />
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'python' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'python' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
-                    <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
-                    <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
-                    <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
-                    <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
-                    <FilterButton checked={pythonOptions.nestedClasses} onClick={() => handleTogglePythonOption('nestedClasses')} label="nested" />
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={pythonOptions.fromDict} onClick={() => handleTogglePythonOption('fromDict')} label="from_dict" />
+                <FilterButton checked={pythonOptions.toDict} onClick={() => handleTogglePythonOption('toDict')} label="to_dict" />
+                <FilterButton checked={pythonOptions.frozen} onClick={() => handleTogglePythonOption('frozen')} label="frozen" />
+                <FilterButton checked={pythonOptions.slots} onClick={() => handleTogglePythonOption('slots')} label="slots" />
+                <FilterButton checked={pythonOptions.camelCaseToSnakeCase} onClick={() => handleTogglePythonOption('camelCaseToSnakeCase')} label="snake_case" />
+                <FilterButton checked={pythonOptions.nestedClasses} onClick={() => handleTogglePythonOption('nestedClasses')} label="nested" />
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'java' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'java' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
-                  <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} label="Setters" disabled={javaOptions.finalFields} />
-                  <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
-                  <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
-                  <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />
-                  <FilterButton checked={javaOptions.equalsHashCode} onClick={() => handleToggleJavaOption('equalsHashCode')} label="equals() & hashCode()" />
-                  <FilterButton checked={javaOptions.toString} onClick={() => handleToggleJavaOption('toString')} label="toString()" />
-                  <FilterButton checked={javaOptions.finalFields} onClick={() => handleToggleJavaOption('finalFields')} label="Final Fields" />
-                  <FilterButton checked={javaOptions.jsonAnnotations} onClick={() => handleToggleJavaOption('jsonAnnotations')} label="@JsonProperty" />
-                  <FilterButton checked={javaOptions.snakeCase} onClick={() => handleToggleJavaOption('snakeCase')} label="camelCase Fields" />
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={javaOptions.getters} onClick={() => handleToggleJavaOption('getters')} label="Getters" />
+                <FilterButton checked={javaOptions.setters} onClick={() => handleToggleJavaOption('setters')} label="Setters" disabled={javaOptions.finalFields} />
+                <FilterButton checked={javaOptions.constructor} onClick={() => handleToggleJavaOption('constructor')} label="All-Args Constructor" />
+                <FilterButton checked={javaOptions.noArgsConstructor} onClick={() => handleToggleJavaOption('noArgsConstructor')} label="No-Args Constructor" />
+                <FilterButton checked={javaOptions.builder} onClick={() => handleToggleJavaOption('builder')} label="Builder" />
+                <FilterButton checked={javaOptions.equalsHashCode} onClick={() => handleToggleJavaOption('equalsHashCode')} label="equals() & hashCode()" />
+                <FilterButton checked={javaOptions.toString} onClick={() => handleToggleJavaOption('toString')} label="toString()" />
+                <FilterButton checked={javaOptions.finalFields} onClick={() => handleToggleJavaOption('finalFields')} label="Final Fields" />
+                <FilterButton checked={javaOptions.jsonAnnotations} onClick={() => handleToggleJavaOption('jsonAnnotations')} label="@JsonProperty" />
+                <FilterButton checked={javaOptions.snakeCase} onClick={() => handleToggleJavaOption('snakeCase')} label="camelCase Fields" />
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'csharp' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'csharp' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <FilterButton checked={csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Records" />
-                    <FilterButton checked={!csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Classes" />
-                    <FilterButton checked={csharpOptions.propertySetters === 'init'} onClick={() => handleCSharpOption('propertySetters', 'init')} label="Immutable (init)" />
-                    <FilterButton checked={csharpOptions.propertySetters === 'set'} onClick={() => handleCSharpOption('propertySetters', 'set')} label="Mutable (set)" />
-                    <FilterButton checked={csharpOptions.jsonAnnotations} onClick={() => handleCSharpOption('jsonAnnotations', !csharpOptions.jsonAnnotations)} label="[JsonPropertyName]" />
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Records" />
+                <FilterButton checked={!csharpOptions.useRecords} onClick={() => handleCSharpOption('useRecords', !csharpOptions.useRecords)} label="Use Classes" />
+                <FilterButton checked={csharpOptions.propertySetters === 'init'} onClick={() => handleCSharpOption('propertySetters', 'init')} label="Immutable (init)" />
+                <FilterButton checked={csharpOptions.propertySetters === 'set'} onClick={() => handleCSharpOption('propertySetters', 'set')} label="Mutable (set)" />
+                <FilterButton checked={csharpOptions.jsonAnnotations} onClick={() => handleCSharpOption('jsonAnnotations', !csharpOptions.jsonAnnotations)} label="[JsonPropertyName]" />
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'typescript' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'typescript' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <FilterButton checked={typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `type`" />
-                  <FilterButton checked={!typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `interface`" />
-                  <FilterButton checked={typescriptOptions.optionalFields} onClick={() => handleToggleTypescriptOption('optionalFields')} label="Optional Fields" />
-                  <FilterButton checked={typescriptOptions.readonlyFields} onClick={() => handleToggleTypescriptOption('readonlyFields')} label="Readonly Fields" />
-                  <FilterButton checked={typescriptOptions.allowNulls} onClick={() => handleToggleTypescriptOption('allowNulls')} label="Allow Nulls" />
-                </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton checked={typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `type`" />
+                <FilterButton checked={!typescriptOptions.useType} onClick={() => handleToggleTypescriptOption('useType')} label="Use `interface`" />
+                <FilterButton checked={typescriptOptions.optionalFields} onClick={() => handleToggleTypescriptOption('optionalFields')} label="Optional Fields" />
+                <FilterButton checked={typescriptOptions.readonlyFields} onClick={() => handleToggleTypescriptOption('readonlyFields')} label="Readonly Fields" />
+                <FilterButton checked={typescriptOptions.allowNulls} onClick={() => handleToggleTypescriptOption('allowNulls')} label="Allow Nulls" />
+              </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'go' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'go' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={goOptions.usePointers} onClick={() => handleToggleGoOption('usePointers')} label="Use Pointers (for nulls)" />
                 <FilterButton checked={goOptions.useArrayOfPointers} onClick={() => handleToggleGoOption('useArrayOfPointers')} label="Use Pointers in Arrays" />
               </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'php' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'php' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={phpOptions.constructorPropertyPromotion} onClick={() => handleTogglePhpOption('constructorPropertyPromotion')} label="Property Promotion" />
@@ -965,11 +1010,11 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 <FilterButton checked={phpOptions.toArray} onClick={() => handleTogglePhpOption('toArray')} label="toArray()" />
               </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'javascript' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
+        {selectedLanguage === 'javascript' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={javascriptOptions.includeJSDoc} onClick={() => handleToggleJavascriptOption('includeJSDoc')} label="JSDoc Comments" />
@@ -977,12 +1022,12 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 <FilterButton checked={javascriptOptions.convertDates} onClick={() => handleToggleJavascriptOption('convertDates')} label="Parse Dates" />
               </div>
             </CardContent>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {selectedLanguage === 'cpp' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        {selectedLanguage === 'cpp' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton
                   checked={cppOptions.useNlohmann}
@@ -991,114 +1036,114 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                  <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
-                  <Select 
-                      value={cppOptions.cppVersion} 
-                      onValueChange={(value) => handleCppOption('cppVersion', value as '17' | '20' | '03')}
-                  >
-                      <SelectTrigger className="w-auto">
-                          <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="17">C++17</SelectItem>
-                          <SelectItem value="20">C++20</SelectItem>
-                          <SelectItem value="03">C++03</SelectItem>
-                      </SelectContent>
-                  </Select>
+                <span className="text-sm font-medium text-muted-foreground">C++ Standard:</span>
+                <Select
+                  value={cppOptions.cppVersion}
+                  onValueChange={(value) => handleCppOption('cppVersion', value as '17' | '20' | '03')}
+                >
+                  <SelectTrigger className="w-auto">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="17">C++17</SelectItem>
+                    <SelectItem value="20">C++20</SelectItem>
+                    <SelectItem value="03">C++03</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-          </CardContent>
-      </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'vbnet' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <FilterButton 
-                checked={vbnetOptions.jsonAnnotations} 
-                onClick={() => handleToggleVbNetOption('jsonAnnotations')} 
-                label="[JsonProperty]"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {selectedLanguage === 'vbnet' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton
+                  checked={vbnetOptions.jsonAnnotations}
+                  onClick={() => handleToggleVbNetOption('jsonAnnotations')}
+                  label="[JsonProperty]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'rust' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <FilterButton 
-                checked={rustOptions.deriveClone} 
-                onClick={() => handleToggleRustOption('deriveClone')} 
-                label="Derive Clone/PartialEq"
-              />
-              <FilterButton 
-                checked={rustOptions.publicFields} 
-                onClick={() => handleToggleRustOption('publicFields')} 
-                label="Public Fields"
-              />
-              <FilterButton
-                checked={rustOptions.useSerdeDefault}
-                onClick={() => handleToggleRustOption('useSerdeDefault')}
-                label="Use `#[serde(default)]`"
-               />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {selectedLanguage === 'rust' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton
+                  checked={rustOptions.deriveClone}
+                  onClick={() => handleToggleRustOption('deriveClone')}
+                  label="Derive Clone/PartialEq"
+                />
+                <FilterButton
+                  checked={rustOptions.publicFields}
+                  onClick={() => handleToggleRustOption('publicFields')}
+                  label="Public Fields"
+                />
+                <FilterButton
+                  checked={rustOptions.useSerdeDefault}
+                  onClick={() => handleToggleRustOption('useSerdeDefault')}
+                  label="Use `#[serde(default)]`"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'ruby' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <FilterButton 
-                checked={rubyOptions.attrAccessor} 
-                onClick={() => handleToggleRubyOption('attrAccessor')} 
-                label="attr_accessor"
-              />
-              <FilterButton 
-                checked={rubyOptions.snakeCase} 
-                onClick={() => handleToggleRubyOption('snakeCase')} 
-                label="snake_case"
-              />
-              <FilterButton
-                checked={rubyOptions.initialize}
-                onClick={() => handleToggleRubyOption('initialize')}
-                label="initialize"
-               />
-               <FilterButton
-                checked={rubyOptions.defaultValues}
-                onClick={() => handleToggleRubyOption('defaultValues')}
-                label="Default Values"
-               />
-               <FilterButton
-                checked={rubyOptions.useStruct}
-                onClick={() => handleToggleRubyOption('useStruct')}
-                label="Use Struct"
-               />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {selectedLanguage === 'r' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <FilterButton 
-                checked={rOptions.defaultValues} 
-                onClick={() => handleToggleROption('defaultValues')} 
-                label="Default Values"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {selectedLanguage === 'ruby' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton
+                  checked={rubyOptions.attrAccessor}
+                  onClick={() => handleToggleRubyOption('attrAccessor')}
+                  label="attr_accessor"
+                />
+                <FilterButton
+                  checked={rubyOptions.snakeCase}
+                  onClick={() => handleToggleRubyOption('snakeCase')}
+                  label="snake_case"
+                />
+                <FilterButton
+                  checked={rubyOptions.initialize}
+                  onClick={() => handleToggleRubyOption('initialize')}
+                  label="initialize"
+                />
+                <FilterButton
+                  checked={rubyOptions.defaultValues}
+                  onClick={() => handleToggleRubyOption('defaultValues')}
+                  label="Default Values"
+                />
+                <FilterButton
+                  checked={rubyOptions.useStruct}
+                  onClick={() => handleToggleRubyOption('useStruct')}
+                  label="Use Struct"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'objectivec' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        {selectedLanguage === 'r' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <FilterButton
+                  checked={rOptions.defaultValues}
+                  onClick={() => handleToggleROption('defaultValues')}
+                  label="Default Values"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {selectedLanguage === 'objectivec' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={objcOptions.properties} onClick={() => handleToggleObjcOption('properties')} label="property" />
                 <FilterButton checked={objcOptions.initializers} onClick={() => handleToggleObjcOption('initializers')} label="Initializer" />
@@ -1106,21 +1151,21 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 <FilterButton checked={objcOptions.toCamelCase} onClick={handleToggleCamelCaseObjcOption} label="camelCase" />
               </div>
               <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                    <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
-                    <Input 
-                      value={objcOptions.rootClassPrefix}
-                      onChange={(e) => handleObjcOption('rootClassPrefix', e.target.value)}
-                      placeholder="e.g. DM"
-                      className="w-24"
-                    />
-                 </div>
-          </CardContent>
-        </Card>
-      )}
+                <span className="text-sm font-medium text-muted-foreground">Class Prefix:</span>
+                <Input
+                  value={objcOptions.rootClassPrefix}
+                  onChange={(e) => handleObjcOption('rootClassPrefix', e.target.value)}
+                  placeholder="e.g. DM"
+                  className="w-24"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'sql' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        {selectedLanguage === 'sql' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={sqlOptions.useSnakeCase ?? false} onClick={() => handleToggleSqlOption('useSnakeCase')} label="snake_case" />
                 <FilterButton checked={sqlOptions.includePrimaryKey ?? false} onClick={() => handleToggleSqlOption('includePrimaryKey')} label="Primary Key" />
@@ -1130,149 +1175,183 @@ export default function ModelForgeClient({ selectedLanguage: lang, title, descri
                 <FilterButton checked={sqlOptions.useTypeInference ?? false} onClick={() => handleToggleSqlOption('useTypeInference')} label="Infer Types" />
                 <FilterButton checked={sqlOptions.defaultValues ?? false} onClick={() => handleToggleSqlOption('defaultValues')} label="Default Values" />
               </div>
-               <div className="flex items-center justify-center gap-2 pt-4 border-t">
-                    <span className="text-sm font-medium text-muted-foreground">Table Prefix:</span>
-                    <Input 
-                      value={sqlOptions.tablePrefix}
-                      onChange={(e) => handleSqlOption('tablePrefix', e.target.value)}
-                      placeholder="e.g. tbl"
-                      className="w-24"
-                    />
-                 </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {selectedLanguage === 'elixir' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                <span className="text-sm font-medium text-muted-foreground">Table Prefix:</span>
+                <Input
+                  value={sqlOptions.tablePrefix}
+                  onChange={(e) => handleSqlOption('tablePrefix', e.target.value)}
+                  placeholder="e.g. tbl"
+                  className="w-24"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {selectedLanguage === 'elixir' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={elixirOptions.useSnakeCase ?? true} onClick={() => handleToggleElixirOption('useSnakeCase')} label="snake_case" />
                 <FilterButton checked={elixirOptions.includeTypes ?? true} onClick={() => handleToggleElixirOption('includeTypes')} label="@types" />
                 <FilterButton checked={elixirOptions.includeStruct ?? true} onClick={() => handleToggleElixirOption('includeStruct')} label="defstruct" />
                 <FilterButton checked={elixirOptions.defaultValues ?? true} onClick={() => handleToggleElixirOption('defaultValues')} label="Default Comments" />
               </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'erlang' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        {selectedLanguage === 'erlang' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={erlangOptions.useSnakeCase ?? true} onClick={() => handleToggleErlangOption('useSnakeCase')} label="snake_case" />
                 <FilterButton checked={erlangOptions.includeTypes ?? true} onClick={() => handleToggleErlangOption('includeTypes')} label="-type" />
                 <FilterButton checked={erlangOptions.includeDefaults ?? true} onClick={() => handleToggleErlangOption('includeDefaults')} label="Defaults" />
               </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {selectedLanguage === 'scala' && (
-        <Card className="max-w-2xl mx-auto shadow-sm">
-          <CardContent className="p-6 space-y-4">
+        {selectedLanguage === 'scala' && (
+          <Card className="max-w-2xl mx-auto shadow-sm">
+            <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <FilterButton checked={scalaOptions.useSnakeCase ?? true} onClick={() => handleToggleScalaOption('useSnakeCase')} label="snake_case" />
                 <FilterButton checked={scalaOptions.includeTypes ?? true} onClick={() => handleToggleScalaOption('includeTypes')} label="Types" />
                 <FilterButton checked={scalaOptions.defaultValues ?? true} onClick={() => handleToggleScalaOption('defaultValues')} label="Defaults" />
                 <FilterButton checked={scalaOptions.includeStruct ?? true} onClick={() => handleToggleScalaOption('includeStruct')} label="Case Class" />
               </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-2" aria-labelledby="io-panels-title">
-        <h2 id="io-panels-title" className="sr-only">JSON Input and Generated Model Output</h2>
-        <Card className="shadow-lg flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleFormatJson} disabled={!jsonInput || !!jsonError}>
-                <Wand2 className="mr-2 h-4 w-4" />
-                Format
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col">
-            <div className="flex-grow h-full">
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-2" aria-labelledby="io-panels-title">
+          <h2 id="io-panels-title" className="sr-only">JSON Input and Generated Model Output</h2>
+          <Card className="shadow-lg flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="font-headline text-2xl">JSON Input</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleFormatJson} disabled={!jsonInput || !!jsonError}>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Format
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col">
+              <div className="flex-grow h-full">
                 <Textarea
-                    value={jsonInput}
-                    onChange={handleJsonInputChange}
-                    placeholder="Paste your JSON here"
-                    className={cn("font-code h-[500px] resize-none", {
-                        "border-destructive ring-destructive ring-2": jsonError,
-                    })}
-                    aria-label="JSON Input Area"
-                    aria-invalid={!!jsonError}
-                    aria-describedby={jsonError ? "json-error-message" : undefined}
+                  value={jsonInput}
+                  onChange={handleJsonInputChange}
+                  placeholder="Paste your JSON here"
+                  className={cn("font-code h-[500px] resize-none", {
+                    "border-destructive ring-destructive ring-2": jsonError,
+                  })}
+                  aria-label="JSON Input Area"
+                  aria-invalid={!!jsonError}
+                  aria-describedby={jsonError ? "json-error-message" : undefined}
                 />
-            </div>
-             {jsonError && (
-              <p id="json-error-message" className="mt-2 flex items-center text-sm text-destructive">
-                <AlertCircle className="mr-2 h-4 w-4" />
-                {jsonError}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="shadow-lg flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <AlertDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={!outputCode || isGenerating}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Rename
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Rename Root Model</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Enter a new name for the root model class. The current name is <strong>{rootClassName}</strong>.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <Input 
-                    value={renameInputValue}
-                    onChange={(e) => setRenameInputValue(e.target.value)}
-                    placeholder="Enter new name"
-                  />
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleRename}>Rename</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputCode}>
-                {hasCopied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
-                <span className="sr-only">Copy to clipboard</span>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col">
-             <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden h-[500px]">
-              {isGenerating ? (
-                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                 </div>
-              ) : outputCode ? (
-                <div className="relative h-full w-full overflow-auto">
-                    <pre className="p-4 h-full">
-                        <code>{outputCode}</code>
-                    </pre>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center text-center text-muted-foreground">
-                  <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your model will be generated live here.'}</p>
-                </div>
+              </div>
+              {jsonError && (
+                <p id="json-error-message" className="mt-2 flex items-center text-sm text-destructive">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  {jsonError}
+                </p>
               )}
+            </CardContent>
+          </Card>
+          <Card className="shadow-lg flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="font-headline text-2xl">Generated Model</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertDialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={!outputCode || isGenerating}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Rename
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Rename Root Model</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Enter a new name for the root model class. The current name is <strong>{rootClassName}</strong>.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <Input
+                      value={renameInputValue}
+                      onChange={(e) => setRenameInputValue(e.target.value)}
+                      placeholder="Enter new name"
+                    />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRename}>Rename</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button variant="ghost" size="icon" onClick={handleCopy} disabled={!outputCode}>
+                  {hasCopied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
+                  <span className="sr-only">Copy to clipboard</span>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col">
+              <div className="relative flex-grow border rounded-md bg-card font-code text-sm overflow-hidden h-[500px]">
+                {isGenerating ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : outputCode ? (
+                  <div className="relative h-full w-full overflow-auto">
+                    <pre className="p-4 h-full">
+                      <code>{outputCode}</code>
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-center text-muted-foreground">
+                    <p>{jsonError ? 'Fix the JSON error to generate code' : 'Your model will be generated live here.'}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Feature Explanation & FAQ Section */}
+        <section className="mt-16 pt-12 border-t border-border text-left">
+          <div className="mx-auto max-w-3xl prose prose-slate dark:prose-invert">
+            <h2 className="text-3xl font-bold tracking-tight mb-6">How to use the Model Generator</h2>
+            <p className="text-lg text-muted-foreground mb-8">
+              Generate type-safe structs, classes, and models for {title.replace("JSON to ", "").replace(" Converter", "")} instantly from data payloads.
+            </p>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold">1. Paste JSON or CSV Data</h3>
+                <p className="text-muted-foreground mt-2">
+                  You can paste raw, minified JSON directly into the input field. Alternatively, if your data comes from a spreadsheet, simply paste your <strong>Comma-Separated Values (CSV)</strong> data including the headers. Our engine instantly detects CSV (whether delimited by commas, semicolons, or tabs) and safely converts it into structured code arrays.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold">2. Drag & Drop Files</h3>
+                <p className="text-muted-foreground mt-2">
+                  Save time by using our <strong>Drag & Drop</strong> feature. Simply drag any `.json` or `.csv` file from your desktop and drop it anywhere on the page. The content will be automatically formatted and mapped into your generation queue.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold">3. Customize and Generate</h3>
+                <p className="text-muted-foreground mt-2">
+                  Use the options panel on the right side to tweak output preferences (such as null-ability, default values, serialization helpers, and naming conventions) so your generated classes perfectly match your codebase conventions.
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
+          </div>
+        </section>
+      </div>
+    </DragDropZone>
   );
 }

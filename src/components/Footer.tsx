@@ -21,6 +21,22 @@ export function Footer() {
           </div>
 
           <div>
+            <h3 className="font-semibold text-foreground">Tools</h3>
+            <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="/format" className="hover:text-primary transition-colors">
+                  JSON & CSV Formatter
+                </Link>
+              </li>
+              <li>
+                <Link href="/" className="hover:text-primary transition-colors">
+                  Model Generator
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <h3 className="font-semibold text-foreground">Legal</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               <li>
@@ -39,6 +55,11 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground">Company</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+              <li>
+                <Link href="/guides" className="hover:text-primary transition-colors">
+                  Guides & Blog
+                </Link>
+              </li>
               <li>
                 <Link href="/about" className="hover:text-primary transition-colors">
                   About
